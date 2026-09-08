@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard RKO — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    /* gaya dashboard (sama seperti sebelumnya, disesuaikan) */
+    :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: 'Inter', -apple-system, sans-serif; color: var(--text-dark); }
+    h1, h2, h3, .num { font-family: 'Poppins', sans-serif; }
+    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+    select option { color: #14201A; }
+    main { max-width: 100%; margin: 0; padding: 28px 20px 60px; }
+    .page-heading { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .page-heading h1 { font-size: 22px; margin: 0 0 4px; }
+    .page-heading p { margin: 0; color: var(--text-muted); font-size: 13px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+    .stat-card .icon { width: 30px; height: 30px; border-radius: 8px; background: var(--green-soft); color: var(--green-mid); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+    .stat-card .num { font-size: 24px; font-weight: 700; line-height: 1.1; }
+    .stat-card .lbl { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+    .grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+    .panel h2 { font-size: 15px; margin: 0 0 2px; }
+    .panel .sub { font-size: 12px; color: var(--text-muted); margin: 0 0 16px; }
+    .gauge-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .gauge-num { font-size: 30px; font-weight: 700; color: var(--green-mid); margin-top: -78px; }
+    .gauge-lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+    td.num-cell, th.num-cell { text-align: right; }
+    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .list-item:last-child { border-bottom: none; }
+    .list-item .name { font-weight: 500; }
+    .list-item .val { color: var(--text-muted); font-size: 12.5px; }
+    .empty-mini { text-align: center; color: var(--text-muted); font-size: 12.5px; padding: 20px 0; }
+    .mini-stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .mini-num { font-size: 17px; font-weight: 700; }
+    .mini-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    footer.note { text-align: center; color: var(--text-muted); font-size: 11.5px; margin-top: 18px; }
+    @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div><div class="title">RKO RSAMP</div><div class="label">Dashboard RKO — rangkuman rekapan unit</div></div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="bulanSelect"></select>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div class="page-heading"><div><h1>Ringkasan bulan berjalan</h1><p>Data digabung dari seluruh unit pelayanan</p></div></div>
+  <section class="stat-grid">
+    <div class="stat-card"><div class="icon">Rp</div><div class="num" id="statBelanja">-</div><div class="lbl">Total rencana belanja</div></div>
+    <div class="stat-card"><div class="icon">#</div><div class="num" id="statItem">-</div><div class="lbl">Item obat &amp; BMHP aktif</div></div>
+    <div class="stat-card"><div class="icon">U</div><div class="num" id="statUnit">-</div><div class="lbl">Unit sudah input kebutuhan</div></div>
+    <div class="stat-card"><div class="icon">%</div><div class="num" id="statCapaian">-</div><div class="lbl">Efisiensi belanja/kunjungan vs bulan lalu</div></div>
+  </section>
+
+  <section class="grid-2">
+    <div class="panel">
+      <h2>Estimasi nilai kebutuhan per instalasi</h2>
+      <p class="sub">Kebutuhan unit &times; HPP beli, dalam juta rupiah</p>
+      <canvas id="chartInstalasi" height="140"></canvas>
+      <div class="empty-mini" id="chartInstalasiEmpty" style="display:none;">Belum ada data kebutuhan untuk periode ini.</div>
+    </div>
+    <div class="panel">
+      <h2>Efisiensi belanja per kunjungan</h2>
+      <p class="sub" id="targetLabel">Bulan ini vs bulan lalu &middot; target &le; -</p>
+      <div class="gauge-wrap">
+        <canvas id="chartGauge" width="180" height="180"></canvas>
+        <div class="gauge-num" id="gaugeNum">-</div>
+        <div class="gauge-lbl" id="gaugeLbl">dari bulan lalu</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="panel">
+      <h2>Rekap per instalasi</h2>
+      <p class="sub">Estimasi nilai kebutuhan, diurutkan dari terbesar</p>
+      <table><thead><tr><th>Instalasi</th><th class="num-cell">Estimasi nilai kebutuhan</th></tr></thead><tbody id="tableInstalasi"><tr><td colspan="2" class="empty-mini">Memuat data...</td></tr></tbody></table>
+    </div>
+    <div class="panel">
+      <h2>Distributor terbesar</h2>
+      <p class="sub">Berdasarkan nilai rencana belanja</p>
+      <div id="listDistributor"><div class="empty-mini">Memuat data...</div></div>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="panel">
+      <h2>Penjualan &amp; margin</h2>
+      <p class="sub">Dari data upload menu Penjualan bulan ini</p>
+      <div class="mini-stat-row">
+        <div><div class="mini-num" id="statHargaJual">-</div><div class="mini-lbl">Harga jual</div></div>
+        <div><div class="mini-num" id="statHppTerjual">-</div><div class="mini-lbl">HPP terjual</div></div>
+        <div><div class="mini-num" id="statSurplus">-</div><div class="mini-lbl">Surplus/margin</div></div>
+      </div>
+      <div class="empty-mini" id="penjualanEmpty" style="display:none;">Belum ada data penjualan untuk periode ini.</div>
+    </div>
+    <div class="panel">
+      <h2>Status pembelian &amp; penerimaan</h2>
+      <p class="sub">Dari PO yang dibuat bulan ini</p>
+      <div class="mini-stat-row">
+        <div><div class="mini-num" id="statJumlahPO">-</div><div class="mini-lbl">Jumlah PO dibuat</div></div>
+        <div><div class="mini-num" id="statPoBelumTerima">-</div><div class="mini-lbl">PO belum diterima</div></div>
+        <div><div class="mini-num" id="statPersenDatang">-</div><div class="mini-lbl">Barang sudah datang</div></div>
+      </div>
+      <div class="empty-mini" id="pembelianEmpty" style="display:none;">Belum ada PO untuk periode ini.</div>
+    </div>
+  </section>
+  <footer class="note">Data ditarik langsung dari Supabase.</footer>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Cek session
+  const userStr = sessionStorage.getItem('rko_user');
+  if (!userStr) window.location.href = 'index.html';
+  const currentUser = JSON.parse(userStr);
+  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+
+  let chartInstalasi, chartGauge;
+  const NAMA_BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    NAMA_BULAN.forEach((nm, i) => { const opt = document.createElement('option'); opt.value = i+1; opt.textContent = nm; if (i+1 === curBulan) opt.selected = true; bulanSel.appendChild(opt); });
+    const tahunSel = document.getElementById('tahunSelect');
+    for (let y = curTahun-1; y <= curTahun+1; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; if (y === curTahun) opt.selected = true; tahunSel.appendChild(opt); }
+  }
+
+  (function init() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth()+1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadDashboard);
+    document.getElementById('tahunSelect').addEventListener('change', loadDashboard);
+    loadDashboard();
+  })();
+
+  async function loadDashboard() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+
+    try {
+      // Ambil data yang dibutuhkan
+      const [rencanaRes, kebutuhanRes, barangRes, distributorRes, penjualanRes, pembelianRes, kunjunganRes] = await Promise.all([
+        supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun),
+        supabase.from('kebutuhan').select('*, master_ruangan(nama_ruangan)').eq('bulan', bulan).eq('tahun', tahun),
+        supabase.from('master_barang').select('*').eq('status_aktif', true),
+        supabase.from('master_distributor').select('*'),
+        supabase.from('penjualan').select('*').eq('bulan', bulan).eq('tahun', tahun),
+        supabase.from('pembelian').select('*').eq('bulan', bulan).eq('tahun', tahun),
+        supabase.from('kunjungan').select('*').eq('bulan', bulan).eq('tahun', tahun)
+      ]);
+
+      const rencana = rencanaRes.data || [];
+      const kebutuhan = kebutuhanRes.data || [];
+      const barang = barangRes.data || [];
+      const distributor = distributorRes.data || [];
+      const penjualan = penjualanRes.data || [];
+      const pembelian = pembelianRes.data || [];
+      const kunjungan = kunjunganRes.data || [];
+
+      // Total rencana belanja
+      const totalRencana = rencana.reduce((sum, r) => sum + Number(r.rencana_rp), 0);
+      document.getElementById('statBelanja').textContent = formatRpSingkat(totalRencana);
+
+      // Total item aktif
+      document.getElementById('statItem').textContent = barang.length.toLocaleString('id-ID');
+
+      // Unit yang sudah input kebutuhan (distinct ruangan_id)
+      const unitIds = new Set(kebutuhan.map(k => k.ruangan_id));
+      document.getElementById('statUnit').textContent = unitIds.size.toLocaleString('id-ID');
+
+      // Efisiensi (belanja per kunjungan) - contoh sederhana: bandingkan total rencana dengan bulan lalu
+      // Ambil data bulan lalu
+      const bulanLalu = bulan == 1 ? 12 : bulan - 1;
+      const tahunLalu = bulan == 1 ? tahun - 1 : tahun;
+      const { data: rencanaLalu } = await supabase.from('rencana_belanja').select('*').eq('bulan', bulanLalu).eq('tahun', tahunLalu);
+      const totalRencanaLalu = (rencanaLalu || []).reduce((sum, r) => sum + Number(r.rencana_rp), 0);
+      const targetEfisiensi = 90; // default
+      let efisiensi = null;
+      if (totalRencanaLalu > 0) {
+        efisiensi = Math.round((totalRencana / totalRencanaLalu) * 100);
+      }
+      const overTarget = efisiensi !== null && efisiensi > targetEfisiensi;
+      document.getElementById('statCapaian').textContent = efisiensi !== null ? efisiensi + '%' : '-';
+      document.getElementById('statCapaian').style.color = efisiensi !== null ? (overTarget ? 'var(--coral)' : 'var(--green-mid)') : 'var(--text-dark)';
+      document.getElementById('targetLabel').textContent = 'Bulan ini vs bulan lalu · target ≤ ' + targetEfisiensi + '%';
+
+      // Chart per instalasi
+      const perInstalasi = {};
+      kebutuhan.forEach(k => {
+        const nama = k.master_ruangan ? k.master_ruangan.nama_ruangan : 'Unit ' + k.ruangan_id;
+        const nilai = Number(k.kebutuhan) * Number(k.master_barang ? k.master_barang.hpp_beli : 0);
+        perInstalasi[nama] = (perInstalasi[nama] || 0) + nilai;
+      });
+      const labels = Object.keys(perInstalasi);
+      const values = labels.map(l => Math.round(perInstalasi[l] / 1000000));
+      const chartEmpty = document.getElementById('chartInstalasiEmpty');
+      const canvas = document.getElementById('chartInstalasi');
+      if (labels.length === 0) {
+        canvas.style.display = 'none'; chartEmpty.style.display = 'block';
+      } else {
+        canvas.style.display = 'block'; chartEmpty.style.display = 'none';
+        if (chartInstalasi) chartInstalasi.destroy();
+        chartInstalasi = new Chart(canvas, {
+          type: 'bar',
+          data: { labels, datasets: [{ data: values, backgroundColor: '#16A34A', borderRadius: 6, maxBarThickness: 34 }] },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } }, x: { grid: { display: false } } } }
+        });
+      }
+
+      // Gauge efisiensi
+      const gaugeNum = document.getElementById('gaugeNum');
+      const gaugeLbl = document.getElementById('gaugeLbl');
+      if (efisiensi === null) {
+        gaugeNum.textContent = 'N/A'; gaugeLbl.textContent = 'Data bulan lalu belum lengkap';
+      } else {
+        gaugeNum.textContent = efisiensi + '%';
+        gaugeNum.style.color = overTarget ? 'var(--coral)' : 'var(--green-mid)';
+        gaugeLbl.textContent = overTarget ? 'di atas target (boros)' : 'di bawah/sama target';
+      }
+      if (chartGauge) chartGauge.destroy();
+      const gaugeColor = overTarget ? '#DC5B45' : '#16A34A';
+      const gaugeValue = efisiensi !== null ? Math.min(100, efisiensi) : 0;
+      chartGauge = new Chart(document.getElementById('chartGauge'), {
+        type: 'doughnut',
+        data: { datasets: [{ data: [gaugeValue, Math.max(0, 100 - gaugeValue)], backgroundColor: [gaugeColor, '#EEF2EE'], borderWidth: 0 }] },
+        options: { cutout: '78%', circumference: 360, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+      });
+
+      // Tabel per instalasi
+      const sorted = labels.map(l => ({ nama: l, nilai: perInstalasi[l] })).sort((a, b) => b.nilai - a.nilai);
+      const tbody = document.getElementById('tableInstalasi');
+      tbody.innerHTML = sorted.length === 0 ? '<tr><td colspan="2" class="empty-mini">Belum ada data untuk periode ini.</td></tr>' :
+        sorted.map(row => `<tr><td>${escapeHtml(row.nama)}</td><td class="num-cell">Rp ${Math.round(row.nilai).toLocaleString('id-ID')}</td></tr>`).join('');
+
+      // Top distributor
+      const distContainer = document.getElementById('listDistributor');
+      const perDistributor = {};
+      rencana.forEach(r => {
+        const nama = distributor.find(d => d.id === r.distributor_id)?.nama_distributor || 'Distributor ' + r.distributor_id;
+        perDistributor[nama] = (perDistributor[nama] || 0) + Number(r.rencana_rp);
+      });
+      const topDist = Object.keys(perDistributor).map(nama => ({ nama, nilai: perDistributor[nama] })).sort((a,b) => b.nilai - a.nilai);
+      distContainer.innerHTML = topDist.length === 0 ? '<div class="empty-mini">Belum ada rencana belanja untuk periode ini.</div>' :
+        topDist.map(item => `<div class="list-item"><span class="name">${escapeHtml(item.nama)}</span><span class="val">Rp ${Math.round(item.nilai).toLocaleString('id-ID')}</span></div>`).join('');
+
+      // Penjualan
+      const totalHpp = penjualan.reduce((s, p) => s + Number(p.hpp_terjual), 0);
+      const totalJual = penjualan.reduce((s, p) => s + Number(p.harga_jual), 0);
+      const surplus = totalJual - totalHpp;
+      const penjualanEmpty = document.getElementById('penjualanEmpty');
+      if (totalHpp === 0 && totalJual === 0) {
+        penjualanEmpty.style.display = 'block';
+        document.getElementById('statHargaJual').textContent = '-';
+        document.getElementById('statHppTerjual').textContent = '-';
+        document.getElementById('statSurplus').textContent = '-';
+      } else {
+        penjualanEmpty.style.display = 'none';
+        document.getElementById('statHargaJual').textContent = formatRpSingkat(totalJual);
+        document.getElementById('statHppTerjual').textContent = formatRpSingkat(totalHpp);
+        const surplusEl = document.getElementById('statSurplus');
+        surplusEl.textContent = formatRpSingkat(surplus);
+        surplusEl.style.color = surplus >= 0 ? 'var(--green-mid)' : 'var(--coral)';
+      }
+
+      // Pembelian
+      const pembelianEmpty = document.getElementById('pembelianEmpty');
+      if (pembelian.length === 0) {
+        pembelianEmpty.style.display = 'block';
+        document.getElementById('statJumlahPO').textContent = '-';
+        document.getElementById('statPoBelumTerima').textContent = '-';
+        document.getElementById('statPersenDatang').textContent = '-';
+      } else {
+        pembelianEmpty.style.display = 'none';
+        document.getElementById('statJumlahPO').textContent = pembelian.length.toLocaleString('id-ID');
+        const belum = pembelian.filter(p => p.status !== 'SELESAI').length;
+        document.getElementById('statPoBelumTerima').textContent = belum + ' (' + formatRpSingkat(0) + ')'; // nilai belum dihitung sederhana
+        const selesai = pembelian.filter(p => p.status === 'SELESAI').length;
+        const persen = pembelian.length > 0 ? Math.round((selesai / pembelian.length) * 100) : 0;
+        document.getElementById('statPersenDatang').textContent = persen + '%';
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal memuat dashboard.');
+    }
+  }
+
+  function formatRpSingkat(v) {
+    const n = Number(v) || 0;
+    if (n >= 1000000000) return 'Rp ' + (n / 1000000000).toFixed(2).replace('.', ',') + ' M';
+    if (n >= 1000000) return 'Rp ' + (n / 1000000).toFixed(1).replace('.', ',') + ' Jt';
+    return 'Rp ' + n.toLocaleString('id-ID');
+  }
+  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+</script>
+</body>
+</html>
