@@ -132,17 +132,30 @@
   }
 
   (function checkSession() {
-    const userStr = sessionStorage.getItem('rko_user');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        document.getElementById('loginOverlay').style.display = 'none';
-        document.getElementById('app').style.display = 'flex';
-        document.getElementById('userNama').textContent = user.nama;
-        renderMenu(user.role);
-      } catch (e) { sessionStorage.removeItem('rko_user'); sessionStorage.removeItem('rko_token'); }
-    }
-  })();
-</script>
-</body>
-</html>
+  // BYPASS LOGIN UNTUK TESTING - HAPUS SETELAH SELESAI
+  const bypassUser = {
+    id: 999,
+    email: 'admin@rsamp.go.id',
+    nama: 'Admin Bypass',
+    role: 'SUPER_ADMIN',
+    active: true
+  };
+  sessionStorage.setItem('rko_user', JSON.stringify(bypassUser));
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('userNama').textContent = bypassUser.nama;
+  renderMenu(bypassUser.role);
+  return;
+  // END BYPASS
+
+  const userStr = sessionStorage.getItem('rko_user');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      document.getElementById('userNama').textContent = user.nama;
+      renderMenu(user.role);
+    } catch (e) { sessionStorage.removeItem('rko_user'); sessionStorage.removeItem('rko_token'); }
+  }
+})();
