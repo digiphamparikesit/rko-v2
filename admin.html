@@ -7,7 +7,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    /* ===== SAMA SEPERTI SEBELUMNYA (tidak diubah) ===== */
     :root {
       --green-deep: #0F3D2E;
       --green-mid: #16A34A;
@@ -189,8 +188,8 @@
             <option value="nonaktif">Nonaktif</option>
           </select>
         </div>
-        <button class="btn btn-primary" style="width:100%;" id="btnTambahBarang">+ Tambah Barang</button>
-        <button class="btn btn-upload" style="width:100%; margin-top:8px;" id="btnUploadCSV">&#8593; Upload CSV Master Barang</button>
+        <button class="btn btn-primary" style="width:100%;" onclick="openForm()">+ Tambah Barang</button>
+        <button class="btn btn-upload" style="width:100%; margin-top:8px;" onclick="openUploadModal()">&#8593; Upload CSV Master Barang</button>
       </div>
     </aside>
 
@@ -279,8 +278,8 @@
     </div>
     <div class="form-msg" id="formMsg"></div>
     <div class="modal-actions">
-      <button class="btn btn-secondary" id="btnFormBatal">Batal</button>
-      <button class="btn btn-primary" id="btnFormSimpan">Simpan</button>
+      <button class="btn btn-secondary" onclick="closeForm()">Batal</button>
+      <button class="btn btn-primary" onclick="submitForm()">Simpan</button>
     </div>
   </div>
 </div>
@@ -297,7 +296,7 @@
       <br><span style="color:var(--amber);">* Kolom prinsipal dan distributor diisi dengan NAMA (akan dicocokkan dengan master).</span>
       <br><span style="color:var(--text-muted); font-size:11px;">* status_aktif: true/false atau 1/0</span>
     </p>
-    <input type="file" id="uploadFileInput" accept=".csv" style="margin-bottom:14px;">
+    <input type="file" id="uploadFileInput" accept=".csv" onchange="handleUploadFile(event)" style="margin-bottom:14px;">
     <div id="uploadSummary" style="display:none; margin-bottom:12px; font-size:13px;"></div>
     <div id="uploadPreviewWrap" style="display:none; max-height:340px; overflow-y:auto; border:1px solid var(--border); border-radius:10px;">
       <table class="preview-table">
@@ -316,8 +315,8 @@
     </div>
     <div class="form-msg" id="uploadMsg"></div>
     <div class="modal-actions">
-      <button class="btn btn-secondary" id="btnUploadBatal">Batal</button>
-      <button class="btn btn-primary" id="btnConfirmUpload" disabled>Import Barang</button>
+      <button class="btn btn-secondary" onclick="closeUploadModal()">Batal</button>
+      <button class="btn btn-primary" id="btnConfirmUpload" onclick="confirmUpload()" disabled>Import Barang</button>
     </div>
   </div>
 </div>
@@ -357,6 +356,7 @@
   let filteredBarang = [];
   let page = 1;
   const PAGE_SIZE = 15;
+  let uploadRows = [];
 
   // ============================================================
   //  UTILITY
@@ -376,6 +376,7 @@
   //  LOAD DATA
   // ============================================================
   async function initData() {
+    console.log('initData dipanggil');
     try {
       const [barangRes, prinsipalRes, distributorRes] = await Promise.all([
         supabase.from('master_barang').select('*'),
@@ -387,6 +388,7 @@
       distributorList = distributorRes.data || [];
       fillSelectOptions();
       applyFilter();
+      console.log('Data dimuat: ' + allBarang.length + ' barang');
     } catch (err) {
       console.error('initData error:', err);
       document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Gagal memuat data: ' + err.message + '</td></tr>';
@@ -466,12 +468,14 @@
     page += delta;
     renderTable();
   }
+  // Jadikan global
+  window.changePage = changePage;
 
   // ============================================================
   //  FORM TAMBAH / EDIT
   // ============================================================
-  function openForm(id) {
-    console.log('openForm called with id:', id);
+  window.openForm = function(id) {
+    console.log('openForm dipanggil, id:', id);
     document.getElementById('formMsg').textContent = '';
     if (id) {
       const b = allBarang.find(x => x.id === id);
@@ -495,13 +499,13 @@
       document.getElementById('fDistributor').value = '';
     }
     document.getElementById('modalOverlay').classList.add('show');
-  }
+  };
 
-  function closeForm() {
+  window.closeForm = function() {
     document.getElementById('modalOverlay').classList.remove('show');
-  }
+  };
 
-  async function submitForm() {
+  window.submitForm = async function() {
     const id = document.getElementById('fId').value;
     const nama = document.getElementById('fNama').value.trim();
     const msg = document.getElementById('formMsg');
@@ -534,9 +538,9 @@
     } catch (err) {
       msg.textContent = 'Gagal: ' + err.message;
     }
-  }
+  };
 
-  async function toggleStatus(id, newStatus) {
+  window.toggleStatus = async function(id, newStatus) {
     try {
       const { error } = await supabase.from('master_barang').update({ status_aktif: newStatus }).eq('id', id);
       if (error) throw error;
@@ -544,15 +548,13 @@
     } catch (err) {
       alert('Gagal: ' + err.message);
     }
-  }
+  };
 
   // ============================================================
   //  UPLOAD CSV
   // ============================================================
-  let uploadRows = [];
-
-  function openUploadModal() {
-    console.log('openUploadModal called');
+  window.openUploadModal = function() {
+    console.log('openUploadModal dipanggil');
     document.getElementById('uploadFileInput').value = '';
     document.getElementById('uploadSummary').style.display = 'none';
     document.getElementById('uploadPreviewWrap').style.display = 'none';
@@ -560,13 +562,13 @@
     document.getElementById('btnConfirmUpload').disabled = true;
     uploadRows = [];
     document.getElementById('modalUpload').classList.add('show');
-  }
+  };
 
-  function closeUploadModal() {
+  window.closeUploadModal = function() {
     document.getElementById('modalUpload').classList.remove('show');
-  }
+  };
 
-  document.getElementById('uploadFileInput').addEventListener('change', function(evt) {
+  window.handleUploadFile = function(evt) {
     const file = evt.target.files[0];
     if (!file) return;
     Papa.parse(file, {
@@ -579,7 +581,7 @@
         document.getElementById('uploadMsg').textContent = 'Gagal membaca file CSV: ' + err.message;
       }
     });
-  });
+  };
 
   async function processUploadRows(rawRows) {
     // Ambil mapping nama → id untuk prinsipal & distributor
@@ -685,7 +687,7 @@
     document.getElementById('uploadMsg').textContent = '';
   }
 
-  async function confirmUpload() {
+  window.confirmUpload = async function() {
     const valid = uploadRows.filter(r => r.statusBaris === 'valid');
     if (valid.length === 0) return;
 
@@ -732,53 +734,13 @@
       msg.textContent = 'Gagal: ' + err.message;
       document.getElementById('btnConfirmUpload').disabled = false;
     }
-  }
+  };
 
   // ============================================================
-  //  EVENT LISTENERS TOMBOL (Menggunakan ID agar lebih aman)
+  //  INISIALISASI
   // ============================================================
-  document.addEventListener('DOMContentLoaded', function() {
-    // Tombol Tambah Barang
-    document.getElementById('btnTambahBarang').addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('Tombol Tambah Barang diklik');
-      openForm();
-    });
-
-    // Tombol Upload CSV
-    document.getElementById('btnUploadCSV').addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('Tombol Upload CSV diklik');
-      openUploadModal();
-    });
-
-    // Tombol Batal di Form
-    document.getElementById('btnFormBatal').addEventListener('click', function(e) {
-      e.preventDefault();
-      closeForm();
-    });
-
-    // Tombol Simpan di Form
-    document.getElementById('btnFormSimpan').addEventListener('click', function(e) {
-      e.preventDefault();
-      submitForm();
-    });
-
-    // Tombol Batal di Upload
-    document.getElementById('btnUploadBatal').addEventListener('click', function(e) {
-      e.preventDefault();
-      closeUploadModal();
-    });
-
-    // Tombol Import di Upload
-    document.getElementById('btnConfirmUpload').addEventListener('click', function(e) {
-      e.preventDefault();
-      confirmUpload();
-    });
-
-    // Inisialisasi data
-    initData();
-  });
+  // Jalankan initData setelah semua fungsi didefinisikan
+  initData();
 </script>
 </body>
 </html>
