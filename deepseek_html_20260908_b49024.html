@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ===== GAYA DASAR (sama seperti sebelumnya) ===== */
+    :root {
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --border: #E4EAE5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      display: flex;
+    }
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 260px; flex-shrink: 0; background: var(--green-deep); color: #fff;
+      min-height: 100vh; padding: 24px 0; position: sticky; top: 0; align-self: flex-start;
+    }
+    .sidebar-header { display: flex; align-items: center; gap: 12px; padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.12); margin-bottom: 12px; }
+    .sidebar-logo { width: 42px; height: 42px; border-radius: 12px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--green-deep); font-size: 15px; }
+    .sidebar-title { font-weight: 700; font-size: 15px; line-height: 1.3; }
+    .sidebar-sub { font-size: 11px; color: rgba(255,255,255,0.6); }
+    .menu-list { display: flex; flex-direction: column; padding: 4px 10px; gap: 2px; }
+    .menu-item {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
+      color: rgba(255,255,255,0.82); text-decoration: none; font-size: 13.5px; font-weight: 500;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .menu-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .menu-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .menu-icon svg { width: 17px; height: 17px; fill: none; stroke: #fff; stroke-width: 2; }
+    .sidebar-footer { padding: 16px 20px 0; margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.12); font-size: 11px; color: rgba(255,255,255,0.55); }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content { flex: 1; padding: 40px 44px; }
+    .welcome-heading h1 { font-size: 23px; margin: 0 0 4px; color: var(--text-dark); }
+    .welcome-heading p { margin: 0; color: var(--text-muted); font-size: 13.5px; }
+
+    /* ===== LOGIN OVERLAY ===== */
+    #loginOverlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center; z-index: 999;
+    }
+    .login-box {
+      background: #fff; padding: 30px; border-radius: 16px; max-width: 360px; width: 100%;
+    }
+    .login-box h2 { margin-top: 0; }
+    .login-box input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; }
+    .login-box button { width: 100%; padding: 10px; background: var(--green-mid); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .login-box button:hover { background: #128a3e; }
+    #loginMsg { margin-top: 10px; color: #DC5B45; font-size: 13px; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 860px) {
+      .sidebar { position: fixed; top: 0; left: -280px; width: 260px; height: 100vh; z-index: 160; transition: left 0.2s ease; }
+      .sidebar.open { left: 0; }
+      .main-content { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== OVERLAY LOGIN ===== -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <h2>Login RKO RSAMP</h2>
+    <input type="email" id="loginEmail" placeholder="Email" />
+    <input type="password" id="loginPassword" placeholder="Password" />
+    <button onclick="login()">Masuk</button>
+    <div id="loginMsg"></div>
+  </div>
+</div>
+
+<!-- ===== APLIKASI UTAMA (sembunyi dulu) ===== -->
+<div id="app" style="display:none;">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">RS</div>
+      <div>
+        <div class="sidebar-title">RKO RSAMP</div>
+        <div class="sidebar-sub">Efisiensi TujuanKU</div>
+      </div>
+    </div>
+    <nav class="menu-list" id="menuList"></nav>
+    <div class="sidebar-footer">RKO Obat &amp; BMHP · RS AM Parikesit</div>
+  </aside>
+
+  <div style="flex:1;">
+    <main class="main-content">
+      <div class="welcome-heading">
+        <h1>Selamat datang, <span id="userNama"></span></h1>
+        <p>Pilih menu di sisi kiri untuk mulai.</p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  // ===== KONFIGURASI SUPABASE =====
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ===== DEFINISI MENU PER ROLE =====
+  const menuDefinition = {
+    SUPER_ADMIN: [
+      { href: 'dashboard.html', label: 'Dashboard RKO' },
+      { href: 'admin.html', label: 'Admin' },
+      { href: 'user.html', label: 'User' },
+      { href: 'gudang-farmasi.html', label: 'Gudang Farmasi' },
+      { href: 'distributor.html', label: 'Distributor' },
+      { href: 'laporan.html', label: 'Laporan' },
+      { href: 'keuangan.html', label: 'Keuangan' },
+      { href: 'pembelian.html', label: 'Pembelian' },
+      { href: 'penerimaan.html', label: 'Penerimaan Barang' },
+      { href: 'penjualan.html', label: 'Penjualan' }
+    ],
+    ADMIN: [
+      { href: 'dashboard.html', label: 'Dashboard RKO' },
+      { href: 'admin.html', label: 'Admin' },
+      { href: 'user.html', label: 'User' },
+      { href: 'gudang-farmasi.html', label: 'Gudang Farmasi' },
+      { href: 'distributor.html', label: 'Distributor' },
+      { href: 'laporan.html', label: 'Laporan' },
+      { href: 'keuangan.html', label: 'Keuangan' },
+      { href: 'pembelian.html', label: 'Pembelian' },
+      { href: 'penerimaan.html', label: 'Penerimaan Barang' },
+      { href: 'penjualan.html', label: 'Penjualan' }
+    ],
+    GUDANG_FARMASI: [
+      { href: 'dashboard.html', label: 'Dashboard RKO' },
+      { href: 'gudang-farmasi.html', label: 'Gudang Farmasi' },
+      { href: 'distributor.html', label: 'Distributor' },
+      { href: 'pembelian.html', label: 'Pembelian' },
+      { href: 'penerimaan.html', label: 'Penerimaan Barang' }
+    ],
+    KEUANGAN: [
+      { href: 'dashboard.html', label: 'Dashboard RKO' },
+      { href: 'keuangan.html', label: 'Keuangan' },
+      { href: 'laporan.html', label: 'Laporan' },
+      { href: 'penjualan.html', label: 'Penjualan' }
+    ],
+    USER_RUANGAN: [
+      { href: 'user.html', label: 'User' }
+    ],
+    TIM_PEMBELIAN: [
+      { href: 'pembelian.html', label: 'Pembelian' }
+    ],
+    TIM_PENERIMAAN: [
+      { href: 'penerimaan.html', label: 'Penerimaan Barang' }
+    ],
+    DISTRIBUTOR_VIEW: [
+      { href: 'distributor.html', label: 'Distributor' }
+    ]
+  };
+
+  // ===== FUNGSI LOGIN =====
+  async function login() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    const msg = document.getElementById('loginMsg');
+
+    if (!email || !password) {
+      msg.textContent = 'Email dan password wajib diisi.';
+      return;
+    }
+
+    try {
+      // 1. Login dengan Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (authError) {
+        msg.textContent = 'Login gagal: ' + authError.message;
+        return;
+      }
+
+      // 2. Ambil data user dari tabel 'users' berdasarkan email
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (userError || !userData) {
+        msg.textContent = 'Data user tidak ditemukan di tabel users.';
+        return;
+      }
+
+      if (!userData.active) {
+        msg.textContent = 'Akun Anda tidak aktif.';
+        return;
+      }
+
+      // 3. Simpan di sessionStorage
+      sessionStorage.setItem('rko_user', JSON.stringify(userData));
+      sessionStorage.setItem('rko_token', authData.session.access_token);
+
+      // 4. Tampilkan aplikasi
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      document.getElementById('userNama').textContent = userData.nama;
+
+      renderMenu(userData.role);
+    } catch (err) {
+      msg.textContent = 'Terjadi kesalahan: ' + err.message;
+    }
+  }
+
+  // ===== RENDER MENU =====
+  function renderMenu(role) {
+    const menus = menuDefinition[role] || [];
+    const container = document.getElementById('menuList');
+    container.innerHTML = menus.map(m => `
+      <a class="menu-item" href="${m.href}">
+        <div class="menu-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></div>
+        ${m.label}
+      </a>
+    `).join('');
+  }
+
+  // ===== CEK SESSION SAAT LOAD =====
+  (function checkSession() {
+    const userStr = sessionStorage.getItem('rko_user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        document.getElementById('userNama').textContent = user.nama;
+        renderMenu(user.role);
+      } catch (e) {
+        // jika session rusak, hapus dan minta login ulang
+        sessionStorage.removeItem('rko_user');
+        sessionStorage.removeItem('rko_token');
+      }
+    }
+  })();
+</script>
+</body>
+</html>
