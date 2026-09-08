@@ -321,12 +321,15 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
+  //  KONFIGURASI SUPABASE - GUNAKAN ANON KEY BARU
   // ============================================================
   const _supabaseUrl = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const _supabaseKey = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
-  // INISIALISASI SUPABASE CLIENT (di window agar global)
+  const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+
+  // INISIALISASI SUPABASE KE WINDOW
   window.supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
+
+  console.log('✅ Supabase client initialized with anon key');
 
   // ============================================================
   //  BYPASS SESSION
@@ -388,22 +391,35 @@
   async function initData() {
     hideError();
     try {
+      console.log('🔍 Memuat data dari Supabase...');
       const [br, pr, dr] = await Promise.all([
         window.supabase.from('master_barang').select('*'),
         window.supabase.from('master_prinsipal').select('*'),
         window.supabase.from('master_distributor').select('*')
       ]);
-      if (br.error) throw new Error('Barang: ' + br.error.message);
-      if (pr.error) throw new Error('Prinsipal: ' + pr.error.message);
-      if (dr.error) throw new Error('Distributor: ' + dr.error.message);
+
+      if (br.error) {
+        console.error('❌ Error master_barang:', br.error);
+        throw new Error('Barang: ' + br.error.message + ' (code: ' + br.error.code + ')');
+      }
+      if (pr.error) {
+        console.error('❌ Error master_prinsipal:', pr.error);
+        throw new Error('Prinsipal: ' + pr.error.message);
+      }
+      if (dr.error) {
+        console.error('❌ Error master_distributor:', dr.error);
+        throw new Error('Distributor: ' + dr.error.message);
+      }
 
       allBarang = br.data || [];
       prinsipalList = pr.data || [];
       distributorList = dr.data || [];
 
+      console.log('✅ Data dimuat: ' + allBarang.length + ' barang');
       fillSelectOptions();
       applyFilter();
     } catch (err) {
+      console.error('❌ ERROR di initData:', err);
       showError('Gagal memuat data: ' + err.message);
       document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Error: ' + err.message + '</td></tr>';
     }
