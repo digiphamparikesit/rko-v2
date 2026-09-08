@@ -1,21 +1,33 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>User — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* ===== GAYA (sama seperti sebelumnya) ===== */
+    /* ===== GAYA SAMA SEPERTI SEBELUMNYA ===== */
     :root {
-      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
-      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
-      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+      --green-deep: #0F3D2E;
+      --green-mid: #16A34A;
+      --green-bright: #3FCF6A;
+      --green-soft: #E7F5EC;
+      --bg: #F4F7F4;
+      --card: #FFFFFF;
+      --text-dark: #14201A;
+      --text-muted: #6B7A72;
+      --amber: #D97706;
+      --coral: #DC5B45;
+      --border: #E4EAE5;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text-dark);
+    }
 
-    /* ===== TOPBAR ===== */
     header.topbar {
       position: sticky; top: 0; z-index: 100;
       background: var(--green-deep); color: #fff; padding: 18px 24px;
@@ -23,7 +35,11 @@
       flex-wrap: wrap; gap: 12px;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .mark {
+      width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: var(--green-deep);
+    }
     .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
     .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
     .topbar-right { display: flex; align-items: center; gap: 14px; }
@@ -31,8 +47,8 @@
     a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
     a.back:hover { color: #fff; }
 
-    /* ===== LAYOUT ===== */
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+
     .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
     .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
     .side-panel { padding: 18px 20px; }
@@ -50,7 +66,6 @@
       .left-col { position: static; }
     }
 
-    /* ===== TOOLBAR & TABEL ===== */
     .toolbar {
       display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
       position: sticky; top: 84px; z-index: 90; background: var(--bg); padding: 12px 0;
@@ -58,21 +73,19 @@
     .toolbar input[type="text"] { flex: 1; min-width: 220px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 9px; font-size: 13.5px; }
     .toolbar select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px; font-size: 13.5px; }
 
-    .info-bar {
-      background: var(--green-soft); border: 1px solid #cdeed9; border-radius: 12px;
-      padding: 12px 16px; font-size: 13px; color: var(--green-deep); margin-bottom: 16px;
-      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-    }
-
     .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     th { color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
 
-    input.qty { width: 90px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; }
+    input.qty {
+      width: 90px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px;
+    }
     input.qty:focus { border-color: var(--green-mid); outline: none; }
 
-    .btn { padding: 7px 14px; border: none; border-radius: 7px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn {
+      padding: 7px 14px; border: none; border-radius: 7px; font-weight: 600; font-size: 12.5px; cursor: pointer;
+    }
     .btn-primary { background: var(--green-mid); color: #fff; }
     .btn-primary:hover { background: #128a3e; }
     .btn-primary:disabled { background: #A9C9B5; cursor: default; }
@@ -106,8 +119,8 @@
 </head>
 <body>
 
-<!-- ===== TOPBAR ===== -->
-<header class="topbar" id="topbar">
+<!-- TOPBAR -->
+<header class="topbar">
   <div class="brand">
     <div class="mark">RS</div>
     <div>
@@ -121,7 +134,7 @@
   </div>
 </header>
 
-<!-- ===== MAIN ===== -->
+<!-- MAIN -->
 <main>
   <div class="layout-split">
     <!-- LEFT COLUMN -->
@@ -170,7 +183,7 @@
           <option value="PROGRAM STUNTING">Program Stunting</option>
           <option value="PROGRAM IMUNISASI">Program Imunisasi</option>
         </select>
-        <button class="btn btn-primary" onclick="openTambahBarangModal()">+ Tambah Barang</button>
+        <button class="btn btn-primary" onclick="window.openTambahBarangModal()">+ Tambah Barang</button>
       </div>
 
       <div class="panel">
@@ -193,8 +206,8 @@
         <div class="pager">
           <span id="pagerInfo">-</span>
           <div>
-            <button id="btnPrev" onclick="changePage(-1)">&larr; Sebelumnya</button>
-            <button id="btnNext" onclick="changePage(1)">Berikutnya &rarr;</button>
+            <button id="btnPrev" onclick="window.changePage(-1)">&larr; Sebelumnya</button>
+            <button id="btnNext" onclick="window.changePage(1)">Berikutnya &rarr;</button>
           </div>
         </div>
       </div>
@@ -207,50 +220,187 @@
   <div class="modal-box">
     <h2 class="side-title">Tambah barang ke daftar ruangan</h2>
     <p class="side-sub" style="margin:-6px 0 12px; font-size:12px; color:var(--text-muted);">Cari dari seluruh master barang &amp; BMHP.</p>
-    <input type="text" id="tambahBarangSearch" placeholder="Ketik nama barang..." oninput="searchTambahBarang()" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; margin-bottom:14px;" />
+    <input type="text" id="tambahBarangSearch" placeholder="Ketik nama barang..." oninput="window.searchTambahBarang()" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; margin-bottom:14px;" />
     <div id="tambahBarangResults" style="max-height:360px; overflow-y:auto;"></div>
     <div style="text-align:right; margin-top:16px;">
-      <button class="btn" style="background:#F1F1EE; color:var(--text-dark);" onclick="closeTambahBarangModal()">Tutup</button>
+      <button class="btn" style="background:#F1F1EE; color:var(--text-dark);" onclick="window.closeTambahBarangModal()">Tutup</button>
     </div>
   </div>
 </div>
 
 <script>
-  // ===== KONFIGURASI SUPABASE =====
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
   const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ===== CEK SESSION =====
-  const userStr = sessionStorage.getItem('rko_user');
-  if (!userStr) {
-    window.location.href = 'index.html';
-  }
-  const currentUser = JSON.parse(userStr);
-  if (!['USER_RUANGAN', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
-    alert('Anda tidak memiliki akses ke halaman ini.');
-    window.location.href = 'index.html';
-  }
-  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+  // ============================================================
+  //  CEK SESSION
+  // ============================================================
+  (function checkSession() {
+    const userStr = sessionStorage.getItem('rko_user');
+    if (!userStr) { window.location.href = 'index.html'; return; }
+    const currentUser = JSON.parse(userStr);
+    if (!['USER_RUANGAN', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
+      alert('Anda tidak memiliki akses ke halaman ini.');
+      window.location.href = 'index.html';
+      return;
+    }
+    document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+    window.currentUser = currentUser;
+  })();
 
-  // ===== VARIABEL GLOBAL =====
+  // ============================================================
+  //  GLOBAL VARIABLES
+  // ============================================================
   let ruanganList = [];
   let activeRuanganId = null;
-  let allBarang = [];           // barang yang terdaftar aktif di ruangan ini
-  let fullMasterBarang = [];    // seluruh master barang (untuk pencarian)
-  let existingKebutuhan = {};   // key: barang_id -> {sisa, kebutuhan, saved}
+  let allBarang = [];
+  let fullMasterBarang = [];
+  let existingKebutuhan = {};
   let currentKunjungan = null;
   let filteredBarang = [];
   let page = 1;
   const PAGE_SIZE = 15;
 
-  // ===== INISIALISASI =====
+  // ============================================================
+  //  UTILITY
+  // ============================================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[s]));
+  }
+
+  // ============================================================
+  //  FILL PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    bulanSel.innerHTML = '';
+    tahunSel.innerHTML = '';
+
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1;
+      opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+
+    const tahunAwal = curTahun - 2;
+    const tahunAkhir = curTahun + 2;
+    for (let y = tahunAwal; y <= tahunAkhir; y++) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
+
+    updatePeriodeLabel();
+  }
+
+  function updatePeriodeLabel() {
+    const b = document.getElementById('bulanSelect');
+    const t = document.getElementById('tahunSelect');
+    if (b.options.length > 0 && t.options.length > 0) {
+      document.getElementById('periodeLabel').textContent =
+        'Periode: ' + b.options[b.selectedIndex].textContent + ' ' + t.value;
+    }
+  }
+
+  // ============================================================
+  //  LOAD DATA UTAMA
+  // ============================================================
+  async function loadBarangDanKebutuhan() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
+
+    try {
+      // 1. Master barang aktif
+      const { data: barang, error: barangError } = await window.supabase
+        .from('master_barang')
+        .select('*')
+        .eq('status_aktif', true);
+      if (barangError) throw barangError;
+      fullMasterBarang = barang || [];
+
+      // 2. Barang ruangan aktif
+      const { data: barangRuangan, error: brError } = await window.supabase
+        .from('barang_ruangan')
+        .select('barang_id')
+        .eq('ruangan_id', activeRuanganId)
+        .eq('status_aktif', true);
+      if (brError) throw brError;
+
+      const aktifIds = barangRuangan.map(br => br.barang_id);
+      const fullMap = {};
+      fullMasterBarang.forEach(b => { fullMap[b.id] = b; });
+      allBarang = aktifIds.map(id => fullMap[id]).filter(Boolean);
+
+      // 3. Kebutuhan periode ini
+      const { data: kebutuhan, error: kebError } = await window.supabase
+        .from('kebutuhan')
+        .select('*')
+        .eq('ruangan_id', activeRuanganId)
+        .eq('bulan', bulan)
+        .eq('tahun', tahun);
+      if (kebError) throw kebError;
+
+      existingKebutuhan = {};
+      (kebutuhan || []).forEach(k => {
+        existingKebutuhan[k.barang_id] = {
+          sisa: k.sisa_stok_ruangan,
+          kebutuhan: k.kebutuhan,
+          saved: true
+        };
+      });
+
+      // 4. Kunjungan
+      const { data: kunjungan, error: kunjError } = await window.supabase
+        .from('kunjungan')
+        .select('*')
+        .eq('ruangan_id', activeRuanganId)
+        .eq('bulan', bulan)
+        .eq('tahun', tahun)
+        .maybeSingle();
+      if (kunjError) throw kunjError;
+
+      if (kunjungan) {
+        currentKunjungan = { id: kunjungan.id, jumlah: kunjungan.jumlah_kunjungan };
+        document.getElementById('kunjunganInput').value = currentKunjungan.jumlah;
+        document.getElementById('kunjunganStatus').textContent = 'Tersimpan';
+        document.getElementById('kunjunganStatus').className = 'status-tag saved';
+      } else {
+        currentKunjungan = null;
+        document.getElementById('kunjunganInput').value = '';
+        document.getElementById('kunjunganStatus').textContent = 'Belum diisi';
+        document.getElementById('kunjunganStatus').className = 'status-tag unsaved';
+      }
+
+      applyFilter();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Gagal memuat data.</td></tr>';
+    }
+  }
+
+  // ============================================================
+  //  INISIALISASI
+  // ============================================================
   async function initData() {
     const now = new Date();
     fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
 
     // Ambil daftar ruangan
-    const { data: ruangan, error: ruanganError } = await supabase
+    const { data: ruangan, error: ruanganError } = await window.supabase
       .from('master_ruangan')
       .select('*');
     if (ruanganError) console.error(ruanganError);
@@ -283,7 +433,7 @@
       });
     }
 
-    // Event listeners filter & search
+    // Event listeners untuk filter
     document.getElementById('bulanSelect').addEventListener('change', () => {
       updatePeriodeLabel();
       loadBarangDanKebutuhan();
@@ -299,111 +449,9 @@
     await loadBarangDanKebutuhan();
   }
 
-  function fillPeriodOptions(curBulan, curTahun) {
-    const bulanSel = document.getElementById('bulanSelect');
-    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    namaBulan.forEach((nm, i) => {
-      const opt = document.createElement('option');
-      opt.value = i + 1;
-      opt.textContent = nm;
-      if (i + 1 === curBulan) opt.selected = true;
-      bulanSel.appendChild(opt);
-    });
-
-    const tahunSel = document.getElementById('tahunSelect');
-    for (let y = curTahun - 1; y <= curTahun + 1; y++) {
-      const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y;
-      if (y === curTahun) opt.selected = true;
-      tahunSel.appendChild(opt);
-    }
-    updatePeriodeLabel();
-  }
-
-  function updatePeriodeLabel() {
-    const b = document.getElementById('bulanSelect');
-    const t = document.getElementById('tahunSelect').value;
-    document.getElementById('periodeLabel').textContent =
-      'Periode: ' + b.options[b.selectedIndex].textContent + ' ' + t;
-  }
-
-  // ===== LOAD DATA UTAMA =====
-  async function loadBarangDanKebutuhan() {
-    const bulan = document.getElementById('bulanSelect').value;
-    const tahun = document.getElementById('tahunSelect').value;
-    document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
-
-    try {
-      // 1. Master barang aktif
-      const { data: barang, error: barangError } = await supabase
-        .from('master_barang')
-        .select('*')
-        .eq('status_aktif', true);
-      if (barangError) throw barangError;
-      fullMasterBarang = barang || [];
-
-      // 2. Barang ruangan aktif
-      const { data: barangRuangan, error: brError } = await supabase
-        .from('barang_ruangan')
-        .select('barang_id')
-        .eq('ruangan_id', activeRuanganId)
-        .eq('status_aktif', true);
-      if (brError) throw brError;
-
-      const aktifIds = barangRuangan.map(br => br.barang_id);
-      const fullMap = {};
-      fullMasterBarang.forEach(b => { fullMap[b.id] = b; });
-      allBarang = aktifIds.map(id => fullMap[id]).filter(Boolean);
-
-      // 3. Kebutuhan periode ini
-      const { data: kebutuhan, error: kebError } = await supabase
-        .from('kebutuhan')
-        .select('*')
-        .eq('ruangan_id', activeRuanganId)
-        .eq('bulan', bulan)
-        .eq('tahun', tahun);
-      if (kebError) throw kebError;
-
-      existingKebutuhan = {};
-      (kebutuhan || []).forEach(k => {
-        existingKebutuhan[k.barang_id] = {
-          sisa: k.sisa_stok_ruangan,
-          kebutuhan: k.kebutuhan,
-          saved: true
-        };
-      });
-
-      // 4. Kunjungan
-      const { data: kunjungan, error: kunjError } = await supabase
-        .from('kunjungan')
-        .select('*')
-        .eq('ruangan_id', activeRuanganId)
-        .eq('bulan', bulan)
-        .eq('tahun', tahun)
-        .maybeSingle();
-      if (kunjError) throw kunjError;
-
-      if (kunjungan) {
-        currentKunjungan = { id: kunjungan.id, jumlah: kunjungan.jumlah_kunjungan };
-        document.getElementById('kunjunganInput').value = currentKunjungan.jumlah;
-        document.getElementById('kunjunganStatus').textContent = 'Tersimpan';
-        document.getElementById('kunjunganStatus').className = 'status-tag saved';
-      } else {
-        currentKunjungan = null;
-        document.getElementById('kunjunganInput').value = '';
-        document.getElementById('kunjunganStatus').textContent = 'Belum diisi';
-        document.getElementById('kunjunganStatus').className = 'status-tag unsaved';
-      }
-
-      applyFilter();
-    } catch (err) {
-      console.error(err);
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Gagal memuat data.</td></tr>';
-    }
-  }
-
-  // ===== FILTER & RENDER TABEL =====
+  // ============================================================
+  //  FILTER & RENDER TABEL
+  // ============================================================
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
     const golongan = document.getElementById('filterGolongan').value;
@@ -433,14 +481,14 @@
           <tr data-id="${b.id}" data-hpp="${hpp}">
             <td>${escapeHtml(b.nama_barang)}</td>
             <td>${escapeHtml(b.satuan_jual || '-')}</td>
-            <td><input type="number" class="qty" data-field="sisa" value="${existing.sisa}" onchange="markUnsaved(${b.id})" /></td>
-            <td><input type="number" class="qty" data-field="kebutuhan" value="${existing.kebutuhan}" onchange="markUnsaved(${b.id}); hitungEstimasi(${b.id});" oninput="hitungEstimasi(${b.id})" /></td>
+            <td><input type="number" class="qty" data-field="sisa" value="${existing.sisa}" onchange="window.markUnsaved(${b.id})" /></td>
+            <td><input type="number" class="qty" data-field="kebutuhan" value="${existing.kebutuhan}" onchange="window.markUnsaved(${b.id}); window.hitungEstimasi(${b.id});" oninput="window.hitungEstimasi(${b.id})" /></td>
             <td><span class="estimasi-nilai" id="estimasi-${b.id}" style="color:var(--text-muted);">Rp ${estimasiAwal.toLocaleString('id-ID')}</span></td>
             <td><span class="status-tag ${existing.saved ? 'saved' : 'unsaved'}" id="status-${b.id}">${existing.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
             <td>
               <div style="display:flex; gap:6px;">
-                <button class="btn btn-primary" onclick="saveRow(${b.id})">Simpan</button>
-                <button class="btn" style="background:#F1F1EE; color:var(--text-muted); padding:7px 10px;" title="Hapus dari daftar ruangan" onclick="removeFromRuangan(${b.id})">&times;</button>
+                <button class="btn btn-primary" onclick="window.saveRow(${b.id})">Simpan</button>
+                <button class="btn" style="background:#F1F1EE; color:var(--text-muted); padding:7px 10px;" title="Hapus dari daftar ruangan" onclick="window.removeFromRuangan(${b.id})">&times;</button>
               </div>
             </td>
           </tr>`;
@@ -453,14 +501,17 @@
     document.getElementById('btnNext').disabled = page >= totalPages;
   }
 
-  function changePage(delta) { page += delta; renderTable(); }
+  window.changePage = function(delta) {
+    page += delta;
+    renderTable();
+  };
 
-  function markUnsaved(barangId) {
+  window.markUnsaved = function(barangId) {
     const tag = document.getElementById('status-' + barangId);
     if (tag) { tag.textContent = 'Belum disimpan'; tag.className = 'status-tag unsaved'; }
-  }
+  };
 
-  function hitungEstimasi(barangId) {
+  window.hitungEstimasi = function(barangId) {
     const row = document.querySelector(`tr[data-id="${barangId}"]`);
     if (!row) return;
     const kebutuhan = Number(row.querySelector('[data-field="kebutuhan"]').value) || 0;
@@ -468,10 +519,12 @@
     const estimasi = kebutuhan * hpp;
     const el = document.getElementById('estimasi-' + barangId);
     if (el) el.textContent = 'Rp ' + estimasi.toLocaleString('id-ID');
-  }
+  };
 
-  // ===== SIMPAN KEBUTUHAN =====
-  async function saveRow(barangId) {
+  // ============================================================
+  //  SIMPAN KEBUTUHAN
+  // ============================================================
+  window.saveRow = async function(barangId) {
     const row = document.querySelector(`tr[data-id="${barangId}"]`);
     const sisa = row.querySelector('[data-field="sisa"]').value;
     const kebutuhan = row.querySelector('[data-field="kebutuhan"]').value;
@@ -484,7 +537,7 @@
     btn.textContent = 'Menyimpan...';
 
     try {
-      const { error } = await supabase
+      const { error } = await window.supabase
         .from('kebutuhan')
         .upsert({
           ruangan_id: activeRuanganId,
@@ -506,10 +559,12 @@
       btn.disabled = false;
       btn.textContent = 'Simpan';
     }
-  }
+  };
 
-  // ===== KUNJUNGAN =====
-  async function saveKunjungan() {
+  // ============================================================
+  //  KUNJUNGAN
+  // ============================================================
+  window.saveKunjungan = async function() {
     const jumlah = Number(document.getElementById('kunjunganInput').value) || 0;
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
@@ -519,7 +574,7 @@
     statusTag.className = 'status-tag unsaved';
 
     try {
-      const { error } = await supabase
+      const { error } = await window.supabase
         .from('kunjungan')
         .upsert({
           ruangan_id: activeRuanganId,
@@ -538,16 +593,18 @@
       statusTag.textContent = 'Gagal';
       statusTag.className = 'status-tag unsaved';
     }
-  }
+  };
 
-  // ===== HAPUS BARANG DARI RUANGAN =====
-  async function removeFromRuangan(barangId) {
+  // ============================================================
+  //  HAPUS BARANG DARI RUANGAN
+  // ============================================================
+  window.removeFromRuangan = async function(barangId) {
     const barang = allBarang.find(b => b.id === barangId);
     const nama = barang ? barang.nama_barang : 'barang ini';
     if (!confirm(`Hapus "${nama}" dari daftar barang ruangan ini?`)) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await window.supabase
         .from('barang_ruangan')
         .update({ status_aktif: false })
         .eq('ruangan_id', activeRuanganId)
@@ -559,21 +616,23 @@
     } catch (err) {
       alert('Gagal menghapus: ' + err.message);
     }
-  }
+  };
 
-  // ===== TAMBAH BARANG (MODAL) =====
-  function openTambahBarangModal() {
+  // ============================================================
+  //  TAMBAH BARANG (MODAL)
+  // ============================================================
+  window.openTambahBarangModal = function() {
     document.getElementById('tambahBarangSearch').value = '';
     document.getElementById('tambahBarangResults').innerHTML = '<div class="empty-state">Ketik nama barang untuk mencari...</div>';
     document.getElementById('modalTambahBarang').classList.add('show');
     document.getElementById('tambahBarangSearch').focus();
-  }
+  };
 
-  function closeTambahBarangModal() {
+  window.closeTambahBarangModal = function() {
     document.getElementById('modalTambahBarang').classList.remove('show');
-  }
+  };
 
-  async function searchTambahBarang() {
+  window.searchTambahBarang = async function() {
     const q = document.getElementById('tambahBarangSearch').value.trim().toLowerCase();
     const container = document.getElementById('tambahBarangResults');
     if (!q) { container.innerHTML = '<div class="empty-state">Ketik nama barang untuk mencari...</div>'; return; }
@@ -591,13 +650,13 @@
     container.innerHTML = hasil.map(b => `
       <div class="search-result-item">
         <span>${escapeHtml(b.nama_barang)} <span style="color:var(--text-muted); font-size:11.5px;">(${escapeHtml(b.satuan_jual || '-')})</span></span>
-        <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;" onclick="tambahBarangKeRuangan(${b.id})">+ Tambah</button>
+        <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;" onclick="window.tambahBarangKeRuangan(${b.id})">+ Tambah</button>
       </div>`).join('');
-  }
+  };
 
-  async function tambahBarangKeRuangan(barangId) {
+  window.tambahBarangKeRuangan = async function(barangId) {
     try {
-      const { error } = await supabase
+      const { error } = await window.supabase
         .from('barang_ruangan')
         .insert({
           ruangan_id: activeRuanganId,
@@ -612,14 +671,11 @@
     } catch (err) {
       alert('Gagal menambahkan: ' + err.message);
     }
-  }
+  };
 
-  // ===== UTILITY =====
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
-  }
-
-  // ===== START =====
+  // ============================================================
+  //  START
+  // ============================================================
   initData();
 </script>
 </body>
