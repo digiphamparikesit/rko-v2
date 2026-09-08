@@ -6,7 +6,7 @@
   <title>RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* style sama seperti sebelumnya */
+    /* ===== GAYA DASAR ===== */
     :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --border: #E4EAE5; }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; display: flex; }
@@ -24,19 +24,15 @@
     .main-content { flex: 1; padding: 40px 44px; }
     .welcome-heading h1 { font-size: 23px; margin: 0 0 4px; color: var(--text-dark); }
     .welcome-heading p { margin: 0; color: var(--text-muted); font-size: 13.5px; }
-    #loginOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 999; }
-    .login-box { background: #fff; padding: 30px; border-radius: 16px; max-width: 360px; width: 100%; }
-    .login-box h2 { margin-top: 0; }
-    .login-box input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; }
-    .login-box button { width: 100%; padding: 10px; background: var(--green-mid); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .login-box button:hover { background: #128a3e; }
-    #loginMsg { margin-top: 10px; color: #DC5B45; font-size: 13px; }
+    #loginOverlay { display: none !important; } /* paksa sembunyi */
+    #app { display: flex !important; }
     @media (max-width: 860px) { .sidebar { position: fixed; top: 0; left: -280px; width: 260px; height: 100vh; z-index: 160; transition: left 0.2s ease; } .sidebar.open { left: 0; } .main-content { padding: 24px 20px; } }
   </style>
 </head>
 <body>
 
-<div id="loginOverlay">
+<!-- OVERLAY LOGIN DISEMBUNYIKAN -->
+<div id="loginOverlay" style="display:none;">
   <div class="login-box">
     <h2>Login RKO RSAMP</h2>
     <input type="email" id="loginEmail" placeholder="Email" />
@@ -46,7 +42,8 @@
   </div>
 </div>
 
-<div id="app" style="display:none;">
+<!-- APP LANGSUNG DITAMPILKAN -->
+<div id="app" style="display:flex;">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">RS</div>
@@ -58,7 +55,7 @@
   <div style="flex:1;">
     <main class="main-content">
       <div class="welcome-heading">
-        <h1>Selamat datang, <span id="userNama"></span></h1>
+        <h1>Selamat datang, <span id="userNama">Super Admin</span></h1>
         <p>Pilih menu di sisi kiri untuk mulai.</p>
       </div>
     </main>
@@ -70,36 +67,48 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // ===== DEFINISI MENU SUPER ADMIN =====
   const menuDefinition = {
     SUPER_ADMIN: [
-      { href: 'dashboard.html', label: 'Dashboard RKO' }, { href: 'admin.html', label: 'Admin' },
-      { href: 'user.html', label: 'User' }, { href: 'gudang-farmasi.html', label: 'Gudang Farmasi' },
-      { href: 'distributor.html', label: 'Distributor' }, { href: 'laporan.html', label: 'Laporan' },
-      { href: 'keuangan.html', label: 'Keuangan' }, { href: 'pembelian.html', label: 'Pembelian' },
-      { href: 'penerimaan.html', label: 'Penerimaan Barang' }, { href: 'penjualan.html', label: 'Penjualan' }
-    ],
-    ADMIN: [
-      { href: 'dashboard.html', label: 'Dashboard RKO' }, { href: 'admin.html', label: 'Admin' },
-      { href: 'user.html', label: 'User' }, { href: 'gudang-farmasi.html', label: 'Gudang Farmasi' },
-      { href: 'distributor.html', label: 'Distributor' }, { href: 'laporan.html', label: 'Laporan' },
-      { href: 'keuangan.html', label: 'Keuangan' }, { href: 'pembelian.html', label: 'Pembelian' },
-      { href: 'penerimaan.html', label: 'Penerimaan Barang' }, { href: 'penjualan.html', label: 'Penjualan' }
-    ],
-    GUDANG_FARMASI: [
-      { href: 'dashboard.html', label: 'Dashboard RKO' }, { href: 'gudang-farmasi.html', label: 'Gudang Farmasi' },
-      { href: 'distributor.html', label: 'Distributor' }, { href: 'pembelian.html', label: 'Pembelian' },
-      { href: 'penerimaan.html', label: 'Penerimaan Barang' }
-    ],
-    KEUANGAN: [
-      { href: 'dashboard.html', label: 'Dashboard RKO' }, { href: 'keuangan.html', label: 'Keuangan' },
-      { href: 'laporan.html', label: 'Laporan' }, { href: 'penjualan.html', label: 'Penjualan' }
-    ],
-    USER_RUANGAN: [ { href: 'user.html', label: 'User' } ],
-    TIM_PEMBELIAN: [ { href: 'pembelian.html', label: 'Pembelian' } ],
-    TIM_PENERIMAAN: [ { href: 'penerimaan.html', label: 'Penerimaan Barang' } ],
-    DISTRIBUTOR_VIEW: [ { href: 'distributor.html', label: 'Distributor' } ]
+      { href: 'dashboard.html', label: 'Dashboard RKO' },
+      { href: 'admin.html', label: 'Admin' },
+      { href: 'user.html', label: 'User' },
+      { href: 'gudang-farmasi.html', label: 'Gudang Farmasi' },
+      { href: 'distributor.html', label: 'Distributor' },
+      { href: 'laporan.html', label: 'Laporan' },
+      { href: 'keuangan.html', label: 'Keuangan' },
+      { href: 'pembelian.html', label: 'Pembelian' },
+      { href: 'penerimaan.html', label: 'Penerimaan Barang' },
+      { href: 'penjualan.html', label: 'Penjualan' }
+    ]
+    // role lain bisa ditambahkan di sini
   };
 
+  // ===== RENDER MENU =====
+  function renderMenu(role) {
+    const menus = menuDefinition[role] || [];
+    const container = document.getElementById('menuList');
+    container.innerHTML = menus.map(m => `
+      <a class="menu-item" href="${m.href}">
+        <div class="menu-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></div>
+        ${m.label}
+      </a>
+    `).join('');
+  }
+
+  // ===== BYPASS: LANGSUNG SET SESSION DAN TAMPILKAN MENU =====
+  const bypassUser = {
+    id: 999,
+    email: 'admin@rsamp.go.id',
+    nama: 'Super Admin',
+    role: 'SUPER_ADMIN',
+    active: true
+  };
+  sessionStorage.setItem('rko_user', JSON.stringify(bypassUser));
+  document.getElementById('userNama').textContent = bypassUser.nama;
+  renderMenu(bypassUser.role);
+
+  // ===== FUNGSI LOGIN (untuk keperluan nanti) =====
   async function login() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
@@ -119,43 +128,6 @@
       renderMenu(userData.role);
     } catch (err) { msg.textContent = 'Terjadi kesalahan: ' + err.message; }
   }
-
-  function renderMenu(role) {
-    const menus = menuDefinition[role] || [];
-    const container = document.getElementById('menuList');
-    container.innerHTML = menus.map(m => `
-      <a class="menu-item" href="${m.href}">
-        <div class="menu-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></div>
-        ${m.label}
-      </a>
-    `).join('');
-  }
-
-  (function checkSession() {
-  // BYPASS LOGIN UNTUK TESTING - HAPUS SETELAH SELESAI
-  const bypassUser = {
-    id: 999,
-    email: 'admin@rsamp.go.id',
-    nama: 'Admin Bypass',
-    role: 'SUPER_ADMIN',
-    active: true
-  };
-  sessionStorage.setItem('rko_user', JSON.stringify(bypassUser));
-  document.getElementById('loginOverlay').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  document.getElementById('userNama').textContent = bypassUser.nama;
-  renderMenu(bypassUser.role);
-  return;
-  // END BYPASS
-
-  const userStr = sessionStorage.getItem('rko_user');
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr);
-      document.getElementById('loginOverlay').style.display = 'none';
-      document.getElementById('app').style.display = 'flex';
-      document.getElementById('userNama').textContent = user.nama;
-      renderMenu(user.role);
-    } catch (e) { sessionStorage.removeItem('rko_user'); sessionStorage.removeItem('rko_token'); }
-  }
-})();
+</script>
+</body>
+</html>
