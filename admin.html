@@ -4,11 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — RKO RSAMP</title>
-  <!-- Load Supabase & Papa Parse -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    /* ===== GAYA DASAR (sama seperti sebelumnya) ===== */
     :root {
       --green-deep: #0F3D2E;
       --green-mid: #16A34A;
@@ -103,7 +101,7 @@
     .btn-upload { background: #6B7A72; color: #fff; }
     .btn-upload:hover { background: #5A6A62; }
 
-    /* ===== MODAL ===== */
+    /* MODAL */
     #modalOverlay, #modalUpload {
       display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45);
       align-items: center; justify-content: center; z-index: 40; padding: 20px;
@@ -126,20 +124,18 @@
 
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
 
-    /* Upload preview table */
     .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
     .preview-table th, .preview-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
     .preview-table th { background: #FAFBFA; font-weight: 600; font-size: 11px; text-transform: uppercase; color: var(--text-muted); }
     .preview-table td.num { text-align: right; }
     .badge-status { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
 
-    /* Pesan error di halaman */
     .error-box { background: #FBEAE7; color: var(--coral); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--coral); }
   </style>
 </head>
 <body>
 
-<!-- ===== TOPBAR ===== -->
+<!-- TOPBAR -->
 <header class="topbar">
   <div class="brand">
     <div class="mark">RS</div>
@@ -154,10 +150,9 @@
   </div>
 </header>
 
-<!-- ===== MAIN ===== -->
+<!-- MAIN -->
 <main>
   <div class="layout-split">
-    <!-- LEFT COLUMN -->
     <aside class="left-col">
       <div class="panel side-panel">
         <h2 class="side-title">Cari &amp; Filter</h2>
@@ -198,7 +193,6 @@
       </div>
     </aside>
 
-    <!-- RIGHT COLUMN -->
     <section class="right-col">
       <div id="errorContainer" style="display:none;" class="error-box"></div>
       <div class="panel">
@@ -230,7 +224,7 @@
   </div>
 </main>
 
-<!-- ===== MODAL TAMBAH / EDIT BARANG ===== -->
+<!-- MODAL TAMBAH / EDIT -->
 <div id="modalOverlay">
   <div class="modal">
     <h2 id="modalTitle">Tambah Barang</h2>
@@ -290,7 +284,7 @@
   </div>
 </div>
 
-<!-- ===== MODAL UPLOAD MASTER BARANG ===== -->
+<!-- MODAL UPLOAD -->
 <div id="modalUpload">
   <div class="modal modal-wide">
     <h2>Upload Master Barang (CSV)</h2>
@@ -329,45 +323,35 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
+  //  KONFIGURASI SUPABASE (HANYA SEKALI)
   // ============================================================
   const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabase = window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ============================================================
-  //  CEK / BYPASS SESSION
+  //  BYPASS SESSION (agar halaman tetap bisa diakses)
   // ============================================================
   (function() {
-    let currentUser = null;
+    let user = null;
     try {
       const stored = sessionStorage.getItem('rko_user');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && ['ADMIN', 'SUPER_ADMIN'].includes(parsed.role)) {
-          currentUser = parsed;
+          user = parsed;
         }
       }
-    } catch (e) { /* ignore */ }
-
-    // Jika tidak ada session atau role tidak sesuai, bypass dengan default
-    if (!currentUser) {
-      currentUser = {
-        id: 999,
-        email: 'admin@rsamp.go.id',
-        nama: 'Admin Bypass',
-        role: 'SUPER_ADMIN',
-        active: true
-      };
-      sessionStorage.setItem('rko_user', JSON.stringify(currentUser));
+    } catch (e) {}
+    if (!user) {
+      user = { id: 999, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
+      sessionStorage.setItem('rko_user', JSON.stringify(user));
     }
-
-    document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
-    window.currentUser = currentUser;
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
   })();
 
   // ============================================================
-  //  GLOBAL VARIABLES
+  //  VARIABEL GLOBAL
   // ============================================================
   let allBarang = [];
   let prinsipalList = [];
@@ -378,7 +362,7 @@
   let uploadRows = [];
 
   // ============================================================
-  //  UTILITY
+  //  UTILITY FUNCTIONS
   // ============================================================
   function escapeHtml(str) {
     if (!str) return '';
@@ -400,24 +384,23 @@
   }
 
   // ============================================================
-  //  LOAD DATA
+  //  LOAD DATA DARI SUPABASE
   // ============================================================
   async function initData() {
     hideError();
     try {
-      const [barangRes, prinsipalRes, distributorRes] = await Promise.all([
+      const [br, pr, dr] = await Promise.all([
         supabase.from('master_barang').select('*'),
         supabase.from('master_prinsipal').select('*'),
         supabase.from('master_distributor').select('*')
       ]);
+      if (br.error) throw new Error('Barang: ' + br.error.message);
+      if (pr.error) throw new Error('Prinsipal: ' + pr.error.message);
+      if (dr.error) throw new Error('Distributor: ' + dr.error.message);
 
-      if (barangRes.error) throw new Error('Barang: ' + barangRes.error.message);
-      if (prinsipalRes.error) throw new Error('Prinsipal: ' + prinsipalRes.error.message);
-      if (distributorRes.error) throw new Error('Distributor: ' + distributorRes.error.message);
-
-      allBarang = barangRes.data || [];
-      prinsipalList = prinsipalRes.data || [];
-      distributorList = distributorRes.data || [];
+      allBarang = br.data || [];
+      prinsipalList = pr.data || [];
+      distributorList = dr.data || [];
 
       fillSelectOptions();
       applyFilter();
@@ -767,7 +750,6 @@
   // ============================================================
   //  START
   // ============================================================
-  // Jalankan initData
   initData();
 </script>
 </body>
