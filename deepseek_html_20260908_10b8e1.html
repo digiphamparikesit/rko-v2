@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keuangan — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* gaya dari versi sebelumnya, disederhanakan */
+    :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+    select option { color: #14201A; }
+    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+    .tab-btn { padding: 9px 18px; border: 1px solid var(--border); background: var(--card); border-radius: 9px; font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--text-muted); }
+    .tab-btn.active { background: var(--green-mid); color: #fff; border-color: var(--green-mid); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 16px; }
+    .panel h2 { font-size: 15px; margin: 0 0 4px; }
+    .panel .sub { font-size: 12px; color: var(--text-muted); margin: 0 0 18px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
+    .field input, .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; font-family: inherit; }
+    .btn { padding: 10px 18px; border: none; border-radius: 9px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
+    .btn-primary { background: var(--green-mid); color: #fff; }
+    .btn-primary:hover { background: #128a3e; }
+    .form-msg { font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+    .form-msg.ok { color: var(--green-mid); }
+    .form-msg.error { color: var(--coral); }
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+    .stat-card .num { font-size: 20px; font-weight: 700; }
+    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .toolbar input[type="text"] { flex: 1; min-width: 220px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 9px; font-size: 13.5px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num { text-align: right; }
+    input.qty { width: 90px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; }
+    input.qty-date { width: 130px; }
+    select.status { padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; }
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+    .badge.lunas { background: var(--green-soft); color: var(--green-mid); }
+    .badge.belum { background: #FBEAE7; color: var(--coral); }
+    .status-tag { font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px; }
+    .status-tag.saved { background: var(--green-soft); color: var(--green-mid); }
+    .status-tag.unsaved { background: #F1F1EE; color: var(--text-muted); }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+    .panel-scroll { overflow-x: auto; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div><div class="title">RKO RSAMP</div><div class="label">Keuangan — anggaran &amp; realisasi pembayaran</div></div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="bulanSelect"></select>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtnAnggaran" onclick="switchTab('anggaran')">Anggaran &amp; Target</button>
+    <button class="tab-btn" id="tabBtnRealisasi" onclick="switchTab('realisasi')">Realisasi &amp; Status Bayar</button>
+  </div>
+
+  <div class="tab-content active" id="tabAnggaran">
+    <div class="panel">
+      <h2>Anggaran bulan ini</h2>
+      <p class="sub">PAGU, total DPA, dan target efisiensi belanja per kunjungan</p>
+      <div class="field-row">
+        <div class="field"><label>PAGU (Rp)</label><input type="number" id="fPagu" placeholder="0"></div>
+        <div class="field"><label>Total DPA (Rp)</label><input type="number" id="fDpa" placeholder="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Target efisiensi (%)</label><input type="number" id="fTarget" placeholder="90"></div>
+        <div class="field"><label>Keterangan (opsional)</label><input type="text" id="fKeterangan" placeholder="mis. revisi anggaran bulan berjalan"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveAnggaran()">Simpan Anggaran</button>
+      <div class="form-msg" id="anggaranMsg"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tabRealisasi">
+    <div class="stat-row">
+      <div class="stat-card"><div class="num" id="statBelumBayar">-</div><div class="lbl">Nilai belum dibayar (hutang)</div></div>
+      <div class="stat-card"><div class="num" id="statLunas">-</div><div class="lbl">Nilai sudah dibayar</div></div>
+      <div class="stat-card"><div class="num" id="statJumlahTransaksi">-</div><div class="lbl">Transaksi belum lunas</div></div>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="Cari nama barang...">
+    </div>
+    <div class="panel panel-scroll">
+      <table>
+        <thead><tr><th>Nama barang</th><th>Distributor</th><th class="num">Rencana (Rp)</th><th>Qty realisasi</th><th>Realisasi (Rp)</th><th>PPN (Rp)</th><th>PPH (Rp)</th><th>Status bayar</th><th>Tgl bayar</th><th>Status</th><th></th></tr></thead>
+        <tbody id="tableBody"><tr><td colspan="11" class="empty-state">Memuat data...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const userStr = sessionStorage.getItem('rko_user');
+  if (!userStr) window.location.href = 'index.html';
+  const currentUser = JSON.parse(userStr);
+  if (!['KEUANGAN', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) { alert('Akses ditolak.'); window.location.href = 'index.html'; }
+  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+
+  let barangMap = {}, distributorMap = {}, rencanaList = [], realisasiMap = {}, filteredRencana = [];
+
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => { const opt = document.createElement('option'); opt.value = i+1; opt.textContent = nm; if (i+1 === curBulan) opt.selected = true; bulanSel.appendChild(opt); });
+    const tahunSel = document.getElementById('tahunSelect');
+    for (let y = curTahun-1; y <= curTahun+1; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; if (y === curTahun) opt.selected = true; tahunSel.appendChild(opt); }
+  }
+
+  (function init() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth()+1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAll);
+    document.getElementById('tahunSelect').addEventListener('change', loadAll);
+    document.getElementById('searchBox').addEventListener('input', applyFilter);
+    loadAll();
+  })();
+
+  function switchTab(tab) {
+    document.getElementById('tabAnggaran').classList.toggle('active', tab === 'anggaran');
+    document.getElementById('tabRealisasi').classList.toggle('active', tab === 'realisasi');
+    document.getElementById('tabBtnAnggaran').classList.toggle('active', tab === 'anggaran');
+    document.getElementById('tabBtnRealisasi').classList.toggle('active', tab === 'realisasi');
+  }
+
+  async function loadAll() {
+    await loadAnggaran();
+    await loadRealisasi();
+  }
+
+  async function loadAnggaran() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+    const { data } = await supabase.from('anggaran').select('*').eq('bulan', bulan).eq('tahun', tahun).maybeSingle();
+    if (data) {
+      document.getElementById('fPagu').value = data.pagu || '';
+      document.getElementById('fDpa').value = data.dpa_total || '';
+      document.getElementById('fTarget').value = data.target_efisiensi || 90;
+      document.getElementById('fKeterangan').value = data.keterangan || '';
+    }
+  }
+
+  async function saveAnggaran() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+    const msg = document.getElementById('anggaranMsg');
+    msg.textContent = 'Menyimpan...';
+    try {
+      const { error } = await supabase.from('anggaran').upsert({
+        bulan, tahun,
+        pagu: Number(document.getElementById('fPagu').value) || 0,
+        dpa_total: Number(document.getElementById('fDpa').value) || 0,
+        target_efisiensi: Number(document.getElementById('fTarget').value) || 90,
+        keterangan: document.getElementById('fKeterangan').value.trim()
+      }, { onConflict: 'bulan, tahun' });
+      if (error) throw error;
+      msg.textContent = 'Tersimpan.';
+      msg.className = 'form-msg ok';
+    } catch (err) { msg.textContent = err.message; msg.className = 'form-msg error'; }
+  }
+
+  async function loadRealisasi() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" class="empty-state">Memuat data...</td></tr>';
+
+    try {
+      const [barangRes, distRes, rencanaRes, realisasiRes] = await Promise.all([
+        supabase.from('master_barang').select('*'),
+        supabase.from('master_distributor').select('*'),
+        supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun),
+        supabase.from('realisasi').select('*').eq('bulan', bulan).eq('tahun', tahun)
+      ]);
+      barangMap = {}; (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
+      distributorMap = {}; (distRes.data || []).forEach(d => { distributorMap[d.id] = d; });
+      rencanaList = rencanaRes.data || [];
+      realisasiMap = {};
+      (realisasiRes.data || []).forEach(r => {
+        realisasiMap[r.barang_id] = {
+          id: r.id, qty: r.realisasi_qty, rp: r.realisasi_rp,
+          status: r.status_bayar || 'BELUM_BAYAR', tgl: r.tanggal_bayar,
+          ppn: r.nilai_ppn, pph: r.nilai_pph, saved: true
+        };
+      });
+      updateStat();
+      applyFilter();
+    } catch (err) {
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" class="empty-state">Gagal memuat data.</td></tr>';
+    }
+  }
+
+  function updateStat() {
+    let belum = 0, lunas = 0, jumlahBelum = 0;
+    Object.values(realisasiMap).forEach(r => {
+      const rp = Number(r.rp) || 0;
+      if (r.status === 'LUNAS') lunas += rp;
+      else { belum += rp; jumlahBelum++; }
+    });
+    document.getElementById('statBelumBayar').textContent = 'Rp ' + belum.toLocaleString('id-ID');
+    document.getElementById('statLunas').textContent = 'Rp ' + lunas.toLocaleString('id-ID');
+    document.getElementById('statJumlahTransaksi').textContent = jumlahBelum.toLocaleString('id-ID');
+  }
+
+  function applyFilter() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    filteredRencana = rencanaList.filter(r => {
+      const b = barangMap[r.barang_id];
+      const nama = b ? b.nama_barang : '';
+      return !q || nama.toLowerCase().includes(q);
+    });
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    if (filteredRencana.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="11" class="empty-state">Belum ada rencana belanja untuk periode ini.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filteredRencana.map(r => {
+      const b = barangMap[r.barang_id];
+      const dist = distributorMap[r.distributor_id];
+      const existing = realisasiMap[r.barang_id] || { qty: r.rencana_qty_satuan_beli, rp: r.rencana_rp, status: 'BELUM_BAYAR', tgl: '', ppn: '', pph: '', saved: false };
+      return `<tr data-barang-id="${r.barang_id}">
+        <td>${escapeHtml(b ? b.nama_barang : 'Barang tidak dikenal')}</td>
+        <td>${escapeHtml(dist ? dist.nama_distributor : '-')}</td>
+        <td class="num">Rp ${Number(r.rencana_rp || 0).toLocaleString('id-ID')}</td>
+        <td><input type="number" class="qty" data-field="qty" value="${existing.qty}" onchange="markUnsaved(${r.barang_id})"></td>
+        <td><input type="number" class="qty" data-field="rp" value="${existing.rp}" style="width:110px;" onchange="markUnsaved(${r.barang_id})"></td>
+        <td><input type="number" class="qty" data-field="ppn" value="${existing.ppn}" onchange="markUnsaved(${r.barang_id})"></td>
+        <td><input type="number" class="qty" data-field="pph" value="${existing.pph}" onchange="markUnsaved(${r.barang_id})"></td>
+        <td><select class="status" data-field="status" onchange="markUnsaved(${r.barang_id})"><option value="BELUM_BAYAR" ${existing.status === 'BELUM_BAYAR' ? 'selected' : ''}>Belum Bayar</option><option value="LUNAS" ${existing.status === 'LUNAS' ? 'selected' : ''}>Lunas</option></select></td>
+        <td><input type="date" class="qty qty-date" data-field="tgl" value="${existing.tgl || ''}" onchange="markUnsaved(${r.barang_id})"></td>
+        <td><span class="status-tag ${existing.saved ? 'saved' : 'unsaved'}" id="status-${r.barang_id}">${existing.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
+        <td><button class="btn btn-primary" onclick="saveRealisasi(${r.barang_id})">Simpan</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function markUnsaved(barangId) {
+    const tag = document.getElementById('status-' + barangId);
+    if (tag) { tag.textContent = 'Belum disimpan'; tag.className = 'status-tag unsaved'; }
+  }
+
+  async function saveRealisasi(barangId) {
+    const row = document.querySelector(`tr[data-barang-id="${barangId}"]`);
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+    const btn = row.querySelector('button');
+    const tag = document.getElementById('status-' + barangId);
+
+    const payload = {
+      barang_id: barangId,
+      bulan, tahun,
+      realisasi_qty: Number(row.querySelector('[data-field="qty"]').value) || 0,
+      realisasi_rp: Number(row.querySelector('[data-field="rp"]').value) || 0,
+      status_bayar: row.querySelector('[data-field="status"]').value,
+      tanggal_bayar: row.querySelector('[data-field="tgl"]').value,
+      nilai_ppn: Number(row.querySelector('[data-field="ppn"]').value) || 0,
+      nilai_pph: Number(row.querySelector('[data-field="pph"]').value) || 0
+    };
+
+    btn.disabled = true; btn.textContent = '...';
+    try {
+      const { error } = await supabase.from('realisasi').upsert(payload, { onConflict: 'barang_id, bulan, tahun' });
+      if (error) throw error;
+      tag.textContent = 'Tersimpan'; tag.className = 'status-tag saved';
+      realisasiMap[barangId] = { ...payload, saved: true };
+      updateStat();
+    } catch (err) { alert('Gagal: ' + err.message); }
+    finally { btn.disabled = false; btn.textContent = 'Simpan'; }
+  }
+
+  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+</script>
+</body>
+</html>
