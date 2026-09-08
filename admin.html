@@ -321,10 +321,12 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE - GUNAKAN ANON KEY (BUKAN SERVICE_ROLE)
+  //  KONFIGURASI SUPABASE
   // ============================================================
   const _supabaseUrl = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const _supabaseKey = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN'; // ini adalah anon key Anda
+  const _supabaseKey = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
+  // INISIALISASI SUPABASE CLIENT (di window agar global)
+  window.supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
 
   // ============================================================
   //  BYPASS SESSION
