@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+  <style>
+    /* gaya laporan (sama seperti versi sebelumnya) */
+    :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: 'Inter', -apple-system, sans-serif; color: var(--text-dark); }
+    h1, h2, .num { font-family: 'Poppins', sans-serif; }
+    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; }
+    select option { color: #14201A; }
+    main { max-width: 100%; margin: 0; padding: 28px 20px 60px; }
+    .page-heading { margin-bottom: 20px; }
+    .page-heading h1 { font-size: 22px; margin: 0 0 4px; }
+    .page-heading p { margin: 0; color: var(--text-muted); font-size: 13px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+    .stat-card .num { font-size: 22px; font-weight: 700; line-height: 1.1; }
+    .stat-card .lbl { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+    .panel h2 { font-size: 15px; margin: 0 0 2px; }
+    .panel .sub { font-size: 12px; color: var(--text-muted); margin: 0 0 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px; }
+    td.num-cell, th.num-cell { text-align: right; }
+    .pos { color: var(--green-mid); font-weight: 600; }
+    .neg { color: var(--coral); font-weight: 600; }
+    .empty-mini { text-align: center; color: var(--text-muted); font-size: 12.5px; padding: 20px 0; }
+    .mini-stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .mini-num { font-size: 17px; font-weight: 700; }
+    .mini-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div><div class="title">RKO RSAMP</div><div class="label">Laporan — rencana vs realisasi belanja</div></div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div class="page-heading"><h1>Rekap tahunan</h1><p>Rencana belanja vs realisasi, per bulan dan per barang, untuk 1 tahun anggaran</p></div>
+  <section class="stat-grid">
+    <div class="stat-card"><div class="num" id="statRencana">-</div><div class="lbl">Total rencana belanja (tahun ini)</div></div>
+    <div class="stat-card"><div class="num" id="statRealisasi">-</div><div class="lbl">Total realisasi belanja</div></div>
+    <div class="stat-card"><div class="num" id="statSelisih">-</div><div class="lbl">Selisih rencana &ndash; realisasi</div></div>
+    <div class="stat-card"><div class="num" id="statCapaian">-</div><div class="lbl">Capaian realisasi</div></div>
+  </section>
+
+  <div class="panel">
+    <h2>Tren bulanan: rencana vs realisasi</h2>
+    <p class="sub">Dalam juta rupiah</p>
+    <canvas id="chartTren" height="90"></canvas>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h2>10 barang dengan realisasi belanja terbesar</h2>
+      <p class="sub">Sepanjang tahun berjalan</p>
+      <canvas id="chartTopBarang" height="220"></canvas>
+      <div class="empty-mini" id="topBarangEmpty" style="display:none;">Belum ada data realisasi tahun ini.</div>
+    </div>
+    <div class="panel">
+      <h2>Rekap per bulan</h2>
+      <p class="sub">Rencana, realisasi, dan capaian</p>
+      <table><thead><tr><th>Bulan</th><th class="num-cell">Rencana</th><th class="num-cell">Realisasi</th><th class="num-cell">Capaian</th></tr></thead><tbody id="tableBulanan"><tr><td colspan="4" class="empty-mini">Memuat data...</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Penjualan &amp; margin tahunan</h2>
+    <p class="sub">Dari data upload menu Penjualan &middot; dalam juta rupiah</p>
+    <canvas id="chartPenjualan" height="90"></canvas>
+    <div class="empty-mini" id="penjualanTahunanEmpty" style="display:none;">Belum ada data penjualan untuk tahun ini.</div>
+    <div class="mini-stat-row" style="margin-top:16px;">
+      <div><div class="mini-num" id="statTotalHpp">-</div><div class="mini-lbl">Total HPP terjual</div></div>
+      <div><div class="mini-num" id="statTotalJual">-</div><div class="mini-lbl">Total harga jual</div></div>
+      <div><div class="mini-num" id="statTotalMargin">-</div><div class="mini-lbl">Total surplus/margin</div></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const userStr = sessionStorage.getItem('rko_user');
+  if (!userStr) window.location.href = 'index.html';
+  const currentUser = JSON.parse(userStr);
+  if (!['ADMIN', 'SUPER_ADMIN', 'KEUANGAN'].includes(currentUser.role)) { alert('Akses ditolak.'); window.location.href = 'index.html'; }
+  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+
+  const NAMA_BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  let chartTren, chartTopBarang, chartPenjualan;
+
+  (function init() {
+    const curTahun = new Date().getFullYear();
+    const sel = document.getElementById('tahunSelect');
+    for (let y = curTahun-2; y <= curTahun; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; if (y === curTahun) opt.selected = true; sel.appendChild(opt); }
+    sel.addEventListener('change', loadLaporan);
+    loadLaporan();
+  })();
+
+  async function loadLaporan() {
+    const tahun = document.getElementById('tahunSelect').value;
+
+    try {
+      const [rencanaRes, realisasiRes, penjualanRes, barangRes] = await Promise.all([
+        supabase.from('rencana_belanja').select('*').eq('tahun', tahun),
+        supabase.from('realisasi').select('*').eq('tahun', tahun),
+        supabase.from('penjualan').select('*').eq('tahun', tahun),
+        supabase.from('master_barang').select('*')
+      ]);
+
+      const rencana = rencanaRes.data || [];
+      const realisasi = realisasiRes.data || [];
+      const penjualan = penjualanRes.data || [];
+      const barangMap = {};
+      (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
+
+      // Agregasi per bulan
+      const rencanaPerBulan = new Array(12).fill(0);
+      const realisasiPerBulan = new Array(12).fill(0);
+      rencana.forEach(r => { const b = Number(r.bulan) - 1; if (b>=0 && b<12) rencanaPerBulan[b] += Number(r.rencana_rp); });
+      realisasi.forEach(r => { const b = Number(r.bulan) - 1; if (b>=0 && b<12) realisasiPerBulan[b] += Number(r.realisasi_rp); });
+
+      const totalRencana = rencanaPerBulan.reduce((a,b) => a+b, 0);
+      const totalRealisasi = realisasiPerBulan.reduce((a,b) => a+b, 0);
+      const selisih = totalRencana - totalRealisasi;
+      const capaian = totalRencana > 0 ? Math.round((totalRealisasi / totalRencana) * 100) : 0;
+
+      document.getElementById('statRencana').textContent = formatRpSingkat(totalRencana);
+      document.getElementById('statRealisasi').textContent = formatRpSingkat(totalRealisasi);
+      document.getElementById('statSelisih').textContent = formatRpSingkat(Math.abs(selisih));
+      document.getElementById('statSelisih').className = 'num ' + (selisih >= 0 ? 'pos' : 'neg');
+      document.getElementById('statCapaian').textContent = capaian + '%';
+
+      // Chart tren
+      if (chartTren) chartTren.destroy();
+      chartTren = new Chart(document.getElementById('chartTren'), {
+        type: 'bar',
+        data: {
+          labels: NAMA_BULAN,
+          datasets: [
+            { label: 'Rencana', data: rencanaPerBulan.map(v => Math.round(v/1000000)), backgroundColor: '#CDEAD9', borderRadius: 5, maxBarThickness: 22 },
+            { label: 'Realisasi', data: realisasiPerBulan.map(v => Math.round(v/1000000)), backgroundColor: '#16A34A', borderRadius: 5, maxBarThickness: 22 }
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12 } } } }, scales: { y: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } }, x: { grid: { display: false } } } }
+      });
+
+      // Top 10 barang
+      const perBarang = {};
+      realisasi.forEach(r => { perBarang[r.barang_id] = (perBarang[r.barang_id] || 0) + Number(r.realisasi_rp); });
+      const topBarang = Object.keys(perBarang).map(id => ({ nama: barangMap[id]?.nama_barang || 'Unknown', nilai: perBarang[id] })).sort((a,b) => b.nilai - a.nilai).slice(0,10);
+      const topCanvas = document.getElementById('chartTopBarang');
+      const topEmpty = document.getElementById('topBarangEmpty');
+      if (topBarang.length === 0) { topCanvas.style.display = 'none'; topEmpty.style.display = 'block'; }
+      else {
+        topCanvas.style.display = 'block'; topEmpty.style.display = 'none';
+        if (chartTopBarang) chartTopBarang.destroy();
+        chartTopBarang = new Chart(topCanvas, {
+          type: 'bar',
+          data: { labels: topBarang.map(b => b.nama.length > 28 ? b.nama.slice(0,26)+'…' : b.nama), datasets: [{ data: topBarang.map(b => Math.round(b.nilai/1000000)), backgroundColor: '#16A34A', borderRadius: 5 }] },
+          options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } }, y: { grid: { display: false } } } }
+        });
+      }
+
+      // Tabel bulanan
+      const tbody = document.getElementById('tableBulanan');
+      tbody.innerHTML = NAMA_BULAN.map((nm, i) => {
+        const r = rencanaPerBulan[i], a = realisasiPerBulan[i];
+        const c = r > 0 ? Math.round((a/r)*100) : (a > 0 ? 100 : 0);
+        return `<tr><td>${nm}</td><td class="num-cell">Rp ${Math.round(r).toLocaleString('id-ID')}</td><td class="num-cell">Rp ${Math.round(a).toLocaleString('id-ID')}</td><td class="num-cell">${c}%</td></tr>`;
+      }).join('');
+
+      // Penjualan tahunan
+      renderPenjualanTahunan(penjualan);
+    } catch (err) {
+      console.error(err);
+      alert('Gagal memuat laporan.');
+    }
+  }
+
+  function renderPenjualanTahunan(penjualan) {
+    const hppPerBulan = new Array(12).fill(0);
+    const jualPerBulan = new Array(12).fill(0);
+    penjualan.forEach(p => {
+      const b = Number(p.bulan) - 1;
+      if (b>=0 && b<12) {
+        hppPerBulan[b] += Number(p.hpp_terjual) || 0;
+        jualPerBulan[b] += Number(p.harga_jual) || 0;
+      }
+    });
+    const totalHpp = hppPerBulan.reduce((a,b) => a+b, 0);
+    const totalJual = jualPerBulan.reduce((a,b) => a+b, 0);
+    const totalMargin = totalJual - totalHpp;
+    const canvas = document.getElementById('chartPenjualan');
+    const emptyEl = document.getElementById('penjualanTahunanEmpty');
+    if (totalHpp === 0 && totalJual === 0) {
+      canvas.style.display = 'none'; emptyEl.style.display = 'block';
+      document.getElementById('statTotalHpp').textContent = '-';
+      document.getElementById('statTotalJual').textContent = '-';
+      document.getElementById('statTotalMargin').textContent = '-';
+      return;
+    }
+    canvas.style.display = 'block'; emptyEl.style.display = 'none';
+    document.getElementById('statTotalHpp').textContent = formatRpSingkat(totalHpp);
+    document.getElementById('statTotalJual').textContent = formatRpSingkat(totalJual);
+    const marginEl = document.getElementById('statTotalMargin');
+    marginEl.textContent = formatRpSingkat(totalMargin);
+    marginEl.style.color = totalMargin >= 0 ? 'var(--green-mid)' : 'var(--coral)';
+    if (chartPenjualan) chartPenjualan.destroy();
+    chartPenjualan = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: NAMA_BULAN,
+        datasets: [
+          { label: 'HPP terjual', data: hppPerBulan.map(v => Math.round(v/1000000)), backgroundColor: '#F5C4B3', borderRadius: 5, maxBarThickness: 22 },
+          { label: 'Harga jual', data: jualPerBulan.map(v => Math.round(v/1000000)), backgroundColor: '#EA580C', borderRadius: 5, maxBarThickness: 22 }
+        ]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12 } } } }, scales: { y: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } }, x: { grid: { display: false } } } }
+    });
+  }
+
+  function formatRpSingkat(v) {
+    const n = Number(v) || 0;
+    if (n >= 1000000000) return 'Rp ' + (n/1000000000).toFixed(2).replace('.',',') + ' M';
+    if (n >= 1000000) return 'Rp ' + (n/1000000).toFixed(1).replace('.',',') + ' Jt';
+    return 'Rp ' + n.toLocaleString('id-ID');
+  }
+</script>
+</body>
+</html>
