@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Gaya dari versi sebelumnya, disesuaikan */
+    :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+    .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
+    .side-panel { padding: 18px 20px; }
+    .side-title { font-size: 14px; margin: 0 0 12px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+    @media (max-width: 860px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num { text-align: right; }
+    .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+    .badge.obat { background: var(--green-soft); color: var(--green-mid); }
+    .badge.bmhp { background: #E9EEFB; color: #3B5BDB; }
+    .badge.off { background: #F1F1EE; color: var(--text-muted); }
+    .row-actions { display: flex; gap: 8px; }
+    .icon-btn { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 9px; font-size: 12px; cursor: pointer; color: var(--text-dark); }
+    .icon-btn:hover { background: var(--green-soft); border-color: var(--green-mid); }
+    .icon-btn.danger:hover { background: #FBEAE7; border-color: var(--coral); }
+    .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); }
+    .pager button { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 12.5px; }
+    .pager button:disabled { opacity: 0.4; cursor: default; }
+    #modalOverlay { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
+    #modalOverlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 26px; }
+    .modal h2 { font-size: 16px; margin: 0 0 16px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
+    .field input, .field select { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+    .btn { padding: 10px 16px; border: none; border-radius: 9px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
+    .btn-primary { background: var(--green-mid); color: #fff; }
+    .btn-primary:hover { background: #128a3e; }
+    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
+    .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div><div class="title">RKO RSAMP</div><div class="label">Admin — master data obat &amp; BMHP</div></div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div class="layout-split">
+    <aside class="left-col">
+      <div class="panel side-panel">
+        <h2 class="side-title">Cari &amp; Filter</h2>
+        <div class="field"><label>Cari nama barang</label><input type="text" id="searchBox" placeholder="Cari nama barang..."></div>
+        <div class="field">
+          <label>Golongan</label>
+          <select id="filterGolongan">
+            <option value="">Semua golongan</option>
+            <option value="OBAT">Obat</option><option value="BMHP">BMHP</option><option value="BHP">BHP</option>
+            <option value="B3">B3</option><option value="NUTRISI ENTERAL">Nutrisi Enteral</option>
+            <option value="PROGRAM">Program</option><option value="PROGRAM TB">Program TB</option>
+            <option value="PROGRAM HIV">Program HIV</option><option value="PROGRAM MALARIA">Program Malaria</option>
+            <option value="PROGRAM RABIES">Program Rabies</option><option value="PROGRAM BKKBN">Program BKKBN</option>
+            <option value="PROGRAM COVID">Program Covid</option><option value="PROGRAM STUNTING">Program Stunting</option>
+            <option value="PROGRAM IMUNISASI">Program Imunisasi</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="filterStatus">
+            <option value="">Semua status</option>
+            <option value="aktif">Aktif</option>
+            <option value="nonaktif">Nonaktif</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="openForm()">+ Tambah Barang</button>
+      </div>
+    </aside>
+
+    <section class="right-col">
+      <div class="panel">
+        <table>
+          <thead><tr><th>Nama barang</th><th>Kelas terapi</th><th>Golongan</th><th>Satuan</th><th class="num">HPP beli</th><th>Status</th><th>Aksi</th></tr></thead>
+          <tbody id="tableBody"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
+        </table>
+        <div class="pager">
+          <span id="pagerInfo">-</span>
+          <div><button id="btnPrev" onclick="changePage(-1)">&larr; Sebelumnya</button><button id="btnNext" onclick="changePage(1)">Berikutnya &rarr;</button></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Tambah Barang</h2>
+    <input type="hidden" id="fId">
+    <div class="field"><label>Nama barang</label><input type="text" id="fNama" placeholder="mis. Paracetamol Tab 500mg"></div>
+    <div class="field-row">
+      <div class="field"><label>Kelas terapi</label><input type="text" id="fKelas"></div>
+      <div class="field"><label>Golongan</label><select id="fGolongan"><option value="OBAT">Obat</option><option value="BMHP">BMHP</option></select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Satuan jual</label><input type="text" id="fSatuanJual" placeholder="mis. Tablet"></div>
+      <div class="field"><label>Satuan beli</label><input type="text" id="fSatuanBeli" placeholder="mis. Box"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Content (isi per kemasan)</label><input type="number" id="fContent"></div>
+      <div class="field"><label>HPP beli (Rp)</label><input type="number" id="fHpp"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Prinsipal</label><select id="fPrinsipal"><option value="">-</option></select></div>
+      <div class="field"><label>Distributor</label><select id="fDistributor"><option value="">-</option></select></div>
+    </div>
+    <div class="form-msg" id="formMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeForm()">Batal</button>
+      <button class="btn btn-primary" onclick="submitForm()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Cek session
+  const userStr = sessionStorage.getItem('rko_user');
+  if (!userStr) window.location.href = 'index.html';
+  const currentUser = JSON.parse(userStr);
+  if (!['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) { alert('Akses ditolak.'); window.location.href = 'index.html'; }
+  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+
+  let allBarang = [], prinsipalList = [], distributorList = [], filteredBarang = [];
+  let page = 1, PAGE_SIZE = 15;
+
+  // Fungsi bantu
+  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+  function formatRp(v) { return Number(v).toLocaleString('id-ID'); }
+
+  // Load data
+  async function initData() {
+    try {
+      const [barangRes, prinsipalRes, distributorRes] = await Promise.all([
+        supabase.from('master_barang').select('*'),
+        supabase.from('master_prinsipal').select('*'),
+        supabase.from('master_distributor').select('*')
+      ]);
+      allBarang = barangRes.data || [];
+      prinsipalList = prinsipalRes.data || [];
+      distributorList = distributorRes.data || [];
+      fillSelectOptions();
+      applyFilter();
+    } catch (err) { alert('Gagal memuat data: ' + err.message); }
+  }
+
+  function fillSelectOptions() {
+    const pSel = document.getElementById('fPrinsipal');
+    const dSel = document.getElementById('fDistributor');
+    pSel.innerHTML = '<option value="">-</option>' + prinsipalList.map(p => `<option value="${p.id}">${p.nama_prinsipal}</option>`).join('');
+    dSel.innerHTML = '<option value="">-</option>' + distributorList.map(d => `<option value="${d.id}">${d.nama_distributor}</option>`).join('');
+  }
+
+  document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
+  document.getElementById('filterGolongan').addEventListener('change', () => { page = 1; applyFilter(); });
+  document.getElementById('filterStatus').addEventListener('change', () => { page = 1; applyFilter(); });
+
+  function applyFilter() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    const golongan = document.getElementById('filterGolongan').value;
+    const status = document.getElementById('filterStatus').value;
+    filteredBarang = allBarang.filter(b => {
+      const matchQ = !q || String(b.nama_barang).toLowerCase().includes(q);
+      const matchG = !golongan || b.golongan === golongan;
+      const isActive = b.status_aktif === true;
+      const matchS = !status || (status === 'aktif' ? isActive : !isActive);
+      return matchQ && matchG && matchS;
+    });
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    const start = (page - 1) * PAGE_SIZE;
+    const pageItems = filteredBarang.slice(start, start + PAGE_SIZE);
+    if (pageItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Tidak ada data yang cocok.</td></tr>';
+    } else {
+      tbody.innerHTML = pageItems.map(b => {
+        const isActive = b.status_aktif === true;
+        const golBadge = b.golongan === 'BMHP' ? 'bmhp' : 'obat';
+        return `<tr class="${isActive ? '' : 'inactive'}">
+          <td>${escapeHtml(b.nama_barang)}</td>
+          <td>${escapeHtml(b.kelas_terapi || '-')}</td>
+          <td><span class="badge ${golBadge}">${escapeHtml(b.golongan || '-')}</span></td>
+          <td>${escapeHtml(b.satuan_jual || '-')} / ${escapeHtml(b.satuan_beli || '-')}</td>
+          <td class="num">Rp ${formatRp(b.hpp_beli)}</td>
+          <td>${isActive ? '<span class="badge obat">Aktif</span>' : '<span class="badge off">Nonaktif</span>'}</td>
+          <td><div class="row-actions">
+            <button class="icon-btn" onclick="openForm(${b.id})">Edit</button>
+            <button class="icon-btn ${isActive ? 'danger' : ''}" onclick="toggleStatus(${b.id}, ${!isActive})">${isActive ? 'Nonaktifkan' : 'Aktifkan'}</button>
+          </div></td>
+        </tr>`;
+      }).join('');
+    }
+    const totalPages = Math.max(1, Math.ceil(filteredBarang.length / PAGE_SIZE));
+    document.getElementById('pagerInfo').textContent = `${filteredBarang.length} item · Halaman ${page} dari ${totalPages}`;
+    document.getElementById('btnPrev').disabled = page <= 1;
+    document.getElementById('btnNext').disabled = page >= totalPages;
+  }
+
+  function changePage(delta) { page += delta; renderTable(); }
+
+  // Form
+  function openForm(id) {
+    document.getElementById('formMsg').textContent = '';
+    if (id) {
+      const b = allBarang.find(x => x.id === id);
+      document.getElementById('modalTitle').textContent = 'Edit Barang';
+      document.getElementById('fId').value = b.id;
+      document.getElementById('fNama').value = b.nama_barang || '';
+      document.getElementById('fKelas').value = b.kelas_terapi || '';
+      document.getElementById('fGolongan').value = b.golongan || 'OBAT';
+      document.getElementById('fSatuanJual').value = b.satuan_jual || '';
+      document.getElementById('fSatuanBeli').value = b.satuan_beli || '';
+      document.getElementById('fContent').value = b.content || '';
+      document.getElementById('fHpp').value = b.hpp_beli || '';
+      document.getElementById('fPrinsipal').value = b.prinsipal_id || '';
+      document.getElementById('fDistributor').value = b.distributor_id || '';
+    } else {
+      document.getElementById('modalTitle').textContent = 'Tambah Barang';
+      ['fId','fNama','fKelas','fSatuanJual','fSatuanBeli','fContent','fHpp'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('fGolongan').value = 'OBAT';
+      document.getElementById('fPrinsipal').value = '';
+      document.getElementById('fDistributor').value = '';
+    }
+    document.getElementById('modalOverlay').classList.add('show');
+  }
+
+  function closeForm() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+  async function submitForm() {
+    const id = document.getElementById('fId').value;
+    const nama = document.getElementById('fNama').value.trim();
+    const msg = document.getElementById('formMsg');
+    if (!nama) { msg.textContent = 'Nama barang wajib diisi.'; return; }
+    const payload = {
+      nama_barang: nama,
+      kelas_terapi: document.getElementById('fKelas').value.trim(),
+      golongan: document.getElementById('fGolongan').value,
+      satuan_jual: document.getElementById('fSatuanJual').value.trim(),
+      satuan_beli: document.getElementById('fSatuanBeli').value.trim(),
+      content: Number(document.getElementById('fContent').value) || 0,
+      hpp_beli: Number(document.getElementById('fHpp').value) || 0,
+      prinsipal_id: document.getElementById('fPrinsipal').value || null,
+      distributor_id: document.getElementById('fDistributor').value || null
+    };
+    msg.textContent = 'Menyimpan...';
+    try {
+      if (id) {
+        const { error } = await supabase.from('master_barang').update(payload).eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('master_barang').insert(payload);
+        if (error) throw error;
+      }
+      closeForm();
+      await initData();
+    } catch (err) { msg.textContent = 'Gagal: ' + err.message; }
+  }
+
+  async function toggleStatus(id, newStatus) {
+    try {
+      const { error } = await supabase.from('master_barang').update({ status_aktif: newStatus }).eq('id', id);
+      if (error) throw error;
+      await initData();
+    } catch (err) { alert('Gagal: ' + err.message); }
+  }
+
+  initData();
+</script>
+</body>
+</html>
