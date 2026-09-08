@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distributor — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* gaya sama seperti versi sebelumnya */
+    :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+    .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
+    .side-panel { padding: 18px 20px; }
+    .side-title { font-size: 14px; margin: 0 0 12px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+    @media (max-width: 860px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+    .stat-card .num { font-size: 20px; font-weight: 700; }
+    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .dist-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
+    .dist-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; cursor: pointer; }
+    .dist-head:hover { background: #FAFBFA; }
+    .dist-name { font-weight: 600; font-size: 14.5px; }
+    .dist-contact { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .dist-right { display: flex; align-items: center; gap: 18px; }
+    .dist-total { text-align: right; }
+    .dist-total .rp { font-weight: 700; font-size: 15px; color: var(--green-mid); }
+    .dist-total .cnt { font-size: 11.5px; color: var(--text-muted); }
+    .chevron { transition: transform 0.15s ease; color: var(--text-muted); font-size: 13px; }
+    .dist-card.open .chevron { transform: rotate(90deg); }
+    .dist-body { display: none; border-top: 1px solid var(--border); }
+    .dist-card.open .dist-body { display: block; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { text-align: left; padding: 9px 20px; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num, th.num { text-align: right; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div><div class="title">RKO RSAMP</div><div class="label">Distributor — nilai rencana belanja</div></div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div class="stat-row">
+    <div class="stat-card"><div class="num" id="statTotalDist">-</div><div class="lbl">Distributor dengan rencana belanja</div></div>
+    <div class="stat-card"><div class="num" id="statTotalRp">Rp -</div><div class="lbl">Total rencana belanja periode ini</div></div>
+    <div class="stat-card"><div class="num" id="statTotalItem">-</div><div class="lbl">Total item dipesan</div></div>
+  </div>
+
+  <div class="layout-split">
+    <aside class="left-col">
+      <div class="panel side-panel">
+        <h2 class="side-title">Filter &amp; Periode</h2>
+        <div class="field"><label>Cari nama distributor</label><input type="text" id="searchBox" placeholder="Cari nama distributor..."></div>
+        <div class="field"><label>Bulan</label><select id="bulanSelect"></select></div>
+        <div class="field"><label>Tahun</label><select id="tahunSelect"></select></div>
+      </div>
+    </aside>
+    <section class="right-col">
+      <div id="distList"><div class="empty-state">Memuat data...</div></div>
+    </section>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const userStr = sessionStorage.getItem('rko_user');
+  if (!userStr) window.location.href = 'index.html';
+  const currentUser = JSON.parse(userStr);
+  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+
+  let distributorList = [], barangMap = {}, grouped = {};
+
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => { const opt = document.createElement('option'); opt.value = i+1; opt.textContent = nm; if (i+1 === curBulan) opt.selected = true; bulanSel.appendChild(opt); });
+    const tahunSel = document.getElementById('tahunSelect');
+    for (let y = curTahun-1; y <= curTahun+1; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; if (y === curTahun) opt.selected = true; tahunSel.appendChild(opt); }
+  }
+
+  (function init() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth()+1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    document.getElementById('searchBox').addEventListener('input', renderList);
+    loadAllData();
+  })();
+
+  async function loadAllData() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+    document.getElementById('distList').innerHTML = '<div class="empty-state">Memuat data...</div>';
+
+    try {
+      const [distRes, barangRes, rencanaRes] = await Promise.all([
+        supabase.from('master_distributor').select('*'),
+        supabase.from('master_barang').select('*'),
+        supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun)
+      ]);
+      distributorList = distRes.data || [];
+      barangMap = {};
+      (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
+
+      const rencana = rencanaRes.data || [];
+      grouped = {};
+      let totalItem = 0, totalRp = 0;
+      rencana.forEach(r => {
+        const distId = r.distributor_id;
+        if (!distId) return;
+        if (!grouped[distId]) grouped[distId] = { total: 0, items: [] };
+        const barang = barangMap[r.barang_id];
+        const rp = Number(r.rencana_rp) || 0;
+        grouped[distId].total += rp;
+        grouped[distId].items.push({
+          nama: barang ? barang.nama_barang : 'Barang tidak dikenal',
+          qty: r.rencana_qty_satuan_beli,
+          satuan: barang ? barang.satuan_beli : '-',
+          rp: rp
+        });
+        totalItem++;
+        totalRp += rp;
+      });
+
+      document.getElementById('statTotalDist').textContent = Object.keys(grouped).length.toLocaleString('id-ID');
+      document.getElementById('statTotalRp').textContent = 'Rp ' + totalRp.toLocaleString('id-ID');
+      document.getElementById('statTotalItem').textContent = totalItem.toLocaleString('id-ID');
+      renderList();
+    } catch (err) {
+      document.getElementById('distList').innerHTML = '<div class="empty-state">Gagal memuat data.</div>';
+    }
+  }
+
+  function renderList() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    const container = document.getElementById('distList');
+    const rows = distributorList.filter(d => grouped[d.id]).filter(d => !q || d.nama_distributor.toLowerCase().includes(q)).sort((a, b) => grouped[b.id].total - grouped[a.id].total);
+    if (rows.length === 0) {
+      container.innerHTML = '<div class="empty-state">Belum ada rencana belanja untuk periode ini.</div>';
+      return;
+    }
+    container.innerHTML = rows.map(d => {
+      const data = grouped[d.id];
+      const itemsHtml = data.items.map(it => `<tr><td>${escapeHtml(it.nama)}</td><td class="num">${Number(it.qty||0).toLocaleString('id-ID')} ${escapeHtml(it.satuan)}</td><td class="num">Rp ${Number(it.rp||0).toLocaleString('id-ID')}</td></tr>`).join('');
+      return `<div class="dist-card" id="card-${d.id}">
+        <div class="dist-head" onclick="toggleCard(${d.id})">
+          <div><div class="dist-name">${escapeHtml(d.nama_distributor)}</div><div class="dist-contact">${escapeHtml(d.kontak || 'Kontak belum diisi')}</div></div>
+          <div class="dist-right"><div class="dist-total"><div class="rp">Rp ${data.total.toLocaleString('id-ID')}</div><div class="cnt">${data.items.length} item</div></div><span class="chevron">&#9656;</span></div>
+        </div>
+        <div class="dist-body"><table><thead><tr><th>Nama barang</th><th class="num">Qty rencana beli</th><th class="num">Nilai (Rp)</th></tr></thead><tbody>${itemsHtml}</tbody></table></div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleCard(id) { document.getElementById('card-'+id).classList.toggle('open'); }
+  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+</script>
+</body>
+</html>
