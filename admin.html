@@ -7,6 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
+    /* ===== SAMA SEPERTI SEBELUMNYA (tidak diubah) ===== */
     :root {
       --green-deep: #0F3D2E;
       --green-mid: #16A34A;
@@ -98,8 +99,10 @@
     .btn-primary { background: var(--green-mid); color: #fff; }
     .btn-primary:hover { background: #128a3e; }
     .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
+    .btn-upload { background: #6B7A72; color: #fff; }
+    .btn-upload:hover { background: #5A6A62; }
 
-    /* ===== MODAL FORM ===== */
+    /* ===== MODAL ===== */
     #modalOverlay, #modalUpload {
       display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45);
       align-items: center; justify-content: center; z-index: 40; padding: 20px;
@@ -186,10 +189,8 @@
             <option value="nonaktif">Nonaktif</option>
           </select>
         </div>
-        <button class="btn btn-primary" style="width:100%;" onclick="openForm()">+ Tambah Barang</button>
-        <button class="btn" style="width:100%; margin-top:8px; background:#6B7A72; color:#fff;" onclick="openUploadModal()">
-          &#8593; Upload CSV Master Barang
-        </button>
+        <button class="btn btn-primary" style="width:100%;" id="btnTambahBarang">+ Tambah Barang</button>
+        <button class="btn btn-upload" style="width:100%; margin-top:8px;" id="btnUploadCSV">&#8593; Upload CSV Master Barang</button>
       </div>
     </aside>
 
@@ -278,8 +279,8 @@
     </div>
     <div class="form-msg" id="formMsg"></div>
     <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeForm()">Batal</button>
-      <button class="btn btn-primary" onclick="submitForm()">Simpan</button>
+      <button class="btn btn-secondary" id="btnFormBatal">Batal</button>
+      <button class="btn btn-primary" id="btnFormSimpan">Simpan</button>
     </div>
   </div>
 </div>
@@ -296,7 +297,7 @@
       <br><span style="color:var(--amber);">* Kolom prinsipal dan distributor diisi dengan NAMA (akan dicocokkan dengan master).</span>
       <br><span style="color:var(--text-muted); font-size:11px;">* status_aktif: true/false atau 1/0</span>
     </p>
-    <input type="file" id="uploadFileInput" accept=".csv" onchange="handleUploadFile(event)" style="margin-bottom:14px;">
+    <input type="file" id="uploadFileInput" accept=".csv" style="margin-bottom:14px;">
     <div id="uploadSummary" style="display:none; margin-bottom:12px; font-size:13px;"></div>
     <div id="uploadPreviewWrap" style="display:none; max-height:340px; overflow-y:auto; border:1px solid var(--border); border-radius:10px;">
       <table class="preview-table">
@@ -315,31 +316,41 @@
     </div>
     <div class="form-msg" id="uploadMsg"></div>
     <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeUploadModal()">Batal</button>
-      <button class="btn btn-primary" id="btnConfirmUpload" onclick="confirmUpload()" disabled>Import Barang</button>
+      <button class="btn btn-secondary" id="btnUploadBatal">Batal</button>
+      <button class="btn btn-primary" id="btnConfirmUpload" disabled>Import Barang</button>
     </div>
   </div>
 </div>
 
 <script>
-  // ===== KONFIGURASI SUPABASE =====
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
   const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ===== CEK SESSION =====
-  const userStr = sessionStorage.getItem('rko_user');
-  if (!userStr) {
-    window.location.href = 'index.html';
-  }
-  const currentUser = JSON.parse(userStr);
-  if (!['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
-    alert('Anda tidak memiliki akses ke halaman ini.');
-    window.location.href = 'index.html';
-  }
-  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+  // ============================================================
+  //  CEK SESSION
+  // ============================================================
+  (function checkSession() {
+    const userStr = sessionStorage.getItem('rko_user');
+    if (!userStr) {
+      window.location.href = 'index.html';
+      return;
+    }
+    const currentUser = JSON.parse(userStr);
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
+      alert('Anda tidak memiliki akses ke halaman ini.');
+      window.location.href = 'index.html';
+      return;
+    }
+    document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+  })();
 
-  // ===== VARIABEL GLOBAL =====
+  // ============================================================
+  //  GLOBAL VARIABLES
+  // ============================================================
   let allBarang = [];
   let prinsipalList = [];
   let distributorList = [];
@@ -347,8 +358,11 @@
   let page = 1;
   const PAGE_SIZE = 15;
 
-  // ===== UTILITY =====
+  // ============================================================
+  //  UTILITY
+  // ============================================================
   function escapeHtml(str) {
+    if (!str) return '';
     return String(str).replace(/[&<>"']/g, s => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[s]));
@@ -358,7 +372,9 @@
     return n.toLocaleString('id-ID');
   }
 
-  // ===== LOAD DATA =====
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
   async function initData() {
     try {
       const [barangRes, prinsipalRes, distributorRes] = await Promise.all([
@@ -372,7 +388,8 @@
       fillSelectOptions();
       applyFilter();
     } catch (err) {
-      alert('Gagal memuat data: ' + err.message);
+      console.error('initData error:', err);
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Gagal memuat data: ' + err.message + '</td></tr>';
     }
   }
 
@@ -385,7 +402,9 @@
       distributorList.map(d => `<option value="${d.id}">${escapeHtml(d.nama_distributor)}</option>`).join('');
   }
 
-  // ===== FILTER & TABEL =====
+  // ============================================================
+  //  FILTER & TABEL
+  // ============================================================
   document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
   document.getElementById('filterGolongan').addEventListener('change', () => { page = 1; applyFilter(); });
   document.getElementById('filterStatus').addEventListener('change', () => { page = 1; applyFilter(); });
@@ -448,11 +467,15 @@
     renderTable();
   }
 
-  // ===== FORM TAMBAH / EDIT =====
+  // ============================================================
+  //  FORM TAMBAH / EDIT
+  // ============================================================
   function openForm(id) {
+    console.log('openForm called with id:', id);
     document.getElementById('formMsg').textContent = '';
     if (id) {
       const b = allBarang.find(x => x.id === id);
+      if (!b) return;
       document.getElementById('modalTitle').textContent = 'Edit Barang';
       document.getElementById('fId').value = b.id;
       document.getElementById('fNama').value = b.nama_barang || '';
@@ -523,10 +546,13 @@
     }
   }
 
-  // ===== UPLOAD CSV MASTER BARANG =====
+  // ============================================================
+  //  UPLOAD CSV
+  // ============================================================
   let uploadRows = [];
 
   function openUploadModal() {
+    console.log('openUploadModal called');
     document.getElementById('uploadFileInput').value = '';
     document.getElementById('uploadSummary').style.display = 'none';
     document.getElementById('uploadPreviewWrap').style.display = 'none';
@@ -540,7 +566,7 @@
     document.getElementById('modalUpload').classList.remove('show');
   }
 
-  function handleUploadFile(evt) {
+  document.getElementById('uploadFileInput').addEventListener('change', function(evt) {
     const file = evt.target.files[0];
     if (!file) return;
     Papa.parse(file, {
@@ -549,11 +575,11 @@
       complete: function(res) {
         processUploadRows(res.data);
       },
-      error: function() {
-        document.getElementById('uploadMsg').textContent = 'Gagal membaca file CSV. Pastikan formatnya benar.';
+      error: function(err) {
+        document.getElementById('uploadMsg').textContent = 'Gagal membaca file CSV: ' + err.message;
       }
     });
-  }
+  });
 
   async function processUploadRows(rawRows) {
     // Ambil mapping nama → id untuk prinsipal & distributor
@@ -708,8 +734,51 @@
     }
   }
 
-  // ===== START =====
-  initData();
+  // ============================================================
+  //  EVENT LISTENERS TOMBOL (Menggunakan ID agar lebih aman)
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    // Tombol Tambah Barang
+    document.getElementById('btnTambahBarang').addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Tombol Tambah Barang diklik');
+      openForm();
+    });
+
+    // Tombol Upload CSV
+    document.getElementById('btnUploadCSV').addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Tombol Upload CSV diklik');
+      openUploadModal();
+    });
+
+    // Tombol Batal di Form
+    document.getElementById('btnFormBatal').addEventListener('click', function(e) {
+      e.preventDefault();
+      closeForm();
+    });
+
+    // Tombol Simpan di Form
+    document.getElementById('btnFormSimpan').addEventListener('click', function(e) {
+      e.preventDefault();
+      submitForm();
+    });
+
+    // Tombol Batal di Upload
+    document.getElementById('btnUploadBatal').addEventListener('click', function(e) {
+      e.preventDefault();
+      closeUploadModal();
+    });
+
+    // Tombol Import di Upload
+    document.getElementById('btnConfirmUpload').addEventListener('click', function(e) {
+      e.preventDefault();
+      confirmUpload();
+    });
+
+    // Inisialisasi data
+    initData();
+  });
 </script>
 </body>
 </html>
