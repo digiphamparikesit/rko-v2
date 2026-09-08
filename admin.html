@@ -7,6 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
+    /* ===== GAYA SAMA SEPERTI SEBELUMNYA ===== */
     :root {
       --green-deep: #0F3D2E;
       --green-mid: #16A34A;
@@ -321,15 +322,14 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE - GUNAKAN ANON KEY BARU
+  //  KONFIGURASI SUPABASE - GUNAKAN ANON KEY (AMAN)
   // ============================================================
   const _supabaseUrl = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
   const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
 
-  // INISIALISASI SUPABASE KE WINDOW
   window.supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
 
-  console.log('✅ Supabase client initialized with anon key');
+  console.log('✅ Supabase client initialized with ANON key');
 
   // ============================================================
   //  BYPASS SESSION
@@ -391,7 +391,7 @@
   async function initData() {
     hideError();
     try {
-      console.log('🔍 Memuat data dari Supabase...');
+      console.log('🔍 Memuat data dari Supabase dengan ANON key...');
       const [br, pr, dr] = await Promise.all([
         window.supabase.from('master_barang').select('*'),
         window.supabase.from('master_prinsipal').select('*'),
