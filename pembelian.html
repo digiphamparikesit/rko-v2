@@ -7,6 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
+    /* ===== GAYA SAMA ===== */
     :root {
       --green-deep: #0F3D2E;
       --green-mid: #16A34A;
@@ -49,7 +50,6 @@
     select option { color: #14201A; }
 
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
-
     .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
     .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
     .side-panel { padding: 18px 20px; }
@@ -104,7 +104,6 @@
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
 
-    /* Selisih card */
     .selisih-card {
       background: #FDF6F3;
       border: 1px solid var(--coral);
@@ -213,7 +212,7 @@
     <div class="field"><label>Distributor</label><select id="fDistributor"><option value="">Pilih distributor...</option></select></div>
     <div class="field"><label>Qty pesan</label><input type="number" id="fQty" placeholder="0"></div>
     <div class="field"><label>Tanggal PO</label><input type="date" id="fTanggal"></div>
-    <div class="field"><label>Status awal</label><select id="fStatus"><option value="DRAFT">Draft</option><option value="DIKIRIM">Dikirim ke distributor</option></select></div>
+    <div class="field"><label>Status awal</label><select id="fStatus"><option value="DRAFT">Draft</option><option value="DIKIRIM">Dikirim</option></select></div>
     <div class="form-msg" id="formMsg"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="window.closeForm()">Batal</button>
@@ -251,8 +250,8 @@
   <div class="modal modal-wide">
     <h2>Buat PO Ulang dari Selisih Penerimaan</h2>
     <p style="font-size:12.5px; color:var(--text-muted); margin:-8px 0 16px;">
-      Daftar PO dengan status <strong>DITERIMA_SEBAGIAN</strong> (barang kurang/rusak).<br>
-      Klik "Buat PO Ulang" untuk membuat PO baru dengan qty = selisih.
+      Daftar PO dengan status <strong>DITERIMA_SEBAGIAN</strong> dan selisih belum diproses.<br>
+      Klik "Buat PO Ulang" untuk membuat PO baru dengan qty = selisih (bisa diedit).
     </p>
     <div id="selisihList" style="max-height:400px; overflow-y:auto;">
       <div class="empty-state">Memuat data selisih...</div>
@@ -603,15 +602,17 @@
   };
 
   // ============================================================
-  //  FITUR: BUAT PO ULANG DARI SELISIH
+  //  FITUR: BUAT PO ULANG DARI SELISIH (DENGAN EDIT)
   // ============================================================
+  let selisihData = {};
+
   window.openSelisihModal = async function() {
     document.getElementById('selisihList').innerHTML = '<div class="empty-state">Memuat data selisih...</div>';
     document.getElementById('selisihMsg').textContent = '';
     document.getElementById('modalSelisih').classList.add('show');
 
     try {
-      // Ambil semua penerimaan dengan selisih > 0, join dengan pembelian dan master_barang
+      // Ambil penerimaan dengan selisih > 0 dan belum diproses
       const { data, error } = await window.supabase
         .from('penerimaan')
         .select(`
@@ -619,16 +620,17 @@
           pembelian: pembelian_id (no_po, qty_pesan, distributor_id),
           master_barang: barang_id (nama_barang, satuan_beli)
         `)
-        .gt('selisih', 0);
+        .gt('selisih', 0)
+        .eq('sudah_diproses', false);
 
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        document.getElementById('selisihList').innerHTML = '<div class="empty-state">Tidak ada selisih pada periode ini.</div>';
+        document.getElementById('selisihList').innerHTML = '<div class="empty-state">Tidak ada selisih yang perlu diproses.</div>';
         return;
       }
 
-      // Kelompokkan berdasarkan pembelian_id agar tidak duplikat
+      // Kelompokkan berdasarkan pembelian_id
       const grouped = {};
       data.forEach(item => {
         const key = item.pembelian_id;
@@ -642,21 +644,23 @@
             distributor_id: item.pembelian?.distributor_id || null,
             total_selisih: 0,
             qty_pesan: item.pembelian?.qty_pesan || 0,
+            penerimaan_ids: []
           };
         }
         grouped[key].total_selisih += Number(item.selisih) || 0;
+        grouped[key].penerimaan_ids.push(item.id);
       });
 
       const list = Object.values(grouped);
       const container = document.getElementById('selisihList');
       container.innerHTML = list.map(item => `
-        <div class="selisih-card">
+        <div class="selisih-card" data-pembelian="${item.pembelian_id}" data-barang="${item.barang_id}" data-selisih="${item.total_selisih}" data-distributor="${item.distributor_id || ''}">
           <div class="info">
             <strong>PO: ${escapeHtml(item.no_po)}</strong><br>
             Barang: ${escapeHtml(item.nama_barang)}<br>
             Selisih: <strong>${item.total_selisih.toLocaleString('id-ID')} ${escapeHtml(item.satuan_beli)}</strong>
           </div>
-          <button class="btn btn-primary" onclick="window.buatPoUlang(${item.pembelian_id}, ${item.barang_id}, ${item.total_selisih}, '${item.distributor_id}')">
+          <button class="btn btn-primary" onclick="window.bukaFormPoUlang('${item.pembelian_id}', '${item.barang_id}', ${item.total_selisih}, '${item.distributor_id || ''}', '${escapeHtml(item.no_po)}', '${escapeHtml(item.nama_barang)}')">
             Buat PO Ulang
           </button>
         </div>
@@ -670,46 +674,130 @@
     document.getElementById('modalSelisih').classList.remove('show');
   };
 
-  window.buatPoUlang = async function(pembelianId, barangId, selisihQty, distributorId) {
-    if (!confirm(`Buat PO ulang untuk selisih ${selisihQty} unit?`)) return;
+  // Form PO Ulang (menggunakan modal overlay yang sama dengan form biasa, tapi kita buat dinamis)
+  window.bukaFormPoUlang = function(pembelianId, barangId, selisihQty, distributorId, noPoLama, namaBarang) {
+    // Kita gunakan modal yang ada (modalOverlay) tapi ubah judul dan field
+    document.getElementById('modalTitle').textContent = 'Buat PO Ulang dari Selisih';
+    document.getElementById('fNoPo').value = ''; // kosong, nanti auto generate
+    document.getElementById('fNoPo').placeholder = 'Otomatis: PO-RE-...';
+    document.getElementById('fNoPo').readOnly = true;
+    document.getElementById('fBarang').value = barangId;
+    document.getElementById('fBarang').disabled = true; // tidak bisa ubah barang
+    document.getElementById('fDistributor').value = distributorId;
+    // isi qty dengan selisih
+    document.getElementById('fQty').value = selisihQty;
+    // tanggal otomatis hari ini
+    document.getElementById('fTanggal').value = new Date().toISOString().slice(0,10);
+    // status default DIKIRIM
+    document.getElementById('fStatus').value = 'DIKIRIM';
 
-    const msg = document.getElementById('selisihMsg');
+    // Tampilkan informasi tambahan
+    const infoDiv = document.getElementById('formInfo');
+    if (!infoDiv) {
+      const div = document.createElement('div');
+      div.id = 'formInfo';
+      div.style.cssText = 'background:#E7F5EC; padding:10px; border-radius:8px; margin-bottom:12px; font-size:13px;';
+      div.innerHTML = `📦 PO Lama: <strong>${escapeHtml(noPoLama)}</strong><br>Barang: <strong>${escapeHtml(namaBarang)}</strong><br>Selisih: <strong>${selisihQty}</strong>`;
+      document.getElementById('modalOverlay').querySelector('.modal').insertBefore(div, document.getElementById('fNoPo').parentNode);
+    } else {
+      infoDiv.innerHTML = `📦 PO Lama: <strong>${escapeHtml(noPoLama)}</strong><br>Barang: <strong>${escapeHtml(namaBarang)}</strong><br>Selisih: <strong>${selisihQty}</strong>`;
+    }
+
+    // Simpan data selisih ke variabel global untuk dipakai saat submit
+    window._selisihData = {
+      pembelian_id: pembelianId,
+      barang_id: barangId,
+      qty_selisih: selisihQty,
+      distributor_id: distributorId
+    };
+
+    // Ubah tombol simpan
+    const simpanBtn = document.querySelector('#modalOverlay .btn-primary');
+    simpanBtn.textContent = 'Buat PO Ulang';
+    simpanBtn.onclick = window.submitPoUlang;
+
+    // Tampilkan modal form
+    document.getElementById('modalOverlay').classList.add('show');
+  };
+
+  window.submitPoUlang = async function() {
+    const msg = document.getElementById('formMsg');
+    const qty = Number(document.getElementById('fQty').value) || 0;
+    const distId = document.getElementById('fDistributor').value;
+    const tanggal = document.getElementById('fTanggal').value;
+
+    if (qty <= 0) {
+      msg.textContent = 'Qty harus > 0.';
+      return;
+    }
+    if (!distId) {
+      msg.textContent = 'Pilih distributor.';
+      return;
+    }
+
     msg.textContent = 'Membuat PO ulang...';
 
     try {
-      // Generate nomor PO otomatis (contoh: PO-RE-{timestamp})
+      const dataSelisih = window._selisihData;
       const now = new Date();
       const timestamp = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '-' + String(Date.now()).slice(-6);
       const noPo = 'PO-RE-' + timestamp;
-
       const bulan = document.getElementById('bulanSelect').value;
       const tahun = document.getElementById('tahunSelect').value;
 
-      const { data, error } = await window.supabase.from('pembelian').insert({
+      // Insert pembelian baru
+      const { data: newPo, error: insertError } = await window.supabase.from('pembelian').insert({
         no_po: noPo,
-        barang_id: barangId,
-        distributor_id: distributorId || null,
+        barang_id: dataSelisih.barang_id,
+        distributor_id: distId,
         bulan: bulan,
         tahun: tahun,
-        qty_pesan: selisihQty,
-        tanggal_po: now.toISOString().slice(0,10),
+        qty_pesan: qty,
+        tanggal_po: tanggal || now.toISOString().slice(0,10),
         status: 'DIKIRIM'
       }).select();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
-      msg.textContent = '✅ PO ulang berhasil dibuat: ' + noPo;
+      // Update penerimaan terkait: tandai sudah_diproses = true
+      const { error: updateError } = await window.supabase
+        .from('penerimaan')
+        .update({ sudah_diproses: true })
+        .eq('pembelian_id', dataSelisih.pembelian_id)
+        .eq('barang_id', dataSelisih.barang_id)
+        .gt('selisih', 0);
+
+      if (updateError) throw updateError;
+
+      msg.textContent = '✅ PO Ulang berhasil dibuat: ' + noPo;
       msg.style.color = 'var(--green-mid)';
 
-      // Refresh data
+      // Tutup modal form
       setTimeout(() => {
-        closeSelisihModal();
+        window.closeForm();
+        // Refresh daftar selisih dan tabel PO
+        window.openSelisihModal();
         loadAllData();
-      }, 1500);
+      }, 1200);
+
     } catch (err) {
       msg.textContent = '❌ Gagal: ' + err.message;
       msg.style.color = 'var(--coral)';
     }
+  };
+
+  // Override closeForm untuk reset tombol
+  const originalCloseForm = window.closeForm;
+  window.closeForm = function() {
+    document.getElementById('fNoPo').readOnly = false;
+    document.getElementById('fNoPo').placeholder = 'Nomor PO dari sistem RS';
+    document.getElementById('fBarang').disabled = false;
+    const infoDiv = document.getElementById('formInfo');
+    if (infoDiv) infoDiv.remove();
+    const simpanBtn = document.querySelector('#modalOverlay .btn-primary');
+    simpanBtn.textContent = 'Simpan PO';
+    simpanBtn.onclick = window.submitForm;
+    originalCloseForm();
   };
 
   // ============================================================
