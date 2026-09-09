@@ -6,46 +6,18 @@
   <title>Penerimaan Barang — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* ===== GAYA SAMA SEPERTI SEBELUMNYA ===== */
-    :root {
-      --green-deep: #0F3D2E;
-      --green-mid: #16A34A;
-      --green-bright: #3FCF6A;
-      --green-soft: #E7F5EC;
-      --bg: #F4F7F4;
-      --card: #FFFFFF;
-      --text-dark: #14201A;
-      --text-muted: #6B7A72;
-      --amber: #D97706;
-      --coral: #DC5B45;
-      --border: #E4EAE5;
-    }
+    :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      color: var(--text-dark);
-    }
-    header.topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: var(--green-deep); color: #fff; padding: 18px 24px;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 12px;
-    }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark {
-      width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 14px; color: var(--green-deep);
-    }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
     .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
     .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
     .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
     a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
     a.back:hover { color: #fff; }
-
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
     .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
     .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
@@ -54,55 +26,33 @@
     .field { margin-bottom: 12px; }
     .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
     .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-    @media (max-width: 860px) {
-      .layout-split { grid-template-columns: 1fr; }
-      .left-col { position: static; }
-    }
-
-    .stat-row {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px;
-    }
+    @media (max-width: 860px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
     .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
     .stat-card.warn { border-color: #F3D0C4; background: #FDF6F3; }
     .stat-card .num { font-size: 20px; font-weight: 700; }
     .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-
     h2.section { font-size: 15px; margin: 0 0 12px; }
-
     .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; margin-bottom: 24px; }
     table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 900px; }
     th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
     th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
     td.num { text-align: right; }
-
     .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
     .badge.ok { background: var(--green-soft); color: var(--green-mid); }
     .badge.selisih { background: #FBEAE7; color: var(--coral); }
-
-    .btn {
-      padding: 7px 14px; border: none; border-radius: 8px; font-weight: 600;
-      font-size: 12.5px; cursor: pointer;
-    }
+    .btn { padding: 7px 14px; border: none; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-primary { background: var(--green-mid); color: #fff; }
     .btn-primary:hover { background: #128a3e; }
     .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
-
-    #modalOverlay {
-      display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45);
-      align-items: center; justify-content: center; z-index: 40; padding: 20px;
-    }
+    #modalOverlay { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
     #modalOverlay.show { display: flex; }
-    .modal {
-      background: #fff; border-radius: 16px; width: 100%; max-width: 460px;
-      max-height: 90vh; overflow-y: auto; padding: 26px;
-    }
+    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; padding: 26px; }
     .modal h2 { font-size: 16px; margin: 0 0 4px; }
     .modal .po-info { font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
     .field { margin-bottom: 12px; }
     .field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
-    .field input, .field select {
-      width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px;
-    }
+    .field input, .field select { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; }
     .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
@@ -114,10 +64,7 @@
 <header class="topbar">
   <div class="brand">
     <div class="mark">RS</div>
-    <div>
-      <div class="title">RKO RSAMP</div>
-      <div class="label">Penerimaan barang — cocokkan vs PO</div>
-    </div>
+    <div><div class="title">RKO RSAMP</div><div class="label">Penerimaan barang — cocokkan vs PO</div></div>
   </div>
   <div class="topbar-right">
     <span class="who" id="whoLabel"></span>
@@ -136,88 +83,30 @@
     <aside class="left-col">
       <div class="panel side-panel">
         <h2 class="side-title">Cari &amp; Filter</h2>
-        <div class="field">
-          <label>Cari nama barang / no. PO</label>
-          <input type="text" id="searchBox" placeholder="Cari nama barang atau no. PO...">
-        </div>
-        <div class="field">
-          <label>Golongan</label>
-          <select id="filterGolongan">
-            <option value="">Semua golongan</option>
-            <option value="OBAT">Obat</option>
-            <option value="BMHP">BMHP</option>
-            <option value="BHP">BHP</option>
-            <option value="B3">B3</option>
-            <option value="NUTRISI ENTERAL">Nutrisi Enteral</option>
-            <option value="PROGRAM">Program</option>
-            <option value="PROGRAM TB">Program TB</option>
-            <option value="PROGRAM HIV">Program HIV</option>
-            <option value="PROGRAM MALARIA">Program Malaria</option>
-            <option value="PROGRAM RABIES">Program Rabies</option>
-            <option value="PROGRAM BKKBN">Program BKKBN</option>
-            <option value="PROGRAM COVID">Program Covid</option>
-            <option value="PROGRAM STUNTING">Program Stunting</option>
-            <option value="PROGRAM IMUNISASI">Program Imunisasi</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Bulan</label>
-          <select id="bulanSelect"></select>
-        </div>
-        <div class="field">
-          <label>Tahun</label>
-          <select id="tahunSelect"></select>
-        </div>
+        <div class="field"><label>Cari nama barang / no. PO</label><input type="text" id="searchBox" placeholder="Cari nama barang atau no. PO..."></div>
+        <div class="field"><label>Golongan</label><select id="filterGolongan"><option value="">Semua golongan</option><option value="OBAT">Obat</option><option value="BMHP">BMHP</option><option value="BHP">BHP</option><option value="B3">B3</option><option value="NUTRISI ENTERAL">Nutrisi Enteral</option><option value="PROGRAM">Program</option><option value="PROGRAM TB">Program TB</option><option value="PROGRAM HIV">Program HIV</option><option value="PROGRAM MALARIA">Program Malaria</option><option value="PROGRAM RABIES">Program Rabies</option><option value="PROGRAM BKKBN">Program BKKBN</option><option value="PROGRAM COVID">Program Covid</option><option value="PROGRAM STUNTING">Program Stunting</option><option value="PROGRAM IMUNISASI">Program Imunisasi</option></select></div>
       </div>
     </aside>
-
     <section class="right-col">
       <h2 class="section">PO menunggu penerimaan</h2>
-      <div class="panel">
-        <table>
-          <thead><tr><th>No. PO</th><th>Nama barang</th><th>Distributor</th><th class="num">Qty dipesan</th><th>Tanggal PO</th><th></th></tr></thead>
-          <tbody id="tableOpenPO"><tr><td colspan="6" class="empty-state">Memuat data...</td></tr></tbody>
-        </table>
-      </div>
+      <div class="panel"><table><thead><tr><th>No. PO</th><th>Nama barang</th><th>Distributor</th><th class="num">Qty dipesan</th><th>Tanggal PO</th><th></th></tr></thead><tbody id="tableOpenPO"><tr><td colspan="6" class="empty-state">Memuat data...</td></tr></tbody></table></div>
 
       <h2 class="section">Riwayat penerimaan</h2>
-      <div class="panel">
-        <table>
-          <thead><tr><th>No. PO</th><th>Nama barang</th><th class="num">Qty diterima</th><th class="num">Selisih</th><th>No. batch</th><th>Kadaluarsa</th><th>Kondisi</th></tr></thead>
-          <tbody id="tableRiwayat"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
-        </table>
-      </div>
+      <div class="panel"><table><thead><tr><th>No. PO</th><th>Nama barang</th><th class="num">Qty diterima</th><th class="num">Selisih</th><th>No. batch</th><th>Kadaluarsa</th><th>Kondisi</th></tr></thead><tbody id="tableRiwayat"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody></table></div>
     </section>
   </div>
 </main>
 
-<!-- MODAL TERIMA BARANG -->
 <div id="modalOverlay">
   <div class="modal">
     <h2>Terima Barang</h2>
     <div class="po-info" id="modalPoInfo"></div>
-    <input type="hidden" id="fPembelianId">
-    <input type="hidden" id="fBarangId">
-    <div class="field-row">
-      <div class="field"><label>Qty diterima</label><input type="number" id="fQtyDiterima" placeholder="0"></div>
-      <div class="field"><label>Tanggal terima</label><input type="date" id="fTanggalTerima"></div>
-    </div>
-    <div class="field-row">
-      <div class="field"><label>No. batch</label><input type="text" id="fNoBatch"></div>
-      <div class="field"><label>Tanggal kadaluarsa</label><input type="date" id="fKadaluarsa"></div>
-    </div>
-    <div class="field">
-      <label>Kondisi barang</label>
-      <select id="fKondisi">
-        <option value="BAIK">Baik</option>
-        <option value="RUSAK">Rusak</option>
-      </select>
-    </div>
+    <input type="hidden" id="fPembelianId"><input type="hidden" id="fBarangId">
+    <div class="field-row"><div class="field"><label>Qty diterima</label><input type="number" id="fQtyDiterima" placeholder="0"></div><div class="field"><label>Tanggal terima</label><input type="date" id="fTanggalTerima"></div></div>
+    <div class="field-row"><div class="field"><label>No. batch</label><input type="text" id="fNoBatch"></div><div class="field"><label>Tanggal kadaluarsa</label><input type="date" id="fKadaluarsa"></div></div>
+    <div class="field"><label>Kondisi barang</label><select id="fKondisi"><option value="BAIK">Baik</option><option value="RUSAK">Rusak</option></select></div>
     <div class="form-msg" id="formMsg"></div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="window.closeForm()">Batal</button>
-      <button class="btn btn-primary" onclick="window.submitForm()">Simpan Penerimaan</button>
-    </div>
+    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeForm()">Batal</button><button class="btn btn-primary" onclick="submitForm()">Simpan Penerimaan</button></div>
   </div>
 </div>
 
@@ -263,53 +152,27 @@
     }[s]));
   }
 
-  // ============================================================
-  //  FILL PERIODE OPTIONS
-  // ============================================================
-  function fillPeriodOptions(curBulan, curTahun) {
-    const bulanSel = document.getElementById('bulanSelect');
-    const tahunSel = document.getElementById('tahunSelect');
-    bulanSel.innerHTML = '';
-    tahunSel.innerHTML = '';
-
-    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    namaBulan.forEach((nm, i) => {
-      const opt = document.createElement('option');
-      opt.value = i + 1;
-      opt.textContent = nm;
-      if (i + 1 === curBulan) opt.selected = true;
-      bulanSel.appendChild(opt);
-    });
-
-    const tahunAwal = curTahun - 2;
-    const tahunAkhir = curTahun + 2;
-    for (let y = tahunAwal; y <= tahunAkhir; y++) {
-      const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y;
-      if (y === curTahun) opt.selected = true;
-      tahunSel.appendChild(opt);
-    }
-    console.log('✅ Periode options diisi');
+  function getFilterState() {
+    return {
+      q: (document.getElementById('searchBox').value || '').toLowerCase().trim(),
+      golongan: document.getElementById('filterGolongan').value
+    };
   }
 
   // ============================================================
   //  LOAD DATA
   // ============================================================
   async function loadAllData() {
-    const bulan = document.getElementById('bulanSelect').value;
-    const tahun = document.getElementById('tahunSelect').value;
-    console.log(`🔍 Memuat data penerimaan untuk bulan=${bulan}, tahun=${tahun}`);
-
     document.getElementById('tableOpenPO').innerHTML = '<tr><td colspan="6" class="empty-state">Memuat data...</td></tr>';
     document.getElementById('tableRiwayat').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
 
     try {
+      console.log('🔍 Memuat data penerimaan...');
       const [barangRes, distRes, pembelianRes, penerimaanRes] = await Promise.all([
         window.supabase.from('master_barang').select('*'),
         window.supabase.from('master_distributor').select('*'),
-        window.supabase.from('pembelian').select('*').eq('bulan', bulan).eq('tahun', tahun),
-        window.supabase.from('penerimaan').select('*').eq('bulan', bulan).eq('tahun', tahun)
+        window.supabase.from('pembelian').select('*'),
+        window.supabase.from('penerimaan').select('*')
       ]);
 
       if (barangRes.error) throw new Error('Barang: ' + barangRes.error.message);
@@ -343,12 +206,17 @@
   // ============================================================
   function updateSummary() {
     const menunggu = pembelianList.filter(p => p.status === 'DIKIRIM').length;
+
     const now = new Date();
-    const bulan = document.getElementById('bulanSelect').value;
-    const tahun = document.getElementById('tahunSelect').value;
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
     const diterimaBulanIni = penerimaanList.filter(p => {
-      return Number(p.bulan) === Number(bulan) && Number(p.tahun) === Number(tahun);
+      if (!p.tanggal_terima) return false;
+      const d = new Date(p.tanggal_terima);
+      return !isNaN(d) && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     }).length;
+
     const selisihCount = penerimaanList.filter(p => Number(p.selisih) !== 0).length;
 
     document.getElementById('statMenunggu').textContent = menunggu;
@@ -357,29 +225,28 @@
   }
 
   // ============================================================
-  //  GET FILTER STATE
-  // ============================================================
-  function getFilterState() {
-    return {
-      q: (document.getElementById('searchBox').value || '').toLowerCase(),
-      golongan: document.getElementById('filterGolongan').value
-    };
-  }
-
-  // ============================================================
   //  RENDER OPEN PO
   // ============================================================
   function renderOpenPO() {
     const { q, golongan } = getFilterState();
+    console.log(`🔍 renderOpenPO, q: "${q}", golongan: "${golongan}"`);
 
-    const openList = pembelianList.filter(p => {
-      if (p.status !== 'DIKIRIM') return false;
+    // Filter PO yang status DIKIRIM
+    let openList = pembelianList.filter(p => p.status === 'DIKIRIM');
+
+    // Filter berdasarkan search & golongan
+    openList = openList.filter(p => {
       const barang = barangMap[p.barang_id];
       const nama = barang ? barang.nama_barang : '';
-      const matchQ = !q || nama.toLowerCase().includes(q) || String(p.no_po).toLowerCase().includes(q);
+      const noPo = p.no_po || '';
+
+      const matchQ = !q || nama.toLowerCase().includes(q) || noPo.toLowerCase().includes(q);
       const matchG = !golongan || (barang && barang.golongan === golongan);
+
       return matchQ && matchG;
     });
+
+    console.log(`✅ openList setelah filter: ${openList.length} PO`);
 
     const tbody = document.getElementById('tableOpenPO');
     if (openList.length === 0) {
@@ -390,14 +257,16 @@
     tbody.innerHTML = openList.map(p => {
       const barang = barangMap[p.barang_id] || {};
       const dist = distributorMap[p.distributor_id];
-      return `<tr>
-        <td>${escapeHtml(p.no_po)}</td>
-        <td>${escapeHtml(barang.nama_barang || 'Tidak dikenal')}</td>
-        <td>${escapeHtml(dist ? dist.nama_distributor : '-')}</td>
-        <td class="num">${Number(p.qty_pesan || 0).toLocaleString('id-ID')}</td>
-        <td>${escapeHtml(p.tanggal_po || '-')}</td>
-        <td><button class="btn btn-primary" onclick="window.openForm(${p.id}, ${p.barang_id}, '${escapeHtml(p.no_po)}', ${p.qty_pesan})">Terima</button></td>
-      </tr>`;
+      return `
+        <tr>
+          <td>${escapeHtml(p.no_po)}</td>
+          <td>${escapeHtml(barang.nama_barang || 'Tidak dikenal')}</td>
+          <td>${escapeHtml(dist ? dist.nama_distributor : '-')}</td>
+          <td class="num">${Number(p.qty_pesan || 0).toLocaleString('id-ID')}</td>
+          <td>${escapeHtml(p.tanggal_po || '-')}</td>
+          <td><button class="btn btn-primary" onclick="window.openForm(${p.id}, ${p.barang_id}, '${escapeHtml(p.no_po)}', ${p.qty_pesan})">Terima</button></td>
+        </tr>
+      `;
     }).join('');
   }
 
@@ -406,15 +275,24 @@
   // ============================================================
   function renderRiwayat() {
     const { q, golongan } = getFilterState();
+    console.log(`🔍 renderRiwayat, q: "${q}", golongan: "${golongan}"`);
 
-    const filtered = penerimaanList.filter(p => {
+    let filtered = penerimaanList.filter(p => {
       const po = pembelianList.find(x => x.id === p.pembelian_id);
       const barang = barangMap[p.barang_id];
       const nama = barang ? barang.nama_barang : '';
-      const matchQ = !q || nama.toLowerCase().includes(q) || String(po ? po.no_po : '').toLowerCase().includes(q);
+      const noPo = po ? po.no_po : '';
+
+      const matchQ = !q || nama.toLowerCase().includes(q) || noPo.toLowerCase().includes(q);
       const matchG = !golongan || (barang && barang.golongan === golongan);
+
       return matchQ && matchG;
     });
+
+    // Urutkan terbaru di atas
+    filtered.sort((a, b) => new Date(b.tanggal_terima) - new Date(a.tanggal_terima));
+
+    console.log(`✅ filtered riwayat: ${filtered.length} item`);
 
     const tbody = document.getElementById('tableRiwayat');
     if (filtered.length === 0) {
@@ -422,25 +300,26 @@
       return;
     }
 
-    const sorted = [...filtered].reverse();
-    tbody.innerHTML = sorted.map(p => {
+    tbody.innerHTML = filtered.map(p => {
       const po = pembelianList.find(x => x.id === p.pembelian_id);
       const barang = barangMap[p.barang_id] || {};
       const selisih = Number(p.selisih) || 0;
-      return `<tr>
-        <td>${escapeHtml(po ? po.no_po : '-')}</td>
-        <td>${escapeHtml(barang.nama_barang || 'Tidak dikenal')}</td>
-        <td class="num">${Number(p.qty_diterima || 0).toLocaleString('id-ID')}</td>
-        <td class="num"><span class="badge ${selisih === 0 ? 'ok' : 'selisih'}">${selisih === 0 ? 'Sesuai' : (selisih > 0 ? '+' : '') + selisih}</span></td>
-        <td>${escapeHtml(p.no_batch || '-')}</td>
-        <td>${escapeHtml(p.tanggal_kadaluarsa || '-')}</td>
-        <td>${escapeHtml(p.kondisi || '-')}</td>
-      </tr>`;
+      return `
+        <tr>
+          <td>${escapeHtml(po ? po.no_po : '-')}</td>
+          <td>${escapeHtml(barang.nama_barang || 'Tidak dikenal')}</td>
+          <td class="num">${Number(p.qty_diterima || 0).toLocaleString('id-ID')}</td>
+          <td class="num"><span class="badge ${selisih === 0 ? 'ok' : 'selisih'}">${selisih === 0 ? 'Sesuai' : (selisih > 0 ? '+' : '') + selisih}</span></td>
+          <td>${escapeHtml(p.no_batch || '-')}</td>
+          <td>${escapeHtml(p.tanggal_kadaluarsa || '-')}</td>
+          <td>${escapeHtml(p.kondisi || '-')}</td>
+        </tr>
+      `;
     }).join('');
   }
 
   // ============================================================
-  //  OPEN / CLOSE FORM
+  //  FORM TERIMA
   // ============================================================
   window.openForm = function(pembelianId, barangId, noPo, qtyPesan) {
     document.getElementById('formMsg').textContent = '';
@@ -459,79 +338,58 @@
     document.getElementById('modalOverlay').classList.remove('show');
   };
 
-  // ============================================================
-  //  SUBMIT FORM
-  // ============================================================
   window.submitForm = async function() {
     const msg = document.getElementById('formMsg');
     const qty = Number(document.getElementById('fQtyDiterima').value) || 0;
-    const pembelianId = Number(document.getElementById('fPembelianId').value);
-    const barangId = Number(document.getElementById('fBarangId').value);
-
     if (qty <= 0) {
-      msg.textContent = 'Qty diterima harus lebih dari 0.';
-      return;
-    }
-
-    // Cari data PO untuk validasi
-    const po = pembelianList.find(p => p.id === pembelianId);
-    if (!po) {
-      msg.textContent = 'Data PO tidak ditemukan.';
-      return;
-    }
-
-    if (qty > Number(po.qty_pesan)) {
-      msg.textContent = 'Qty diterima tidak boleh melebihi qty pesan (' + po.qty_pesan + ').';
+      msg.textContent = 'Qty diterima harus > 0.';
       return;
     }
 
     msg.textContent = 'Menyimpan...';
-    msg.style.color = 'var(--text-muted)';
-
-    const btn = document.querySelector('#modalOverlay .btn-primary');
-    btn.disabled = true;
-    btn.textContent = 'Menyimpan...';
-
     try {
-      const selisih = Number(po.qty_pesan) - qty;
+      const pembelianId = Number(document.getElementById('fPembelianId').value);
+      const barangId = Number(document.getElementById('fBarangId').value);
+
+      // Ambil qty pesan dari pembelian
+      const { data: pembelian, error: poError } = await window.supabase
+        .from('pembelian')
+        .select('qty_pesan')
+        .eq('id', pembelianId)
+        .single();
+
+      if (poError) throw poError;
+
+      const selisih = Number(pembelian.qty_pesan) - qty;
 
       // Insert penerimaan
-      const { error: insertError } = await window.supabase.from('penerimaan').insert({
-        pembelian_id: pembelianId,
-        barang_id: barangId,
-        qty_diterima: qty,
-        tanggal_terima: document.getElementById('fTanggalTerima').value,
-        no_batch: document.getElementById('fNoBatch').value.trim(),
-        tanggal_kadaluarsa: document.getElementById('fKadaluarsa').value,
-        kondisi: document.getElementById('fKondisi').value,
-        selisih: selisih,
-        bulan: document.getElementById('bulanSelect').value,
-        tahun: document.getElementById('tahunSelect').value
-      });
-      if (insertError) throw insertError;
+      const { error } = await window.supabase
+        .from('penerimaan')
+        .insert({
+          pembelian_id: pembelianId,
+          barang_id: barangId,
+          qty_diterima: qty,
+          tanggal_terima: document.getElementById('fTanggalTerima').value,
+          no_batch: document.getElementById('fNoBatch').value.trim(),
+          tanggal_kadaluarsa: document.getElementById('fKadaluarsa').value,
+          kondisi: document.getElementById('fKondisi').value,
+          selisih: selisih
+        });
+
+      if (error) throw error;
 
       // Update status pembelian
       const statusBaru = selisih === 0 ? 'SELESAI' : 'DITERIMA_SEBAGIAN';
-      const { error: updateError } = await window.supabase
+      await window.supabase
         .from('pembelian')
         .update({ status: statusBaru })
         .eq('id', pembelianId);
-      if (updateError) throw updateError;
 
-      msg.textContent = '✅ Berhasil disimpan!';
-      msg.style.color = 'var(--green-mid)';
-
-      setTimeout(() => {
-        window.closeForm();
-        loadAllData();
-      }, 1000);
+      window.closeForm();
+      await loadAllData();
     } catch (err) {
       console.error('❌ Error submitForm:', err);
       msg.textContent = 'Gagal: ' + err.message;
-      msg.style.color = 'var(--coral)';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Simpan Penerimaan';
     }
   };
 
@@ -539,29 +397,22 @@
   //  EVENT LISTENERS
   // ============================================================
   document.addEventListener('DOMContentLoaded', function() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    const searchBox = document.getElementById('searchBox');
+    const filterGolongan = document.getElementById('filterGolongan');
 
-    document.getElementById('searchBox').addEventListener('input', function() {
+    searchBox.addEventListener('input', function() {
+      console.log('🔍 Search box input:', this.value);
       renderOpenPO();
       renderRiwayat();
     });
 
-    document.getElementById('filterGolongan').addEventListener('change', function() {
+    filterGolongan.addEventListener('change', function() {
+      console.log('🔍 Filter golongan:', this.value);
       renderOpenPO();
       renderRiwayat();
     });
 
-    document.getElementById('bulanSelect').addEventListener('change', function() {
-      console.log('📅 Bulan berubah ke:', this.value);
-      loadAllData();
-    });
-
-    document.getElementById('tahunSelect').addEventListener('change', function() {
-      console.log('📅 Tahun berubah ke:', this.value);
-      loadAllData();
-    });
-
+    // Load data
     loadAllData();
   });
 </script>
