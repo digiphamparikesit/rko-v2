@@ -655,22 +655,22 @@
   };
 
   window.tambahBarangKeRuangan = async function(barangId) {
-    try {
-      const { error } = await window.supabase
-        .from('barang_ruangan')
-        .insert({
-          ruangan_id: activeRuanganId,
-          barang_id: barangId,
-          status_aktif: true
-        });
+  try {
+    const { error } = await window.supabase
+      .from('barang_ruangan')
+      .insert({
+        ruangan_id: activeRuanganId,
+        barang_id: barangId,
+        status_aktif: true
+      });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      closeTambahBarangModal();
-      await loadBarangDanKebutuhan();
-    } catch (err) {
-      alert('Gagal menambahkan: ' + err.message);
-    }
+    closeTambahBarangModal();
+    await loadBarangDanKebutuhan();
+  } catch (err) {
+    alert('Gagal menambahkan: ' + err.message);
+  }
   };
 
   // ============================================================
