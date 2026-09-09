@@ -172,7 +172,7 @@
       // Ambil data yang dibutuhkan
       const [rencanaRes, kebutuhanRes, barangRes, distributorRes, penjualanRes, pembelianRes, kunjunganRes] = await Promise.all([
         supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun),
-        supabase.from('kebutuhan').select('*, master_ruangan(nama_ruangan)').eq('bulan', bulan).eq('tahun', tahun),
+        supabase.from('kebutuhan').select('*, master_ruangan(nama_ruangan), master_barang(hpp_beli)').eq('bulan', bulan).eq('tahun', tahun),
         supabase.from('master_barang').select('*').eq('status_aktif', true),
         supabase.from('master_distributor').select('*'),
         supabase.from('penjualan').select('*').eq('bulan', bulan).eq('tahun', tahun),
