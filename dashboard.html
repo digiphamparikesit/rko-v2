@@ -218,9 +218,9 @@
       // Chart per instalasi
       const perInstalasi = {};
       kebutuhan.forEach(k => {
-        const nama = k.master_ruangan ? k.master_ruangan.nama_ruangan : 'Unit ' + k.ruangan_id;
-        const nilai = Number(k.kebutuhan) * Number(k.master_barang ? k.master_barang.hpp_beli : 0);
-        perInstalasi[nama] = (perInstalasi[nama] || 0) + nilai;
+      const nama = k.master_ruangan ? k.master_ruangan.nama_ruangan : 'Unit ' + k.ruangan_id;
+      const nilai = Number(k.kebutuhan) * Number(k.master_barang ? k.master_barang.hpp_beli : 0);
+      perInstalasi[nama] = (perInstalasi[nama] || 0) + nilai;
       });
       const labels = Object.keys(perInstalasi);
       const values = labels.map(l => Math.round(perInstalasi[l] / 1000000));
