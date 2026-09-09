@@ -185,7 +185,7 @@
     <p>Rencana belanja vs realisasi, per bulan dan per barang, untuk 1 tahun anggaran</p>
   </div>
 
-  <!-- ERROR -->
+  <!-- ERROR CONTAINER -->
   <div id="errorContainer" style="display:none;" class="error-box"></div>
 
   <!-- Statistik -->
@@ -196,11 +196,14 @@
     <div class="stat-card"><div class="num" id="statCapaian">-</div><div class="lbl">Capaian realisasi</div></div>
   </section>
 
-  <!-- Grafik Tren -->
-  <div class="panel">
+  <!-- Grafik Tren (dengan error handling) -->
+  <div class="panel" id="panelTren">
     <h2>Tren bulanan: rencana vs realisasi</h2>
     <p class="sub">Dalam juta rupiah</p>
     <canvas id="chartTren" height="90"></canvas>
+    <div id="chartTrenError" style="display:none; color:var(--coral); text-align:center; padding:20px;">
+      ⚠️ Grafik tidak dapat ditampilkan. Data tetap tersedia di tabel.
+    </div>
   </div>
 
   <!-- Grid 2: Top Barang + Rekap Bulanan -->
@@ -210,6 +213,9 @@
       <p class="sub">Sepanjang tahun berjalan</p>
       <canvas id="chartTopBarang" height="220"></canvas>
       <div class="empty-mini" id="topBarangEmpty" style="display:none;">Belum ada data realisasi tahun ini.</div>
+      <div id="chartTopError" style="display:none; color:var(--coral); text-align:center; padding:20px;">
+        ⚠️ Grafik tidak dapat ditampilkan.
+      </div>
     </div>
     <div class="panel">
       <h2>Rekap per bulan</h2>
@@ -227,6 +233,9 @@
     <p class="sub">Dari data upload menu Penjualan &middot; dalam juta rupiah</p>
     <canvas id="chartPenjualan" height="90"></canvas>
     <div class="empty-mini" id="penjualanTahunanEmpty" style="display:none;">Belum ada data penjualan untuk tahun ini.</div>
+    <div id="chartPenjualanError" style="display:none; color:var(--coral); text-align:center; padding:20px;">
+      ⚠️ Grafik tidak dapat ditampilkan.
+    </div>
     <div class="mini-stat-row" style="margin-top:16px;">
       <div><div class="mini-num" id="statTotalHpp">-</div><div class="mini-lbl">Total HPP terjual</div></div>
       <div><div class="mini-num" id="statTotalJual">-</div><div class="mini-lbl">Total harga jual</div></div>
@@ -242,6 +251,7 @@
       <div class="empty-mini">Memuat data...</div>
     </div>
   </div>
+  <!-- ===== END LAPORAN SELISIH ===== -->
 
 </main>
 
@@ -276,7 +286,9 @@
   //  VARIABLES
   // ============================================================
   const NAMA_BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  let chartTren, chartTopBarang, chartPenjualan;
+  let chartTren = null;
+  let chartTopBarang = null;
+  let chartPenjualan = null;
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -311,23 +323,14 @@
     hideError();
 
     try {
-      // Query 1: Rencana & Realisasi per bulan
-      const [rencanaRes, realisasiRes, penjualanRes, barangRes, pembelianRes, penerimaanRes] = await Promise.all([
+      const [rencanaRes, realisasiRes, penjualanRes, barangRes, penerimaanRes, pembelianRes] = await Promise.all([
         window.supabase.from('rencana_belanja').select('*').eq('tahun', tahun),
         window.supabase.from('realisasi').select('*').eq('tahun', tahun),
         window.supabase.from('penjualan').select('*').eq('tahun', tahun),
         window.supabase.from('master_barang').select('*'),
-        window.supabase.from('pembelian').select('*').eq('tahun', tahun), // ambil semua PO tahun ini
-        window.supabase.from('penerimaan').select('*') // ambil SEMUA penerimaan (tanpa filter tahun, karena tidak ada kolom tahun)
+        window.supabase.from('penerimaan').select('*, pembelian(no_po, distributor_id)').eq('tahun', tahun),
+        window.supabase.from('pembelian').select('*').eq('tahun', tahun)
       ]);
-
-      // Cek error
-      if (rencanaRes.error) throw new Error('Rencana: ' + rencanaRes.error.message);
-      if (realisasiRes.error) throw new Error('Realisasi: ' + realisasiRes.error.message);
-      if (penjualanRes.error) throw new Error('Penjualan: ' + penjualanRes.error.message);
-      if (barangRes.error) throw new Error('Barang: ' + barangRes.error.message);
-      if (pembelianRes.error) throw new Error('Pembelian: ' + pembelianRes.error.message);
-      if (penerimaanRes.error) throw new Error('Penerimaan: ' + penerimaanRes.error.message);
 
       const rencana = rencanaRes.data || [];
       const realisasi = realisasiRes.data || [];
@@ -335,10 +338,10 @@
       const barangMap = {};
       (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
 
-      const pembelian = pembelianRes.data || [];
       const penerimaan = penerimaanRes.data || [];
+      const pembelian = pembelianRes.data || [];
 
-      // ---- Statistik & Grafik (sama seperti sebelumnya) ----
+      // ---- Statistik ----
       const rencanaPerBulan = new Array(12).fill(0);
       const realisasiPerBulan = new Array(12).fill(0);
       rencana.forEach(r => { const b = Number(r.bulan)-1; if (b>=0 && b<12) rencanaPerBulan[b] += Number(r.rencana_rp); });
@@ -355,55 +358,22 @@
       document.getElementById('statSelisih').className = 'num ' + (selisih >= 0 ? 'pos' : 'neg');
       document.getElementById('statCapaian').textContent = capaian + '%';
 
-      // ---- Grafik Tren ----
-      if (chartTren) chartTren.destroy();
-      chartTren = new Chart(document.getElementById('chartTren'), {
-        type: 'bar',
-        data: {
-          labels: NAMA_BULAN,
-          datasets: [
-            { label: 'Rencana', data: rencanaPerBulan.map(v => Math.round(v/1e6)), backgroundColor: '#CDEAD9', borderRadius: 5, maxBarThickness: 22 },
-            { label: 'Realisasi', data: realisasiPerBulan.map(v => Math.round(v/1e6)), backgroundColor: '#16A34A', borderRadius: 5, maxBarThickness: 22 }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12 } } } },
-          scales: {
-            y: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } },
-            x: { grid: { display: false } }
-          }
-        }
-      });
+      // ---- Grafik Tren (wrap dengan try-catch) ----
+      try {
+        renderChartTren(rencanaPerBulan, realisasiPerBulan);
+      } catch (err) {
+        console.warn('Chart Tren error:', err);
+        document.getElementById('chartTren').style.display = 'none';
+        document.getElementById('chartTrenError').style.display = 'block';
+      }
 
-      // ---- Top 10 Barang ----
-      const perBarang = {};
-      realisasi.forEach(r => { perBarang[r.barang_id] = (perBarang[r.barang_id] || 0) + Number(r.realisasi_rp); });
-      const topBarang = Object.keys(perBarang)
-        .map(id => ({ nama: barangMap[id]?.nama_barang || 'Unknown', nilai: perBarang[id] }))
-        .sort((a,b) => b.nilai - a.nilai).slice(0,10);
-      const topCanvas = document.getElementById('chartTopBarang');
-      const topEmpty = document.getElementById('topBarangEmpty');
-      if (topBarang.length === 0) { topCanvas.style.display = 'none'; topEmpty.style.display = 'block'; }
-      else {
-        topCanvas.style.display = 'block'; topEmpty.style.display = 'none';
-        if (chartTopBarang) chartTopBarang.destroy();
-        chartTopBarang = new Chart(topCanvas, {
-          type: 'bar',
-          data: {
-            labels: topBarang.map(b => b.nama.length > 28 ? b.nama.slice(0,26)+'…' : b.nama),
-            datasets: [{ data: topBarang.map(b => Math.round(b.nilai/1e6)), backgroundColor: '#16A34A', borderRadius: 5 }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } },
-              y: { grid: { display: false } }
-            }
-          }
-        });
+      // ---- Top 10 Barang (wrap dengan try-catch) ----
+      try {
+        renderTopBarang(realisasi, barangMap);
+      } catch (err) {
+        console.warn('Chart Top Barang error:', err);
+        document.getElementById('chartTopBarang').style.display = 'none';
+        document.getElementById('chartTopError').style.display = 'block';
       }
 
       // ---- Tabel Bulanan ----
@@ -414,33 +384,167 @@
         return `<tr><td>${nm}</td><td class="num-cell">Rp ${Math.round(r).toLocaleString('id-ID')}</td><td class="num-cell">Rp ${Math.round(a).toLocaleString('id-ID')}</td><td class="num-cell">${c}%</td></tr>`;
       }).join('');
 
-      // ---- Penjualan Tahunan ----
-      renderPenjualanTahunan(penjualan);
+      // ---- Penjualan Tahunan (wrap dengan try-catch) ----
+      try {
+        renderPenjualanTahunan(penjualan);
+      } catch (err) {
+        console.warn('Chart Penjualan error:', err);
+        document.getElementById('chartPenjualan').style.display = 'none';
+        document.getElementById('chartPenjualanError').style.display = 'block';
+        // Tetap tampilkan angka statistik
+        const totalHpp = penjualan.reduce((s, p) => s + Number(p.hpp_terjual || 0), 0);
+        const totalJual = penjualan.reduce((s, p) => s + Number(p.harga_jual || 0), 0);
+        const totalMargin = totalJual - totalHpp;
+        document.getElementById('statTotalHpp').textContent = totalHpp > 0 ? formatRpSingkat(totalHpp) : '-';
+        document.getElementById('statTotalJual').textContent = totalJual > 0 ? formatRpSingkat(totalJual) : '-';
+        document.getElementById('statTotalMargin').textContent = totalMargin !== 0 ? formatRpSingkat(totalMargin) : '-';
+        document.getElementById('statTotalMargin').style.color = totalMargin >= 0 ? 'var(--green-mid)' : 'var(--coral)';
+      }
 
-      // ---- LAPORAN SELISIH PENERIMAAN ----
+      // ---- LAPORAN SELISIH PENERIMAAN (prioritas utama) ----
       renderLaporanSelisih(penerimaan, pembelian, barangMap);
 
     } catch (err) {
-      console.error('❌ Error loadLaporan:', err);
+      console.error('❌ Laporan error:', err);
       showError('Gagal memuat laporan: ' + err.message);
     }
   }
 
   // ============================================================
-  //  RENDER LAPORAN SELISIH (DIPERBAIKI)
+  //  RENDER CHART TREN
+  // ============================================================
+  function renderChartTren(rencanaPerBulan, realisasiPerBulan) {
+    if (typeof Chart === 'undefined') throw new Error('Chart.js tidak dimuat.');
+    if (chartTren) chartTren.destroy();
+    chartTren = new Chart(document.getElementById('chartTren'), {
+      type: 'bar',
+      data: {
+        labels: NAMA_BULAN,
+        datasets: [
+          { label: 'Rencana', data: rencanaPerBulan.map(v => Math.round(v/1e6)), backgroundColor: '#CDEAD9', borderRadius: 5, maxBarThickness: 22 },
+          { label: 'Realisasi', data: realisasiPerBulan.map(v => Math.round(v/1e6)), backgroundColor: '#16A34A', borderRadius: 5, maxBarThickness: 22 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12 } } } },
+        scales: {
+          y: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+    document.getElementById('chartTren').style.display = 'block';
+    document.getElementById('chartTrenError').style.display = 'none';
+  }
+
+  // ============================================================
+  //  RENDER TOP BARANG
+  // ============================================================
+  function renderTopBarang(realisasi, barangMap) {
+    if (typeof Chart === 'undefined') throw new Error('Chart.js tidak dimuat.');
+    const perBarang = {};
+    realisasi.forEach(r => { perBarang[r.barang_id] = (perBarang[r.barang_id] || 0) + Number(r.realisasi_rp); });
+    const topBarang = Object.keys(perBarang)
+      .map(id => ({ nama: barangMap[id]?.nama_barang || 'Unknown', nilai: perBarang[id] }))
+      .sort((a,b) => b.nilai - a.nilai).slice(0,10);
+    const topCanvas = document.getElementById('chartTopBarang');
+    const topEmpty = document.getElementById('topBarangEmpty');
+    const topError = document.getElementById('chartTopError');
+    if (topBarang.length === 0) {
+      topCanvas.style.display = 'none';
+      topEmpty.style.display = 'block';
+      topError.style.display = 'none';
+      return;
+    }
+    topCanvas.style.display = 'block';
+    topEmpty.style.display = 'none';
+    topError.style.display = 'none';
+    if (chartTopBarang) chartTopBarang.destroy();
+    chartTopBarang = new Chart(topCanvas, {
+      type: 'bar',
+      data: {
+        labels: topBarang.map(b => b.nama.length > 28 ? b.nama.slice(0,26)+'…' : b.nama),
+        datasets: [{ data: topBarang.map(b => Math.round(b.nilai/1e6)), backgroundColor: '#16A34A', borderRadius: 5 }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // ============================================================
+  //  RENDER PENJUALAN TAHUNAN
+  // ============================================================
+  function renderPenjualanTahunan(penjualan) {
+    if (typeof Chart === 'undefined') throw new Error('Chart.js tidak dimuat.');
+    const hppPerBulan = new Array(12).fill(0);
+    const jualPerBulan = new Array(12).fill(0);
+    penjualan.forEach(p => {
+      const b = Number(p.bulan)-1;
+      if (b>=0 && b<12) {
+        hppPerBulan[b] += Number(p.hpp_terjual) || 0;
+        jualPerBulan[b] += Number(p.harga_jual) || 0;
+      }
+    });
+    const totalHpp = hppPerBulan.reduce((a,b) => a+b, 0);
+    const totalJual = jualPerBulan.reduce((a,b) => a+b, 0);
+    const totalMargin = totalJual - totalHpp;
+    const canvas = document.getElementById('chartPenjualan');
+    const emptyEl = document.getElementById('penjualanTahunanEmpty');
+    const errorEl = document.getElementById('chartPenjualanError');
+    if (totalHpp === 0 && totalJual === 0) {
+      canvas.style.display = 'none';
+      emptyEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      document.getElementById('statTotalHpp').textContent = '-';
+      document.getElementById('statTotalJual').textContent = '-';
+      document.getElementById('statTotalMargin').textContent = '-';
+      return;
+    }
+    canvas.style.display = 'block';
+    emptyEl.style.display = 'none';
+    errorEl.style.display = 'none';
+    document.getElementById('statTotalHpp').textContent = formatRpSingkat(totalHpp);
+    document.getElementById('statTotalJual').textContent = formatRpSingkat(totalJual);
+    const marginEl = document.getElementById('statTotalMargin');
+    marginEl.textContent = formatRpSingkat(totalMargin);
+    marginEl.style.color = totalMargin >= 0 ? 'var(--green-mid)' : 'var(--coral)';
+    if (chartPenjualan) chartPenjualan.destroy();
+    chartPenjualan = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: NAMA_BULAN,
+        datasets: [
+          { label: 'HPP terjual', data: hppPerBulan.map(v => Math.round(v/1e6)), backgroundColor: '#F5C4B3', borderRadius: 5, maxBarThickness: 22 },
+          { label: 'Harga jual', data: jualPerBulan.map(v => Math.round(v/1e6)), backgroundColor: '#EA580C', borderRadius: 5, maxBarThickness: 22 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12 } } } },
+        scales: {
+          y: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // ============================================================
+  //  RENDER LAPORAN SELISIH (PRIORITAS UTAMA)
   // ============================================================
   function renderLaporanSelisih(penerimaan, pembelian, barangMap) {
     const container = document.getElementById('selisihContainer');
-    const tahun = document.getElementById('tahunSelect').value;
 
     // Filter penerimaan dengan selisih > 0
-    // Kemudian filter berdasarkan tahun dari pembelian terkait
-    const dataSelisih = penerimaan.filter(p => {
-      if (Number(p.selisih) <= 0) return false;
-      const po = pembelian.find(x => x.id === p.pembelian_id);
-      if (!po) return false;
-      return Number(po.tahun) === Number(tahun);
-    });
+    const dataSelisih = penerimaan.filter(p => Number(p.selisih) > 0);
 
     if (dataSelisih.length === 0) {
       container.innerHTML = '<div class="empty-mini">✅ Tidak ada selisih penerimaan pada tahun ini.</div>';
@@ -489,58 +593,6 @@
 
     html += '</tbody></table>';
     container.innerHTML = html;
-  }
-
-  // ============================================================
-  //  RENDER PENJUALAN TAHUNAN
-  // ============================================================
-  function renderPenjualanTahunan(penjualan) {
-    const hppPerBulan = new Array(12).fill(0);
-    const jualPerBulan = new Array(12).fill(0);
-    penjualan.forEach(p => {
-      const b = Number(p.bulan)-1;
-      if (b>=0 && b<12) {
-        hppPerBulan[b] += Number(p.hpp_terjual) || 0;
-        jualPerBulan[b] += Number(p.harga_jual) || 0;
-      }
-    });
-    const totalHpp = hppPerBulan.reduce((a,b) => a+b, 0);
-    const totalJual = jualPerBulan.reduce((a,b) => a+b, 0);
-    const totalMargin = totalJual - totalHpp;
-    const canvas = document.getElementById('chartPenjualan');
-    const emptyEl = document.getElementById('penjualanTahunanEmpty');
-    if (totalHpp === 0 && totalJual === 0) {
-      canvas.style.display = 'none'; emptyEl.style.display = 'block';
-      document.getElementById('statTotalHpp').textContent = '-';
-      document.getElementById('statTotalJual').textContent = '-';
-      document.getElementById('statTotalMargin').textContent = '-';
-      return;
-    }
-    canvas.style.display = 'block'; emptyEl.style.display = 'none';
-    document.getElementById('statTotalHpp').textContent = formatRpSingkat(totalHpp);
-    document.getElementById('statTotalJual').textContent = formatRpSingkat(totalJual);
-    const marginEl = document.getElementById('statTotalMargin');
-    marginEl.textContent = formatRpSingkat(totalMargin);
-    marginEl.style.color = totalMargin >= 0 ? 'var(--green-mid)' : 'var(--coral)';
-    if (chartPenjualan) chartPenjualan.destroy();
-    chartPenjualan = new Chart(canvas, {
-      type: 'bar',
-      data: {
-        labels: NAMA_BULAN,
-        datasets: [
-          { label: 'HPP terjual', data: hppPerBulan.map(v => Math.round(v/1e6)), backgroundColor: '#F5C4B3', borderRadius: 5, maxBarThickness: 22 },
-          { label: 'Harga jual', data: jualPerBulan.map(v => Math.round(v/1e6)), backgroundColor: '#EA580C', borderRadius: 5, maxBarThickness: 22 }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12 } } } },
-        scales: {
-          y: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } },
-          x: { grid: { display: false } }
-        }
-      }
-    });
   }
 
   // ============================================================
