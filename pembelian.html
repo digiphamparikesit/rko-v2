@@ -7,16 +7,26 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    /* ===== GAYA DASAR (sama seperti sebelumnya) ===== */
     :root {
-      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A;
-      --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF;
-      --text-dark: #14201A; --text-muted: #6B7A72;
-      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+      --green-deep: #0F3D2E;
+      --green-mid: #16A34A;
+      --green-bright: #3FCF6A;
+      --green-soft: #E7F5EC;
+      --bg: #F4F7F4;
+      --card: #FFFFFF;
+      --text-dark: #14201A;
+      --text-muted: #6B7A72;
+      --amber: #D97706;
+      --coral: #DC5B45;
+      --border: #E4EAE5;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
-
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text-dark);
+    }
     header.topbar {
       position: sticky; top: 0; z-index: 100;
       background: var(--green-deep); color: #fff; padding: 18px 24px;
@@ -24,7 +34,11 @@
       flex-wrap: wrap; gap: 12px;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .mark {
+      width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: var(--green-deep);
+    }
     .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
     .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
     .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -35,6 +49,7 @@
     select option { color: #14201A; }
 
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+
     .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
     .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
     .side-panel { padding: 18px 20px; }
@@ -46,16 +61,17 @@
 
     .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
     .toolbar input[type="text"] { flex: 1; min-width: 220px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 9px; font-size: 13.5px; }
-
-    .btn { padding: 10px 16px; border: none; border-radius: 9px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
+    .btn {
+      padding: 10px 16px; border: none; border-radius: 9px; font-weight: 600;
+      font-size: 13.5px; cursor: pointer;
+    }
     .btn-primary { background: var(--green-mid); color: #fff; }
     .btn-primary:hover { background: #128a3e; }
     .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
     .btn-warning { background: var(--amber); color: #fff; }
     .btn-warning:hover { background: #B45309; }
-    .btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 6px; }
 
-    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; margin-bottom: 16px; }
     table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 900px; }
     th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
     th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
@@ -68,21 +84,41 @@
     .badge.selesai { background: var(--green-soft); color: var(--green-mid); }
 
     select.status-select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
 
     /* MODAL */
-    #modalOverlay, #modalUpload {
+    #modalOverlay, #modalUpload, #modalSelisih {
       display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45);
       align-items: center; justify-content: center; z-index: 40; padding: 20px;
     }
-    #modalOverlay.show, #modalUpload.show { display: flex; }
-    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; padding: 26px; }
+    #modalOverlay.show, #modalUpload.show, #modalSelisih.show { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px; width: 100%; max-width: 460px;
+      max-height: 90vh; overflow-y: auto; padding: 26px;
+    }
+    .modal-wide { max-width: 720px; }
     .modal h2 { font-size: 16px; margin: 0 0 16px; }
     .field { margin-bottom: 12px; }
     .field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
     .field input, .field select { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+
+    /* Selisih card */
+    .selisih-card {
+      background: #FDF6F3;
+      border: 1px solid var(--coral);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .selisih-card .info { font-size: 13px; }
+    .selisih-card .info strong { color: var(--coral); }
   </style>
 </head>
 <body>
@@ -90,7 +126,10 @@
 <header class="topbar">
   <div class="brand">
     <div class="mark">RS</div>
-    <div><div class="title">RKO RSAMP</div><div class="label">Pembelian — buat &amp; kelola PO</div></div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Pembelian — buat &amp; kelola PO</div>
+    </div>
   </div>
   <div class="topbar-right">
     <span class="who" id="whoLabel"></span>
@@ -105,27 +144,125 @@
     <aside class="left-col">
       <div class="panel side-panel">
         <h2 class="side-title">Cari &amp; Filter</h2>
-        <div class="field"><label>Cari nama barang / no. PO</label><input type="text" id="searchBox" placeholder="Cari nama barang atau no. PO..."></div>
-        <div class="field"><label>Golongan</label><select id="filterGolongan"><option value="">Semua golongan</option><option value="OBAT">Obat</option><option value="BMHP">BMHP</option><option value="BHP">BHP</option><option value="B3">B3</option><option value="NUTRISI ENTERAL">Nutrisi Enteral</option><option value="PROGRAM">Program</option><option value="PROGRAM TB">Program TB</option><option value="PROGRAM HIV">Program HIV</option><option value="PROGRAM MALARIA">Program Malaria</option><option value="PROGRAM RABIES">Program Rabies</option><option value="PROGRAM BKKBN">Program BKKBN</option><option value="PROGRAM COVID">Program Covid</option><option value="PROGRAM STUNTING">Program Stunting</option><option value="PROGRAM IMUNISASI">Program Imunisasi</option></select></div>
-        <div class="field"><label>Status PO</label><select id="filterStatus"><option value="">Semua status</option><option value="DRAFT">Draft</option><option value="DIKIRIM">Dikirim</option><option value="DITERIMA_SEBAGIAN">Diterima sebagian</option><option value="SELESAI">Selesai</option></select></div>
-        <button class="btn btn-primary" style="width:100%;" onclick="openForm()">+ Buat PO Baru</button>
-        <button class="btn" style="width:100%; margin-top:8px; background:#F1F1EE; color:var(--text-dark);" onclick="openUploadModal()">&#8593; Upload Data dari SIM RS (CSV)</button>
+        <div class="field">
+          <label>Cari nama barang / no. PO</label>
+          <input type="text" id="searchBox" placeholder="Cari nama barang atau no. PO...">
+        </div>
+        <div class="field">
+          <label>Golongan</label>
+          <select id="filterGolongan">
+            <option value="">Semua golongan</option>
+            <option value="OBAT">Obat</option>
+            <option value="BMHP">BMHP</option>
+            <option value="BHP">BHP</option>
+            <option value="B3">B3</option>
+            <option value="NUTRISI ENTERAL">Nutrisi Enteral</option>
+            <option value="PROGRAM">Program</option>
+            <option value="PROGRAM TB">Program TB</option>
+            <option value="PROGRAM HIV">Program HIV</option>
+            <option value="PROGRAM MALARIA">Program Malaria</option>
+            <option value="PROGRAM RABIES">Program Rabies</option>
+            <option value="PROGRAM BKKBN">Program BKKBN</option>
+            <option value="PROGRAM COVID">Program Covid</option>
+            <option value="PROGRAM STUNTING">Program Stunting</option>
+            <option value="PROGRAM IMUNISASI">Program Imunisasi</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status PO</label>
+          <select id="filterStatus">
+            <option value="">Semua status</option>
+            <option value="DRAFT">Draft</option>
+            <option value="DIKIRIM">Dikirim</option>
+            <option value="DITERIMA_SEBAGIAN">Diterima sebagian</option>
+            <option value="SELESAI">Selesai</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="window.openForm()">+ Buat PO Baru</button>
+        <button class="btn" style="width:100%; margin-top:8px; background:#F1F1EE; color:var(--text-dark);" onclick="window.openUploadModal()">&#8593; Upload Data dari SIM RS (CSV)</button>
+        <button class="btn btn-warning" style="width:100%; margin-top:8px;" onclick="window.openSelisihModal()">&#9888; Buat PO Ulang dari Selisih</button>
       </div>
     </aside>
+
     <section class="right-col">
       <div class="panel">
         <table>
-          <thead><tr><th>No. PO</th><th>Nama barang</th><th>Distributor</th><th class="num">Qty pesan</th><th>Tanggal PO</th><th>Status</th><th>Aksi</th></tr></thead>
-          <tbody id="tableBody"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
+          <thead>
+            <tr>
+              <th>No. PO</th>
+              <th>Nama barang</th>
+              <th>Distributor</th>
+              <th class="num">Qty pesan</th>
+              <th>Tanggal PO</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"><tr><td colspan="6" class="empty-state">Memuat data...</td></tr></tbody>
         </table>
       </div>
     </section>
   </div>
 </main>
 
-<!-- MODAL FORM & UPLOAD SAMA SEPERTI SEBELUMNYA -->
-<div id="modalOverlay"> ... </div>
-<div id="modalUpload"> ... </div>
+<!-- MODAL BUAT PO BARU -->
+<div id="modalOverlay">
+  <div class="modal">
+    <h2>Buat PO Baru</h2>
+    <div class="field"><label>No. PO</label><input type="text" id="fNoPo" placeholder="Nomor PO dari sistem RS"></div>
+    <div class="field"><label>Barang (dari rencana belanja periode ini)</label><select id="fBarang"><option value="">Pilih barang...</option></select></div>
+    <div class="field"><label>Distributor</label><select id="fDistributor"><option value="">Pilih distributor...</option></select></div>
+    <div class="field"><label>Qty pesan</label><input type="number" id="fQty" placeholder="0"></div>
+    <div class="field"><label>Tanggal PO</label><input type="date" id="fTanggal"></div>
+    <div class="field"><label>Status awal</label><select id="fStatus"><option value="DRAFT">Draft</option><option value="DIKIRIM">Dikirim ke distributor</option></select></div>
+    <div class="form-msg" id="formMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeForm()">Batal</button>
+      <button class="btn btn-primary" onclick="window.submitForm()">Simpan PO</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL UPLOAD CSV -->
+<div id="modalUpload">
+  <div class="modal modal-wide">
+    <h2>Upload Data Pembelian dari SIM RS</h2>
+    <p style="font-size:12.5px; color:var(--text-muted); margin:-8px 0 16px;">
+      Export data PO dari SIM RS ke CSV, lalu upload. Kolom wajib:<br>
+      <code>no_po, no_faktur, nama_barang, distributor, qty_pesan, satuan_beli, tanggal_po</code>
+    </p>
+    <input type="file" id="uploadFile" accept=".csv" onchange="window.handleUploadFile(event)" style="margin-bottom:14px;">
+    <div id="uploadSummary" style="display:none; margin-bottom:12px;"></div>
+    <div id="uploadPreviewWrap" style="display:none; max-height:340px; overflow-y:auto; border:1px solid var(--border); border-radius:10px;">
+      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <thead><tr><th>No. PO</th><th>No. Faktur</th><th>Barang</th><th>Distributor</th><th class="num">Qty</th><th>Status</th></tr></thead>
+        <tbody id="uploadPreviewBody"></tbody>
+      </table>
+    </div>
+    <div class="form-msg" id="uploadMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeUploadModal()">Batal</button>
+      <button class="btn btn-primary" id="btnConfirmUpload" onclick="window.confirmUpload()" disabled>Import baris valid</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SELISIH -->
+<div id="modalSelisih">
+  <div class="modal modal-wide">
+    <h2>Buat PO Ulang dari Selisih Penerimaan</h2>
+    <p style="font-size:12.5px; color:var(--text-muted); margin:-8px 0 16px;">
+      Daftar PO dengan status <strong>DITERIMA_SEBAGIAN</strong> (barang kurang/rusak).<br>
+      Klik "Buat PO Ulang" untuk membuat PO baru dengan qty = selisih.
+    </p>
+    <div id="selisihList" style="max-height:400px; overflow-y:auto;">
+      <div class="empty-state">Memuat data selisih...</div>
+    </div>
+    <div class="form-msg" id="selisihMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeSelisihModal()">Tutup</button>
+    </div>
+  </div>
+</div>
 
 <script>
   // ============================================================
@@ -138,40 +275,64 @@
   // ============================================================
   //  CEK SESSION
   // ============================================================
-  const userStr = sessionStorage.getItem('rko_user');
-  if (!userStr) window.location.href = 'index.html';
-  const currentUser = JSON.parse(userStr);
-  if (!['TIM_PEMBELIAN', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) { alert('Akses ditolak.'); window.location.href = 'index.html'; }
-  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
-
-  // ============================================================
-  //  VARIABLES
-  // ============================================================
-  let barangMap = {}, distributorList = [], rencanaList = [], pembelianList = [], filteredList = [];
-
-  function fillPeriodOptions(curBulan, curTahun) {
-    const bulanSel = document.getElementById('bulanSelect');
-    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    namaBulan.forEach((nm, i) => { const opt = document.createElement('option'); opt.value = i+1; opt.textContent = nm; if (i+1 === curBulan) opt.selected = true; bulanSel.appendChild(opt); });
-    const tahunSel = document.getElementById('tahunSelect');
-    for (let y = curTahun-1; y <= curTahun+1; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; if (y === curTahun) opt.selected = true; tahunSel.appendChild(opt); }
-  }
-
-  (function init() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth()+1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    document.getElementById('searchBox').addEventListener('input', applyFilter);
-    document.getElementById('filterGolongan').addEventListener('change', applyFilter);
-    document.getElementById('filterStatus').addEventListener('change', applyFilter);
-    loadAllData();
+  (function checkSession() {
+    const userStr = sessionStorage.getItem('rko_user');
+    if (!userStr) { window.location.href = 'index.html'; return; }
+    const currentUser = JSON.parse(userStr);
+    if (!['TIM_PEMBELIAN', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
+      alert('Akses ditolak.');
+      window.location.href = 'index.html';
+    }
+    document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+    window.currentUser = currentUser;
   })();
 
+  // ============================================================
+  //  VARIABEL GLOBAL
+  // ============================================================
+  let barangMap = {};
+  let distributorList = [];
+  let rencanaList = [];
+  let pembelianList = [];
+  let filteredList = [];
+  let uploadRows = [];
+
+  // ============================================================
+  //  PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    bulanSel.innerHTML = '';
+    tahunSel.innerHTML = '';
+
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1;
+      opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+
+    const tahunAwal = curTahun - 2;
+    const tahunAkhir = curTahun + 2;
+    for (let y = tahunAwal; y <= tahunAkhir; y++) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
   async function loadAllData() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
-    document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="empty-state">Memuat data...</td></tr>';
 
     try {
       const [barangRes, distRes, rencanaRes, pembelianRes] = await Promise.all([
@@ -180,18 +341,56 @@
         window.supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun),
         window.supabase.from('pembelian').select('*').eq('bulan', bulan).eq('tahun', tahun)
       ]);
-      barangMap = {}; (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
+
+      barangMap = {};
+      (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
       distributorList = distRes.data || [];
       rencanaList = rencanaRes.data || [];
       pembelianList = pembelianRes.data || [];
+
       fillFormOptions();
       applyFilter();
     } catch (err) {
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Gagal memuat data.</td></tr>';
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="empty-state">Gagal memuat data.</td></tr>';
     }
   }
 
-  function fillFormOptions() { /* sama seperti sebelumnya */ }
+  function fillFormOptions() {
+    const bSel = document.getElementById('fBarang');
+    bSel.innerHTML = '<option value="">Pilih barang...</option>';
+    rencanaList.forEach(r => {
+      const barang = barangMap[r.barang_id];
+      if (!barang) return;
+      const opt = document.createElement('option');
+      opt.value = r.barang_id;
+      opt.dataset.distributor = r.distributor_id;
+      opt.textContent = barang.nama_barang + ' (rencana: ' + r.rencana_qty_satuan_beli + ')';
+      bSel.appendChild(opt);
+    });
+
+    const dSel = document.getElementById('fDistributor');
+    dSel.innerHTML = '<option value="">Pilih distributor...</option>';
+    distributorList.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.nama_distributor;
+      dSel.appendChild(opt);
+    });
+
+    bSel.addEventListener('change', () => {
+      const selected = bSel.options[bSel.selectedIndex];
+      if (selected && selected.dataset.distributor) {
+        document.getElementById('fDistributor').value = selected.dataset.distributor;
+      }
+    });
+  }
+
+  // ============================================================
+  //  FILTER & TABEL
+  // ============================================================
+  document.getElementById('searchBox').addEventListener('input', applyFilter);
+  document.getElementById('filterGolongan').addEventListener('change', applyFilter);
+  document.getElementById('filterStatus').addEventListener('change', applyFilter);
 
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
@@ -208,127 +407,333 @@
     renderTable();
   }
 
-  // ============================================================
-  //  RENDER TABEL (DENGAN TOMBOL BUAT ULANG)
-  // ============================================================
   function renderTable() {
     const tbody = document.getElementById('tableBody');
     if (filteredList.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada PO untuk periode ini.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Belum ada PO untuk periode ini.</td></tr>';
       return;
     }
     tbody.innerHTML = filteredList.map(p => {
       const barang = barangMap[p.barang_id] || {};
       const dist = distributorList.find(d => d.id === p.distributor_id);
-      const statusClass = { DRAFT: 'draft', DIKIRIM: 'dikirim', DITERIMA_SEBAGIAN: 'sebagian', SELESAI: 'selesai' }[p.status] || 'draft';
       const statusLabel = { DRAFT: 'Draft', DIKIRIM: 'Dikirim', DITERIMA_SEBAGIAN: 'Diterima sebagian', SELESAI: 'Selesai' }[p.status] || p.status;
-
-      // Tombol aksi: status DITERIMA_SEBAGIAN → tampilkan tombol Buat Ulang
-      let actionBtn = '';
-      if (p.status === 'DITERIMA_SEBAGIAN') {
-        actionBtn = `<button class="btn btn-warning btn-sm" onclick="buatUlangDariSelisih(${p.id})" title="Buat PO baru untuk selisih">🔄 Buat Ulang</button>`;
-      }
-
+      const statusClass = { DRAFT: 'draft', DIKIRIM: 'dikirim', DITERIMA_SEBAGIAN: 'sebagian', SELESAI: 'selesai' }[p.status] || 'draft';
       return `<tr>
         <td>${escapeHtml(p.no_po)}</td>
         <td>${escapeHtml(barang.nama_barang || 'Tidak dikenal')}</td>
         <td>${escapeHtml(dist ? dist.nama_distributor : '-')}</td>
         <td class="num">${Number(p.qty_pesan || 0).toLocaleString('id-ID')}</td>
         <td>${escapeHtml(p.tanggal_po || '-')}</td>
-        <td><select class="status-select" onchange="updateStatus(${p.id}, this.value)">
-          <option value="DRAFT" ${p.status === 'DRAFT' ? 'selected' : ''}>Draft</option>
-          <option value="DIKIRIM" ${p.status === 'DIKIRIM' ? 'selected' : ''}>Dikirim</option>
-          <option value="DITERIMA_SEBAGIAN" ${p.status === 'DITERIMA_SEBAGIAN' ? 'selected' : ''}>Diterima sebagian</option>
-          <option value="SELESAI" ${p.status === 'SELESAI' ? 'selected' : ''}>Selesai</option>
-        </select></td>
-        <td>${actionBtn}</td>
+        <td>
+          <select class="status-select" onchange="window.updateStatus(${p.id}, this.value)">
+            <option value="DRAFT" ${p.status === 'DRAFT' ? 'selected' : ''}>Draft</option>
+            <option value="DIKIRIM" ${p.status === 'DIKIRIM' ? 'selected' : ''}>Dikirim</option>
+            <option value="DITERIMA_SEBAGIAN" ${p.status === 'DITERIMA_SEBAGIAN' ? 'selected' : ''}>Diterima sebagian</option>
+            <option value="SELESAI" ${p.status === 'SELESAI' ? 'selected' : ''}>Selesai</option>
+          </select>
+        </td>
       </tr>`;
     }).join('');
   }
 
-  // ============================================================
-  //  FUNGSI BUAT PO ULANG DARI SELISIH
-  // ============================================================
-  async function buatUlangDariSelisih(pembelianId) {
-    if (!confirm('Buat PO ulang untuk selisih dari PO ini?')) return;
-    try {
-      // Ambil penerimaan terakhir dengan selisih > 0
-      const { data: penerimaan, error: err1 } = await window.supabase
-        .from('penerimaan')
-        .select('*')
-        .eq('pembelian_id', pembelianId)
-        .gt('selisih', 0)
-        .order('id', { ascending: false })
-        .limit(1);
-      if (err1) throw err1;
-      if (!penerimaan || penerimaan.length === 0) {
-        alert('Tidak ada selisih untuk PO ini.');
-        return;
-      }
-      const selisihData = penerimaan[0];
-      const qtySelisih = Number(selisihData.selisih);
-
-      // Ambil PO lama
-      const { data: poLama, error: err2 } = await window.supabase
-        .from('pembelian')
-        .select('*')
-        .eq('id', pembelianId)
-        .single();
-      if (err2) throw err2;
-
-      // Buat PO baru
-      const now = new Date();
-      const bulan = now.getMonth() + 1;
-      const tahun = now.getFullYear();
-      const noPoBaru = poLama.no_po + '-REV';
-
-      const { error: err3 } = await window.supabase
-        .from('pembelian')
-        .insert({
-          no_po: noPoBaru,
-          barang_id: poLama.barang_id,
-          distributor_id: poLama.distributor_id,
-          bulan: bulan,
-          tahun: tahun,
-          qty_pesan: qtySelisih,
-          satuan_beli: poLama.satuan_beli || '',
-          tanggal_po: now.toISOString().slice(0,10),
-          status: 'DRAFT'
-        });
-      if (err3) throw err3;
-
-      alert('PO ulang berhasil dibuat dengan no. PO: ' + noPoBaru);
-      await loadAllData();
-    } catch (err) {
-      alert('Gagal membuat PO ulang: ' + err.message);
-    }
-  }
-
-  // ============================================================
-  //  FUNGSI LAINNYA (updateStatus, openForm, submitForm, upload, dll)
-  // ============================================================
-  async function updateStatus(id, status) {
+  window.updateStatus = async function(id, status) {
     try {
       const { error } = await window.supabase.from('pembelian').update({ status }).eq('id', id);
       if (error) throw error;
       await loadAllData();
-    } catch (err) { alert('Gagal: ' + err.message); }
+    } catch (err) {
+      alert('Gagal update status: ' + err.message);
+    }
+  };
+
+  // ============================================================
+  //  FORM BUAT PO BARU
+  // ============================================================
+  window.openForm = function() {
+    document.getElementById('formMsg').textContent = '';
+    document.getElementById('fNoPo').value = '';
+    document.getElementById('fBarang').value = '';
+    document.getElementById('fDistributor').value = '';
+    document.getElementById('fQty').value = '';
+    document.getElementById('fTanggal').value = '';
+    document.getElementById('fStatus').value = 'DRAFT';
+    document.getElementById('modalOverlay').classList.add('show');
+  };
+
+  window.closeForm = function() {
+    document.getElementById('modalOverlay').classList.remove('show');
+  };
+
+  window.submitForm = async function() {
+    const noPo = document.getElementById('fNoPo').value.trim();
+    const barangId = document.getElementById('fBarang').value;
+    const distId = document.getElementById('fDistributor').value;
+    const qty = Number(document.getElementById('fQty').value) || 0;
+    const msg = document.getElementById('formMsg');
+
+    if (!noPo) { msg.textContent = 'Isi No. PO.'; return; }
+    if (!barangId) { msg.textContent = 'Pilih barang.'; return; }
+    if (!distId) { msg.textContent = 'Pilih distributor.'; return; }
+    if (qty <= 0) { msg.textContent = 'Qty > 0.'; return; }
+
+    msg.textContent = 'Menyimpan...';
+    try {
+      const { error } = await window.supabase.from('pembelian').insert({
+        no_po: noPo,
+        barang_id: barangId,
+        distributor_id: distId,
+        bulan: document.getElementById('bulanSelect').value,
+        tahun: document.getElementById('tahunSelect').value,
+        qty_pesan: qty,
+        tanggal_po: document.getElementById('fTanggal').value,
+        status: document.getElementById('fStatus').value
+      });
+      if (error) throw error;
+      closeForm();
+      await loadAllData();
+    } catch (err) {
+      msg.textContent = 'Gagal: ' + err.message;
+    }
+  };
+
+  // ============================================================
+  //  UPLOAD CSV
+  // ============================================================
+  window.openUploadModal = function() {
+    document.getElementById('uploadFile').value = '';
+    document.getElementById('uploadSummary').style.display = 'none';
+    document.getElementById('uploadPreviewWrap').style.display = 'none';
+    document.getElementById('uploadMsg').textContent = '';
+    document.getElementById('btnConfirmUpload').disabled = true;
+    uploadRows = [];
+    document.getElementById('modalUpload').classList.add('show');
+  };
+
+  window.closeUploadModal = function() {
+    document.getElementById('modalUpload').classList.remove('show');
+  };
+
+  window.handleUploadFile = function(evt) {
+    const file = evt.target.files[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(res) { processUploadRows(res.data); },
+      error: function() { document.getElementById('uploadMsg').textContent = 'Gagal membaca CSV.'; }
+    });
+  };
+
+  function processUploadRows(rawRows) {
+    const barangNameMap = {};
+    Object.values(barangMap).forEach(b => {
+      barangNameMap[String(b.nama_barang).trim().toUpperCase()] = b.id;
+    });
+    const distNameMap = {};
+    distributorList.forEach(d => {
+      distNameMap[String(d.nama_distributor).trim().toUpperCase()] = d.id;
+    });
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+    const existingKey = new Set(pembelianList.map(p => (p.no_po + '||' + p.barang_id).toUpperCase()));
+
+    uploadRows = rawRows.map(row => {
+      const noPo = (row.no_po || '').trim();
+      const noFaktur = (row.no_faktur || '').trim();
+      const namaBarangCsv = (row.nama_barang || '').trim();
+      const distCsv = (row.distributor || '').trim();
+      const qty = Number(row.qty_pesan) || 0;
+      const satuanBeli = (row.satuan_beli || '').trim();
+      const tanggalPo = (row.tanggal_po || '').trim();
+      const barangId = barangNameMap[namaBarangCsv.toUpperCase()];
+      const distId = distNameMap[distCsv.toUpperCase()];
+      let statusBaris = 'valid', alasan = '';
+      if (!noPo) { statusBaris = 'invalid'; alasan = 'No. PO kosong'; }
+      else if (!namaBarangCsv) { statusBaris = 'invalid'; alasan = 'Nama barang kosong'; }
+      else if (!barangId) { statusBaris = 'invalid'; alasan = 'Barang tidak ditemukan'; }
+      else if (!distId) { statusBaris = 'invalid'; alasan = 'Distributor tidak ditemukan'; }
+      else if (qty <= 0) { statusBaris = 'invalid'; alasan = 'Qty harus > 0'; }
+      else if (existingKey.has((noPo + '||' + barangId).toUpperCase())) { statusBaris = 'duplikat'; alasan = 'Duplikat'; }
+      return { no_po: noPo, no_faktur: noFaktur, nama_barang_csv: namaBarangCsv, distributor_csv: distCsv, barang_id: barangId, distributor_id: distId, qty_pesan: qty, satuan_beli: satuanBeli, tanggal_po: tanggalPo, status: 'DIKIRIM', bulan, tahun, statusBaris, alasan };
+    });
+
+    const valid = uploadRows.filter(r => r.statusBaris === 'valid');
+    const invalid = uploadRows.filter(r => r.statusBaris === 'invalid');
+    const dup = uploadRows.filter(r => r.statusBaris === 'duplikat');
+    document.getElementById('uploadSummary').style.display = 'block';
+    document.getElementById('uploadSummary').innerHTML =
+      `Total <strong>${uploadRows.length}</strong> baris — <span style="color:var(--green-mid);">${valid.length} valid</span>, ` +
+      `<span style="color:var(--text-muted);">${dup.length} duplikat</span>, <span style="color:var(--coral);">${invalid.length} bermasalah</span>`;
+    document.getElementById('uploadPreviewWrap').style.display = 'block';
+    document.getElementById('uploadPreviewBody').innerHTML = uploadRows.map(r => {
+      const badgeColor = r.statusBaris === 'valid' ? 'var(--green-mid)' : (r.statusBaris === 'duplikat' ? 'var(--text-muted)' : 'var(--coral)');
+      const badgeBg = r.statusBaris === 'valid' ? 'var(--green-soft)' : (r.statusBaris === 'duplikat' ? '#F1F1EE' : '#FBEAE7');
+      const label = r.statusBaris === 'valid' ? 'Siap import' : (r.statusBaris === 'duplikat' ? 'Duplikat' : r.alasan);
+      return `<tr><td>${escapeHtml(r.no_po)}</td><td>${escapeHtml(r.no_faktur)}</td><td>${escapeHtml(r.nama_barang_csv)}</td><td>${escapeHtml(r.distributor_csv)}</td><td class="num">${r.qty_pesan}</td><td><span style="font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px; color:${badgeColor}; background:${badgeBg};">${escapeHtml(label)}</span></td></tr>`;
+    }).join('');
+    document.getElementById('btnConfirmUpload').disabled = valid.length === 0;
   }
 
-  function openForm() { /* ... */ }
-  function closeForm() { /* ... */ }
-  async function submitForm() { /* ... */ }
+  window.confirmUpload = async function() {
+    const valid = uploadRows.filter(r => r.statusBaris === 'valid');
+    if (valid.length === 0) return;
+    const msg = document.getElementById('uploadMsg');
+    msg.textContent = 'Mengimpor...';
+    document.getElementById('btnConfirmUpload').disabled = true;
+    try {
+      const { error } = await window.supabase.from('pembelian').insert(valid.map(r => ({
+        no_po: r.no_po,
+        no_faktur: r.no_faktur,
+        barang_id: r.barang_id,
+        distributor_id: r.distributor_id,
+        qty_pesan: r.qty_pesan,
+        satuan_beli: r.satuan_beli,
+        bulan: r.bulan,
+        tahun: r.tahun,
+        tanggal_po: r.tanggal_po,
+        status: r.status
+      })));
+      if (error) throw error;
+      msg.textContent = 'Berhasil! ' + valid.length + ' PO diimpor.';
+      setTimeout(() => { closeUploadModal(); loadAllData(); }, 1200);
+    } catch (err) {
+      msg.textContent = 'Gagal: ' + err.message;
+      document.getElementById('btnConfirmUpload').disabled = false;
+    }
+  };
 
-  // Upload CSV (sama seperti sebelumnya)
-  function openUploadModal() { /* ... */ }
-  function closeUploadModal() { /* ... */ }
-  function handleUploadFile(evt) { /* ... */ }
-  function processUploadRows(rawRows) { /* ... */ }
-  function renderUploadPreview() { /* ... */ }
-  function downloadBarisBermasalah() { /* ... */ }
-  async function confirmUpload() { /* ... */ }
+  // ============================================================
+  //  FITUR: BUAT PO ULANG DARI SELISIH
+  // ============================================================
+  window.openSelisihModal = async function() {
+    document.getElementById('selisihList').innerHTML = '<div class="empty-state">Memuat data selisih...</div>';
+    document.getElementById('selisihMsg').textContent = '';
+    document.getElementById('modalSelisih').classList.add('show');
 
-  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+    try {
+      // Ambil semua penerimaan dengan selisih > 0, join dengan pembelian dan master_barang
+      const { data, error } = await window.supabase
+        .from('penerimaan')
+        .select(`
+          *,
+          pembelian: pembelian_id (no_po, qty_pesan, distributor_id),
+          master_barang: barang_id (nama_barang, satuan_beli)
+        `)
+        .gt('selisih', 0);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        document.getElementById('selisihList').innerHTML = '<div class="empty-state">Tidak ada selisih pada periode ini.</div>';
+        return;
+      }
+
+      // Kelompokkan berdasarkan pembelian_id agar tidak duplikat
+      const grouped = {};
+      data.forEach(item => {
+        const key = item.pembelian_id;
+        if (!grouped[key]) {
+          grouped[key] = {
+            pembelian_id: item.pembelian_id,
+            no_po: item.pembelian?.no_po || '-',
+            barang_id: item.barang_id,
+            nama_barang: item.master_barang?.nama_barang || 'Tidak dikenal',
+            satuan_beli: item.master_barang?.satuan_beli || '-',
+            distributor_id: item.pembelian?.distributor_id || null,
+            total_selisih: 0,
+            qty_pesan: item.pembelian?.qty_pesan || 0,
+          };
+        }
+        grouped[key].total_selisih += Number(item.selisih) || 0;
+      });
+
+      const list = Object.values(grouped);
+      const container = document.getElementById('selisihList');
+      container.innerHTML = list.map(item => `
+        <div class="selisih-card">
+          <div class="info">
+            <strong>PO: ${escapeHtml(item.no_po)}</strong><br>
+            Barang: ${escapeHtml(item.nama_barang)}<br>
+            Selisih: <strong>${item.total_selisih.toLocaleString('id-ID')} ${escapeHtml(item.satuan_beli)}</strong>
+          </div>
+          <button class="btn btn-primary" onclick="window.buatPoUlang(${item.pembelian_id}, ${item.barang_id}, ${item.total_selisih}, '${item.distributor_id}')">
+            Buat PO Ulang
+          </button>
+        </div>
+      `).join('');
+    } catch (err) {
+      document.getElementById('selisihList').innerHTML = '<div class="empty-state">Gagal memuat data selisih: ' + err.message + '</div>';
+    }
+  };
+
+  window.closeSelisihModal = function() {
+    document.getElementById('modalSelisih').classList.remove('show');
+  };
+
+  window.buatPoUlang = async function(pembelianId, barangId, selisihQty, distributorId) {
+    if (!confirm(`Buat PO ulang untuk selisih ${selisihQty} unit?`)) return;
+
+    const msg = document.getElementById('selisihMsg');
+    msg.textContent = 'Membuat PO ulang...';
+
+    try {
+      // Generate nomor PO otomatis (contoh: PO-RE-{timestamp})
+      const now = new Date();
+      const timestamp = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '-' + String(Date.now()).slice(-6);
+      const noPo = 'PO-RE-' + timestamp;
+
+      const bulan = document.getElementById('bulanSelect').value;
+      const tahun = document.getElementById('tahunSelect').value;
+
+      const { data, error } = await window.supabase.from('pembelian').insert({
+        no_po: noPo,
+        barang_id: barangId,
+        distributor_id: distributorId || null,
+        bulan: bulan,
+        tahun: tahun,
+        qty_pesan: selisihQty,
+        tanggal_po: now.toISOString().slice(0,10),
+        status: 'DIKIRIM'
+      }).select();
+
+      if (error) throw error;
+
+      msg.textContent = '✅ PO ulang berhasil dibuat: ' + noPo;
+      msg.style.color = 'var(--green-mid)';
+
+      // Refresh data
+      setTimeout(() => {
+        closeSelisihModal();
+        loadAllData();
+      }, 1500);
+    } catch (err) {
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+    }
+  };
+
+  // ============================================================
+  //  UTILITY
+  // ============================================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[s]));
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+
+    loadAllData();
+  });
 </script>
 </body>
 </html>
