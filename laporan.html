@@ -147,6 +147,15 @@
     .badge.warning { background: #FDF1E0; color: var(--amber); }
     .badge.danger { background: #FBEAE7; color: var(--coral); }
 
+    .error-box {
+      background: #FBEAE7;
+      color: var(--coral);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border: 1px solid var(--coral);
+    }
+
     @media (max-width: 900px) {
       .stat-grid { grid-template-columns: repeat(2, 1fr); }
       .grid-2 { grid-template-columns: 1fr; }
@@ -175,6 +184,9 @@
     <h1>Rekap tahunan</h1>
     <p>Rencana belanja vs realisasi, per bulan dan per barang, untuk 1 tahun anggaran</p>
   </div>
+
+  <!-- ERROR -->
+  <div id="errorContainer" style="display:none;" class="error-box"></div>
 
   <!-- Statistik -->
   <section class="stat-grid">
@@ -222,7 +234,7 @@
     </div>
   </div>
 
-  <!-- ===== FITUR BARU: LAPORAN SELISIH PENERIMAAN ===== -->
+  <!-- ===== LAPORAN SELISIH PENERIMAAN ===== -->
   <div class="panel">
     <h2>📋 Laporan Selisih Penerimaan</h2>
     <p class="sub">Daftar PO yang diterima sebagian (selisih > 0) sepanjang tahun ini</p>
@@ -230,7 +242,6 @@
       <div class="empty-mini">Memuat data...</div>
     </div>
   </div>
-  <!-- ===== END LAPORAN SELISIH ===== -->
 
 </main>
 
@@ -281,22 +292,42 @@
     return 'Rp ' + n.toLocaleString('id-ID');
   }
 
+  function showError(msg) {
+    const container = document.getElementById('errorContainer');
+    container.style.display = 'block';
+    container.textContent = '⚠️ ' + msg;
+  }
+
+  function hideError() {
+    document.getElementById('errorContainer').style.display = 'none';
+  }
+
   // ============================================================
   //  LOAD LAPORAN
   // ============================================================
   async function loadLaporan() {
     const tahun = document.getElementById('tahunSelect').value;
     console.log(`🔍 Laporan: memuat data tahun ${tahun}`);
+    hideError();
 
     try {
-      const [rencanaRes, realisasiRes, penjualanRes, barangRes, penerimaanRes, pembelianRes] = await Promise.all([
+      // Query 1: Rencana & Realisasi per bulan
+      const [rencanaRes, realisasiRes, penjualanRes, barangRes, pembelianRes, penerimaanRes] = await Promise.all([
         window.supabase.from('rencana_belanja').select('*').eq('tahun', tahun),
         window.supabase.from('realisasi').select('*').eq('tahun', tahun),
         window.supabase.from('penjualan').select('*').eq('tahun', tahun),
         window.supabase.from('master_barang').select('*'),
-        window.supabase.from('penerimaan').select('*, pembelian(no_po, distributor_id)').eq('tahun', tahun),
-        window.supabase.from('pembelian').select('*').eq('tahun', tahun)
+        window.supabase.from('pembelian').select('*').eq('tahun', tahun), // ambil semua PO tahun ini
+        window.supabase.from('penerimaan').select('*') // ambil SEMUA penerimaan (tanpa filter tahun, karena tidak ada kolom tahun)
       ]);
+
+      // Cek error
+      if (rencanaRes.error) throw new Error('Rencana: ' + rencanaRes.error.message);
+      if (realisasiRes.error) throw new Error('Realisasi: ' + realisasiRes.error.message);
+      if (penjualanRes.error) throw new Error('Penjualan: ' + penjualanRes.error.message);
+      if (barangRes.error) throw new Error('Barang: ' + barangRes.error.message);
+      if (pembelianRes.error) throw new Error('Pembelian: ' + pembelianRes.error.message);
+      if (penerimaanRes.error) throw new Error('Penerimaan: ' + penerimaanRes.error.message);
 
       const rencana = rencanaRes.data || [];
       const realisasi = realisasiRes.data || [];
@@ -304,10 +335,10 @@
       const barangMap = {};
       (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
 
-      const penerimaan = penerimaanRes.data || [];
       const pembelian = pembelianRes.data || [];
+      const penerimaan = penerimaanRes.data || [];
 
-      // ---- Statistik sama seperti sebelumnya ----
+      // ---- Statistik & Grafik (sama seperti sebelumnya) ----
       const rencanaPerBulan = new Array(12).fill(0);
       const realisasiPerBulan = new Array(12).fill(0);
       rencana.forEach(r => { const b = Number(r.bulan)-1; if (b>=0 && b<12) rencanaPerBulan[b] += Number(r.rencana_rp); });
@@ -324,7 +355,7 @@
       document.getElementById('statSelisih').className = 'num ' + (selisih >= 0 ? 'pos' : 'neg');
       document.getElementById('statCapaian').textContent = capaian + '%';
 
-      // ---- Grafik Tren (sama) ----
+      // ---- Grafik Tren ----
       if (chartTren) chartTren.destroy();
       chartTren = new Chart(document.getElementById('chartTren'), {
         type: 'bar',
@@ -390,26 +421,33 @@
       renderLaporanSelisih(penerimaan, pembelian, barangMap);
 
     } catch (err) {
-      console.error(err);
-      alert('Gagal memuat laporan.');
+      console.error('❌ Error loadLaporan:', err);
+      showError('Gagal memuat laporan: ' + err.message);
     }
   }
 
   // ============================================================
-  //  RENDER LAPORAN SELISIH
+  //  RENDER LAPORAN SELISIH (DIPERBAIKI)
   // ============================================================
   function renderLaporanSelisih(penerimaan, pembelian, barangMap) {
     const container = document.getElementById('selisihContainer');
+    const tahun = document.getElementById('tahunSelect').value;
 
     // Filter penerimaan dengan selisih > 0
-    const dataSelisih = penerimaan.filter(p => Number(p.selisih) > 0);
+    // Kemudian filter berdasarkan tahun dari pembelian terkait
+    const dataSelisih = penerimaan.filter(p => {
+      if (Number(p.selisih) <= 0) return false;
+      const po = pembelian.find(x => x.id === p.pembelian_id);
+      if (!po) return false;
+      return Number(po.tahun) === Number(tahun);
+    });
 
     if (dataSelisih.length === 0) {
       container.innerHTML = '<div class="empty-mini">✅ Tidak ada selisih penerimaan pada tahun ini.</div>';
       return;
     }
 
-    // Kelompokkan berdasarkan no_po (dari pembelian)
+    // Kelompokkan berdasarkan no_po
     const grouped = {};
     dataSelisih.forEach(p => {
       const po = pembelian.find(x => x.id === p.pembelian_id);
@@ -425,7 +463,6 @@
       });
     });
 
-    // Build HTML
     let html = `<table>
       <thead><tr>
         <th>No. PO</th>
