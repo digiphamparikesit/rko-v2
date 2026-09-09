@@ -6,19 +6,46 @@
   <title>Gudang Farmasi — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* gaya sama seperti versi sebelumnya, disederhanakan */
-    :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
+    /* ===== GAYA SAMA SEPERTI SEBELUMNYA ===== */
+    :root {
+      --green-deep: #0F3D2E;
+      --green-mid: #16A34A;
+      --green-bright: #3FCF6A;
+      --green-soft: #E7F5EC;
+      --bg: #F4F7F4;
+      --card: #FFFFFF;
+      --text-dark: #14201A;
+      --text-muted: #6B7A72;
+      --amber: #D97706;
+      --coral: #DC5B45;
+      --border: #E4EAE5;
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
-    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text-dark);
+    }
+    header.topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--green-deep); color: #fff; padding: 18px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .mark {
+      width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: var(--green-deep);
+    }
     .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
     .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
     .topbar-right { display: flex; align-items: center; gap: 14px; }
     .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
     a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
     a.back:hover { color: #fff; }
+
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
     .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
     .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 185px; z-index: 80; align-self: start; }
@@ -27,8 +54,14 @@
     .field { margin-bottom: 12px; }
     .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
     .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-    @media (max-width: 860px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
-    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; position: sticky; top: 84px; z-index: 90; background: var(--bg); padding-top: 12px; margin-top: -12px; }
+    @media (max-width: 860px) {
+      .layout-split { grid-template-columns: 1fr; }
+      .left-col { position: static; }
+    }
+    .stat-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px;
+      position: sticky; top: 84px; z-index: 90; background: var(--bg); padding-top: 12px; margin-top: -12px;
+    }
     .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
     .stat-card .num { font-size: 20px; font-weight: 700; }
     .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
@@ -56,9 +89,15 @@
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
     .barang-link { color: var(--green-deep); text-decoration: none; font-weight: 500; }
     .barang-link:hover { text-decoration: underline; color: var(--green-mid); }
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45);
+      align-items: center; justify-content: center; z-index: 40; padding: 20px;
+    }
     .modal-overlay.show { display: flex; }
-    .modal-box { background: #fff; border-radius: 16px; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; padding: 24px; }
+    .modal-box {
+      background: #fff; border-radius: 16px; width: 100%; max-width: 480px;
+      max-height: 88vh; overflow-y: auto; padding: 24px;
+    }
   </style>
 </head>
 <body>
@@ -66,7 +105,10 @@
 <header class="topbar">
   <div class="brand">
     <div class="mark">RS</div>
-    <div><div class="title">RKO RSAMP</div><div class="label">Gudang Farmasi — rencana belanja obat &amp; BMHP</div></div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Gudang Farmasi — rencana belanja obat &amp; BMHP</div>
+    </div>
   </div>
   <div class="topbar-right">
     <span class="who" id="whoLabel"></span>
@@ -85,15 +127,25 @@
     <aside class="left-col">
       <div class="panel side-panel">
         <h2 class="side-title">Filter &amp; Periode</h2>
-        <div class="field"><label>Cari nama barang</label><input type="text" id="searchBox" placeholder="Cari nama barang..."></div>
-        <div class="field"><label>Tampilkan</label><select id="filterKurang"><option value="">Semua item</option><option value="kurang">Kurang stok saja</option></select></div>
-        <div class="field"><label>Bulan</label><select id="bulanSelect"></select></div>
-        <div class="field"><label>Tahun</label><select id="tahunSelect"></select></div>
-      </div>
-      <div class="panel side-panel">
-        <h2 class="side-title">Koreksi Konversi Satuan</h2>
-        <p class="side-sub" style="margin:-8px 0 12px; font-size:11.5px; color:var(--text-muted);">Cek barang dengan satuan beli berbeda (box/roll dll) yang datanya tersimpan sebelum rumus konversi diperbaiki.</p>
-        <button class="btn" style="width:100%; background:#F1F1EE; color:var(--text-dark);" onclick="bukaTinjauKoreksi()">Tinjau Data yang Perlu Dicek</button>
+        <div class="field">
+          <label>Cari nama barang</label>
+          <input type="text" id="searchBox" placeholder="Cari nama barang...">
+        </div>
+        <div class="field">
+          <label>Tampilkan</label>
+          <select id="filterKurang">
+            <option value="">Semua item</option>
+            <option value="kurang">Kurang stok saja</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Bulan</label>
+          <select id="bulanSelect"></select>
+        </div>
+        <div class="field">
+          <label>Tahun</label>
+          <select id="tahunSelect"></select>
+        </div>
       </div>
     </aside>
 
@@ -105,85 +157,135 @@
         </table>
         <div class="pager">
           <span id="pagerInfo">-</span>
-          <div><button id="btnPrev" onclick="changePage(-1)">&larr; Sebelumnya</button><button id="btnNext" onclick="changePage(1)">Berikutnya &rarr;</button></div>
+          <div><button id="btnPrev" onclick="window.changePage(-1)">&larr; Sebelumnya</button><button id="btnNext" onclick="window.changePage(1)">Berikutnya &rarr;</button></div>
         </div>
       </div>
     </section>
   </div>
 </main>
 
+<!-- MODAL DETAIL BARANG (opsional) -->
 <div id="modalDetailBarang" class="modal-overlay">
-  <div class="modal-box"><h2 class="side-title" id="detailBarangNama">-</h2><p class="side-sub" style="margin:-6px 0 12px; font-size:12px; color:var(--text-muted);">Ruangan yang mengusulkan kebutuhan ini bulan berjalan</p><div id="detailBarangList" style="max-height:400px; overflow-y:auto;"></div><div style="text-align:right; margin-top:16px;"><button class="btn" style="background:#F1F1EE; color:var(--text-dark);" onclick="closeDetailBarang()">Tutup</button></div></div>
-</div>
-
-<div id="modalKoreksi" class="modal-overlay">
-  <div class="modal-box" style="max-width:760px;">
-    <h2 class="side-title">Tinjau Koreksi Konversi Satuan</h2>
-    <p class="side-sub" style="margin:-6px 0 12px; font-size:12px; color:var(--text-muted);">Barang dengan satuan beli berbeda (CONTENT &ne; 1) yang sudah punya rencana belanja tersimpan.</p>
-    <div id="koreksiSummary" style="font-size:13px; margin-bottom:12px;"></div>
-    <div id="koreksiListWrap" style="max-height:400px; overflow-y:auto; border:1px solid var(--border); border-radius:10px;">
-      <table style="width:100%; border-collapse:collapse; font-size:12px;">
-        <thead><tr style="background:#FAFBFA;"><th style="padding:8px 8px; text-align:center;"><input type="checkbox" id="koreksiCheckAll" onchange="toggleAllKoreksi(this)"></th><th style="text-align:left; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Barang</th><th style="text-align:right; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Qty tersimpan</th><th style="text-align:right; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Qty seharusnya</th><th style="text-align:right; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Rp tersimpan</th><th style="text-align:right; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Rp seharusnya</th></tr></thead>
-        <tbody id="koreksiListBody"></tbody>
-      </table>
-    </div>
-    <div class="form-msg" id="koreksiMsg" style="font-size:12.5px; margin-top:10px; min-height:16px;"></div>
-    <div style="text-align:right; margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
-      <button class="btn" style="background:#F1F1EE; color:var(--text-dark);" onclick="closeTinjauKoreksi()">Tutup</button>
-      <button class="btn btn-primary" id="btnTerapkanKoreksi" onclick="terapkanKoreksi()" disabled>Terapkan Koreksi Terpilih</button>
+  <div class="modal-box">
+    <h2 class="side-title" id="detailBarangNama">-</h2>
+    <p class="side-sub" style="margin:-6px 0 12px; font-size:12px; color:var(--text-muted);">Ruangan yang mengusulkan kebutuhan ini bulan berjalan</p>
+    <div id="detailBarangList" style="max-height:400px; overflow-y:auto;"></div>
+    <div style="text-align:right; margin-top:16px;">
+      <button class="btn" style="background:#F1F1EE; color:var(--text-dark);" onclick="window.closeDetailBarang()">Tutup</button>
     </div>
   </div>
 </div>
 
 <script>
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
   const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const userStr = sessionStorage.getItem('rko_user');
-  if (!userStr) window.location.href = 'index.html';
-  const currentUser = JSON.parse(userStr);
-  if (!['GUDANG_FARMASI', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) { alert('Akses ditolak.'); window.location.href = 'index.html'; }
-  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
-
-  let allBarang = [], distributorList = [], kebutuhanTotalPerBarang = {}, stokGudangMap = {}, rencanaMap = {};
-  let filteredBarang = [], page = 1, PAGE_SIZE = 15;
-
-  function fillPeriodOptions(curBulan, curTahun) {
-    const bulanSel = document.getElementById('bulanSelect');
-    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    namaBulan.forEach((nm, i) => { const opt = document.createElement('option'); opt.value = i+1; opt.textContent = nm; if (i+1 === curBulan) opt.selected = true; bulanSel.appendChild(opt); });
-    const tahunSel = document.getElementById('tahunSelect');
-    for (let y = curTahun-1; y <= curTahun+1; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; if (y === curTahun) opt.selected = true; tahunSel.appendChild(opt); }
-  }
-
-  (function init() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth()+1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
-    document.getElementById('filterKurang').addEventListener('change', () => { page = 1; applyFilter(); });
-    loadAllData();
+  // ============================================================
+  //  CEK SESSION
+  // ============================================================
+  (function checkSession() {
+    const userStr = sessionStorage.getItem('rko_user');
+    if (!userStr) { window.location.href = 'index.html'; return; }
+    const currentUser = JSON.parse(userStr);
+    if (!['GUDANG_FARMASI', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
+      alert('Anda tidak memiliki akses ke halaman ini.');
+      window.location.href = 'index.html';
+      return;
+    }
+    document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+    window.currentUser = currentUser;
   })();
 
+  // ============================================================
+  //  VARIABEL GLOBAL
+  // ============================================================
+  let allBarang = [];
+  let distributorList = [];
+  let kebutuhanTotalPerBarang = {};
+  let stokGudangMap = {};
+  let rencanaMap = {};
+  let filteredBarang = [];
+  let page = 1;
+  const PAGE_SIZE = 15;
+
+  // ============================================================
+  //  UTILITY
+  // ============================================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[s]));
+  }
+
+  function formatRp(v) {
+    const n = Number(v) || 0;
+    return n.toLocaleString('id-ID');
+  }
+
+  function showError(msg) {
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty-state">⚠️ ' + msg + '</td></tr>';
+  }
+
+  // ============================================================
+  //  FILL PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    bulanSel.innerHTML = '';
+    tahunSel.innerHTML = '';
+
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1;
+      opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+
+    const tahunAwal = curTahun - 2;
+    const tahunAkhir = curTahun + 2;
+    for (let y = tahunAwal; y <= tahunAkhir; y++) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
   async function loadAllData() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
     document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty-state">Memuat data...</td></tr>';
 
     try {
+      console.log('🔍 Memuat data untuk periode:', bulan, tahun);
+
       const [barangRes, distRes, kebutuhanRes, stokRes, rencanaRes] = await Promise.all([
-        supabase.from('master_barang').select('*').eq('status_aktif', true),
-        supabase.from('master_distributor').select('*'),
-        supabase.from('kebutuhan').select('*').eq('bulan', bulan).eq('tahun', tahun),
-        supabase.from('stok_opname').select('*').eq('bulan', bulan).eq('tahun', tahun),
-        supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun)
+        window.supabase.from('master_barang').select('*').eq('status_aktif', true),
+        window.supabase.from('master_distributor').select('*'),
+        window.supabase.from('kebutuhan').select('*').eq('bulan', bulan).eq('tahun', tahun),
+        window.supabase.from('stok_opname').select('*').eq('bulan', bulan).eq('tahun', tahun),
+        window.supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun)
       ]);
+
+      console.log('✅ Data barang:', barangRes.data?.length || 0);
+      console.log('✅ Data kebutuhan:', kebutuhanRes.data?.length || 0);
 
       allBarang = barangRes.data || [];
       distributorList = distRes.data || [];
 
+      // Agregasi kebutuhan per barang (total dari semua ruangan)
       kebutuhanTotalPerBarang = {};
       (kebutuhanRes.data || []).forEach(k => {
         kebutuhanTotalPerBarang[k.barang_id] = (kebutuhanTotalPerBarang[k.barang_id] || 0) + Number(k.kebutuhan);
@@ -195,7 +297,11 @@
       rencanaMap = {};
       (rencanaRes.data || []).forEach(r => {
         rencanaMap[r.barang_id] = {
-          id: r.id, distributor_id: r.distributor_id, qty: r.rencana_qty_satuan_beli, rp: r.rencana_rp, saved: true
+          id: r.id,
+          distributor_id: r.distributor_id,
+          qty: r.rencana_qty_satuan_beli,
+          rp: r.rencana_rp,
+          saved: true
         };
       });
 
@@ -203,7 +309,8 @@
       applyFilter();
       updateSummary();
     } catch (err) {
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty-state">Gagal memuat data.</td></tr>';
+      console.error('❌ Error loadAllData:', err);
+      showError('Gagal memuat data: ' + err.message);
     }
   }
 
@@ -219,9 +326,46 @@
     document.getElementById('statTotalRencana').textContent = 'Rp ' + totalRp.toLocaleString('id-ID');
   }
 
+  // ============================================================
+  //  FILTER & TABEL
+  // ============================================================
+  // Event listener dipasang di sini agar setelah DOM siap
+  document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi periode
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+
+    // Event listener
+    document.getElementById('searchBox').addEventListener('input', function() {
+      console.log('🔍 Search box input:', this.value);
+      page = 1;
+      applyFilter();
+    });
+
+    document.getElementById('filterKurang').addEventListener('change', function() {
+      page = 1;
+      applyFilter();
+    });
+
+    document.getElementById('bulanSelect').addEventListener('change', function() {
+      console.log('📅 Bulan berubah:', this.value);
+      loadAllData();
+    });
+
+    document.getElementById('tahunSelect').addEventListener('change', function() {
+      console.log('📅 Tahun berubah:', this.value);
+      loadAllData();
+    });
+
+    // Muat data pertama
+    loadAllData();
+  });
+
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
     const onlyKurang = document.getElementById('filterKurang').value === 'kurang';
+    console.log('🔍 applyFilter, q:', q, 'onlyKurang:', onlyKurang, 'allBarang.length:', allBarang.length);
+
     filteredBarang = allBarang.filter(b => {
       const matchQ = !q || String(b.nama_barang).toLowerCase().includes(q);
       if (!matchQ) return false;
@@ -231,6 +375,7 @@
       }
       return true;
     });
+    console.log('✅ filteredBarang.length:', filteredBarang.length);
     renderTable();
   }
 
@@ -238,29 +383,37 @@
     const tbody = document.getElementById('tableBody');
     const start = (page - 1) * PAGE_SIZE;
     const pageItems = filteredBarang.slice(start, start + PAGE_SIZE);
+    console.log('📊 renderTable, pageItems.length:', pageItems.length);
 
     if (pageItems.length === 0) {
       tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Tidak ada data yang cocok.</td></tr>';
-    } else {
-      tbody.innerHTML = pageItems.map(b => {
-        const kebutuhan = kebutuhanTotalPerBarang[b.id] || 0;
-        const stok = stokGudangMap[b.id] !== undefined ? stokGudangMap[b.id] : '';
-        const kurang = Math.max(0, kebutuhan - (Number(stok) || 0));
-        const rencana = rencanaMap[b.id] || { distributor_id: b.distributor_id || '', qty: '', rp: '', saved: false };
-        const distOptions = distributorList.map(d => `<option value="${d.id}" ${String(d.id) === String(rencana.distributor_id) ? 'selected' : ''}>${escapeHtml(d.nama_distributor)}</option>`).join('');
-        return `<tr data-id="${b.id}" data-hpp="${b.hpp_beli || 0}" data-content="${b.content || 1}">
-          <td><a href="#" class="barang-link" onclick="showDetailBarang(${b.id}); return false;">${escapeHtml(b.nama_barang)}</a></td>
-          <td class="num">${kebutuhan.toLocaleString('id-ID')} <span class="unit-lbl">${escapeHtml(b.satuan_jual || '')}</span></td>
-          <td><input type="number" class="qty" data-field="stok" value="${stok}" onchange="recalc(${b.id})"> <span class="unit-lbl">${escapeHtml(b.satuan_jual || '')}</span></td>
-          <td class="num"><span class="badge ${kurang > 0 ? 'kurang' : 'cukup'}">${kurang.toLocaleString('id-ID')}</span> <span class="unit-lbl">${escapeHtml(b.satuan_jual || '')}</span></td>
-          <td><select class="dist" data-field="dist">${distOptions || '<option value="">-</option>'}</select></td>
-          <td><input type="number" class="qty" data-field="qty" value="${rencana.qty}"> <span class="unit-lbl">${escapeHtml(b.satuan_beli || '')}</span></td>
-          <td><input type="number" class="qty" data-field="rp" value="${rencana.rp}" style="width:110px;"></td>
-          <td><span class="status-tag ${rencana.saved ? 'saved' : 'unsaved'}" id="status-${b.id}">${rencana.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
-          <td><button class="btn btn-primary" onclick="saveRow(${b.id})">Simpan</button></td>
-        </tr>`;
-      }).join('');
+      document.getElementById('pagerInfo').textContent = '0 item · Halaman 1 dari 1';
+      document.getElementById('btnPrev').disabled = true;
+      document.getElementById('btnNext').disabled = true;
+      return;
     }
+
+    tbody.innerHTML = pageItems.map(b => {
+      const kebutuhan = kebutuhanTotalPerBarang[b.id] || 0;
+      const stok = stokGudangMap[b.id] !== undefined ? stokGudangMap[b.id] : '';
+      const kurang = Math.max(0, kebutuhan - (Number(stok) || 0));
+      const rencana = rencanaMap[b.id] || { distributor_id: b.distributor_id || '', qty: '', rp: '', saved: false };
+      const distOptions = distributorList.map(d =>
+        `<option value="${d.id}" ${String(d.id) === String(rencana.distributor_id) ? 'selected' : ''}>${escapeHtml(d.nama_distributor)}</option>`
+      ).join('');
+
+      return `<tr data-id="${b.id}" data-hpp="${b.hpp_beli || 0}" data-content="${b.content || 1}">
+        <td><a href="#" class="barang-link" onclick="window.showDetailBarang(${b.id}); return false;">${escapeHtml(b.nama_barang)}</a></td>
+        <td class="num">${kebutuhan.toLocaleString('id-ID')} <span class="unit-lbl">${escapeHtml(b.satuan_jual || '')}</span></td>
+        <td><input type="number" class="qty" data-field="stok" value="${stok}" onchange="window.recalc(${b.id})"> <span class="unit-lbl">${escapeHtml(b.satuan_jual || '')}</span></td>
+        <td class="num"><span class="badge ${kurang > 0 ? 'kurang' : 'cukup'}">${kurang.toLocaleString('id-ID')}</span> <span class="unit-lbl">${escapeHtml(b.satuan_jual || '')}</span></td>
+        <td><select class="dist" data-field="dist">${distOptions || '<option value="">-</option>'}</select></td>
+        <td><input type="number" class="qty" data-field="qty" value="${rencana.qty}"> <span class="unit-lbl">${escapeHtml(b.satuan_beli || '')}</span></td>
+        <td><input type="number" class="qty" data-field="rp" value="${rencana.rp}" style="width:110px;"></td>
+        <td><span class="status-tag ${rencana.saved ? 'saved' : 'unsaved'}" id="status-${b.id}">${rencana.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
+        <td><button class="btn btn-primary" onclick="window.saveRow(${b.id})">Simpan</button></td>
+      </tr>`;
+    }).join('');
 
     const totalPages = Math.max(1, Math.ceil(filteredBarang.length / PAGE_SIZE));
     document.getElementById('pagerInfo').textContent = `${filteredBarang.length} item · Halaman ${page} dari ${totalPages}`;
@@ -268,31 +421,36 @@
     document.getElementById('btnNext').disabled = page >= totalPages;
   }
 
-  function changePage(delta) { page += delta; renderTable(); }
+  window.changePage = function(delta) {
+    page += delta;
+    renderTable();
+  };
 
-  function recalc(barangId) {
+  window.recalc = function(barangId) {
     const row = document.querySelector(`tr[data-id="${barangId}"]`);
     const stok = Number(row.querySelector('[data-field="stok"]').value) || 0;
     const kebutuhan = kebutuhanTotalPerBarang[barangId] || 0;
     const kurang = Math.max(0, kebutuhan - stok);
     const hpp = Number(row.dataset.hpp) || 0;
     const content = Number(row.dataset.content) || 1;
+
     row.querySelector('.badge').textContent = kurang.toLocaleString('id-ID');
     row.querySelector('.badge').className = 'badge ' + (kurang > 0 ? 'kurang' : 'cukup');
+
     const qtyBeli = Math.ceil(kurang / content);
     const qtyInput = row.querySelector('[data-field="qty"]');
     const rpInput = row.querySelector('[data-field="rp"]');
     if (!qtyInput.value) qtyInput.value = qtyBeli;
     if (!rpInput.value) rpInput.value = qtyBeli * hpp;
-    markUnsaved(barangId);
-  }
+    window.markUnsaved(barangId);
+  };
 
-  function markUnsaved(barangId) {
+  window.markUnsaved = function(barangId) {
     const tag = document.getElementById('status-' + barangId);
     if (tag) { tag.textContent = 'Belum disimpan'; tag.className = 'status-tag unsaved'; }
-  }
+  };
 
-  async function saveRow(barangId) {
+  window.saveRow = async function(barangId) {
     const row = document.querySelector(`tr[data-id="${barangId}"]`);
     const stok = Number(row.querySelector('[data-field="stok"]').value) || 0;
     const distId = row.querySelector('[data-field="dist"]').value;
@@ -303,71 +461,71 @@
     const btn = row.querySelector('button');
     const tag = document.getElementById('status-' + barangId);
 
-    btn.disabled = true; btn.textContent = '...';
+    btn.disabled = true;
+    btn.textContent = '...';
 
     try {
-      const { error: stokError } = await supabase
+      const { error: stokError } = await window.supabase
         .from('stok_opname')
         .upsert({ barang_id: barangId, bulan, tahun, stok_gudang: stok }, { onConflict: 'barang_id, bulan, tahun' });
       if (stokError) throw stokError;
 
-      const { error: rencanaError } = await supabase
+      const { error: rencanaError } = await window.supabase
         .from('rencana_belanja')
         .upsert({ barang_id: barangId, distributor_id: distId || null, bulan, tahun, rencana_qty_satuan_beli: qty, rencana_rp: rp }, { onConflict: 'barang_id, bulan, tahun' });
       if (rencanaError) throw rencanaError;
 
-      tag.textContent = 'Tersimpan'; tag.className = 'status-tag saved';
+      tag.textContent = 'Tersimpan';
+      tag.className = 'status-tag saved';
       stokGudangMap[barangId] = stok;
       rencanaMap[barangId] = { id: null, distributor_id: distId, qty, rp, saved: true };
       updateSummary();
-    } catch (err) { alert('Gagal menyimpan: ' + err.message); }
-    finally { btn.disabled = false; btn.textContent = 'Simpan'; }
-  }
+    } catch (err) {
+      alert('Gagal menyimpan: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Simpan';
+    }
+  };
 
-  function showDetailBarang(barangId) { /* implementasi mirip, ambil detail kebutuhan dari supabase */ alert('Fungsi detail barang'); }
-  function closeDetailBarang() { document.getElementById('modalDetailBarang').classList.remove('show'); }
+  window.showDetailBarang = function(barangId) {
+    const barang = allBarang.find(b => b.id === barangId);
+    document.getElementById('detailBarangNama').textContent = barang ? barang.nama_barang : 'Barang';
+    document.getElementById('detailBarangList').innerHTML = '<div class="empty-state">Memuat detail...</div>';
+    document.getElementById('modalDetailBarang').classList.add('show');
 
-  // Koreksi konversi (disederhanakan)
-  let koreksiCandidates = [];
-  async function bukaTinjauKoreksi() {
-    document.getElementById('modalKoreksi').classList.add('show');
-    // ambil data rencana & barang
+    // Ambil detail kebutuhan per ruangan untuk barang ini
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
-    const { data: rencana } = await supabase.from('rencana_belanja').select('*, master_barang(*)').eq('bulan', bulan).eq('tahun', tahun);
-    koreksiCandidates = (rencana || []).filter(r => {
-      const content = Number(r.master_barang?.content) || 1;
-      return content > 1;
-    }).map(r => ({
-      barang_id: r.barang_id,
-      nama: r.master_barang?.nama_barang || 'Unknown',
-      qty_tersimpan: Number(r.rencana_qty_satuan_beli),
-      rp_tersimpan: Number(r.rencana_rp),
-      qty_seharusnya: 0, // hitung berdasarkan kebutuhan & stok
-      rp_seharusnya: 0
-    }));
-    // hitung ulang
-    for (let c of koreksiCandidates) {
-      const kebutuhan = kebutuhanTotalPerBarang[c.barang_id] || 0;
-      const stok = stokGudangMap[c.barang_id] || 0;
-      const kurang = Math.max(0, kebutuhan - stok);
-      const content = allBarang.find(b => b.id === c.barang_id)?.content || 1;
-      const hpp = allBarang.find(b => b.id === c.barang_id)?.hpp_beli || 0;
-      c.qty_seharusnya = Math.ceil(kurang / content);
-      c.rp_seharusnya = c.qty_seharusnya * hpp;
-    }
-    renderKoreksiList();
-  }
+    window.supabase
+      .from('kebutuhan')
+      .select('*, master_ruangan(nama_ruangan)')
+      .eq('barang_id', barangId)
+      .eq('bulan', bulan)
+      .eq('tahun', tahun)
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          document.getElementById('detailBarangList').innerHTML = '<div class="empty-state">Tidak ada ruangan yang mengusulkan barang ini periode ini.</div>';
+          return;
+        }
+        const sorted = data.sort((a, b) => b.kebutuhan - a.kebutuhan);
+        let html = '<table style="width:100%; border-collapse:collapse; font-size:13px;"><thead><tr style="border-bottom:1px solid var(--border);"><th style="text-align:left; padding:8px 4px;">Ruangan</th><th style="text-align:right; padding:8px 4px;">Kebutuhan</th></tr></thead><tbody>';
+        sorted.forEach(d => {
+          const nama = d.master_ruangan?.nama_ruangan || 'Unit ' + d.ruangan_id;
+          html += `<tr><td style="padding:8px 4px;">${escapeHtml(nama)}</td><td style="text-align:right; padding:8px 4px;">${Number(d.kebutuhan).toLocaleString('id-ID')}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        document.getElementById('detailBarangList').innerHTML = html;
+      })
+      .catch(err => {
+        document.getElementById('detailBarangList').innerHTML = '<div class="empty-state">Gagal memuat detail: ' + err.message + '</div>';
+      });
+  };
 
-  function renderKoreksiList() {
-    // render
-  }
-
-  function toggleAllKoreksi(checkbox) {}
-  function closeTinjauKoreksi() { document.getElementById('modalKoreksi').classList.remove('show'); }
-  async function terapkanKoreksi() {}
-
-  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+  window.closeDetailBarang = function() {
+    document.getElementById('modalDetailBarang').classList.remove('show');
+  };
 </script>
 </body>
 </html>
