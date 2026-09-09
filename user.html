@@ -655,44 +655,43 @@
   };
 
   window.tambahBarangKeRuangan = async function(barangId) {
-  try {
-    const { error } = await window.supabase
-      .from('barang_ruangan')
-      .insert({
-        ruangan_id: activeRuanganId,
-        barang_id: barangId,
-        status_aktif: true
-      });
-
-    if (error) throw error;
-
-    closeTambahBarangModal();
-    await loadBarangDanKebutuhan();
-  } catch (err) {
-    alert('Gagal menambahkan: ' + err.message);
-  }
-  };
-  window.tambahBarangKeRuangan = async function(barangId) {
-  console.log('tambahBarangKeRuangan dipanggil, barangId:', barangId);
+  console.log('🔥 tambahBarangKeRuangan dipanggil');
+  console.log('barangId:', barangId);
   console.log('activeRuanganId:', activeRuanganId);
-  try {
-    // Cek apakah ruangan_id dan barang_id valid di database
-    const { data: ruanganCheck } = await window.supabase
-      .from('master_ruangan')
-      .select('id')
-      .eq('id', activeRuanganId)
-      .single();
-    console.log('ruanganCheck:', ruanganCheck);
 
-    const { data: barangCheck } = await window.supabase
-      .from('master_barang')
-      .select('id')
-      .eq('id', barangId)
-      .single();
-    console.log('barangCheck:', barangCheck);
-    
-    // Jika keduanya ada, lanjutkan insert
-    const { error } = await window.supabase
+  try {
+    // 1. Cek apakah barang sudah terdaftar di ruangan ini
+    const { data: existing, error: checkError } = await window.supabase
+      .from('barang_ruangan')
+      .select('id, status_aktif')
+      .eq('ruangan_id', activeRuanganId)
+      .eq('barang_id', barangId)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    if (existing) {
+      // Barang sudah ada
+      if (existing.status_aktif === true) {
+        alert('Barang ini sudah ada di daftar ruangan.');
+        window.closeTambahBarangModal();
+        return;
+      } else {
+        // Barang ada tapi status nonaktif → aktifkan kembali
+        const { error: updateError } = await window.supabase
+          .from('barang_ruangan')
+          .update({ status_aktif: true })
+          .eq('id', existing.id);
+        if (updateError) throw updateError;
+        console.log('✅ Barang diaktifkan kembali');
+        window.closeTambahBarangModal();
+        await loadBarangDanKebutuhan();
+        return;
+      }
+    }
+
+    // 2. Barang belum ada → insert baru
+    const { error: insertError } = await window.supabase
       .from('barang_ruangan')
       .insert({
         ruangan_id: activeRuanganId,
@@ -700,11 +699,13 @@
         status_aktif: true
       });
 
-    if (error) throw error;
+    if (insertError) throw insertError;
 
-    closeTambahBarangModal();
+    console.log('✅ Berhasil tambah barang baru');
+    window.closeTambahBarangModal();
     await loadBarangDanKebutuhan();
   } catch (err) {
+    console.error('❌ Error tambah barang:', err);
     alert('Gagal menambahkan: ' + err.message);
   }
   };
