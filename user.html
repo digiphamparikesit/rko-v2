@@ -672,7 +672,42 @@
     alert('Gagal menambahkan: ' + err.message);
   }
   };
+  window.tambahBarangKeRuangan = async function(barangId) {
+  console.log('tambahBarangKeRuangan dipanggil, barangId:', barangId);
+  console.log('activeRuanganId:', activeRuanganId);
+  try {
+    // Cek apakah ruangan_id dan barang_id valid di database
+    const { data: ruanganCheck } = await window.supabase
+      .from('master_ruangan')
+      .select('id')
+      .eq('id', activeRuanganId)
+      .single();
+    console.log('ruanganCheck:', ruanganCheck);
 
+    const { data: barangCheck } = await window.supabase
+      .from('master_barang')
+      .select('id')
+      .eq('id', barangId)
+      .single();
+    console.log('barangCheck:', barangCheck);
+    
+    // Jika keduanya ada, lanjutkan insert
+    const { error } = await window.supabase
+      .from('barang_ruangan')
+      .insert({
+        ruangan_id: activeRuanganId,
+        barang_id: barangId,
+        status_aktif: true
+      });
+
+    if (error) throw error;
+
+    closeTambahBarangModal();
+    await loadBarangDanKebutuhan();
+  } catch (err) {
+    alert('Gagal menambahkan: ' + err.message);
+  }
+  };
   // ============================================================
   //  START
   // ============================================================
