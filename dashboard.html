@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
-    /* ===== GAYA DASHBOARD ===== */
+    /* ===== RESET & VARIABEL ===== */
     :root {
       --green-deep: #0F3D2E;
       --green-mid: #16A34A;
@@ -17,103 +17,146 @@
       --card: #FFFFFF;
       --text-dark: #14201A;
       --text-muted: #6B7A72;
-      --amber: #D97706;
-      --coral: #DC5B45;
       --border: #E4EAE5;
+      --coral: #DC5B45;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
       font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
       color: var(--text-dark);
     }
     h1, h2, h3, .num { font-family: 'Poppins', sans-serif; }
 
+    /* ===== TOPBAR ===== */
     header.topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: var(--green-deep); color: #fff; padding: 18px 24px;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--green-deep);
+      color: #fff;
+      padding: 8px 20px;
+      height: 48px;
+      flex-shrink: 0;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand .mark {
-      width: 34px; height: 34px; border-radius: 9px;
+      width: 28px; height: 28px; border-radius: 8px;
       background: var(--green-bright);
       display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 14px; color: var(--green-deep);
+      font-weight: 700; font-size: 12px; color: var(--green-deep);
     }
-    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
-    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 14px; }
+    .brand .label { font-size: 10px; color: rgba(255,255,255,0.65); }
     .topbar-right {
-      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      display: flex; align-items: center; gap: 10px;
     }
-    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
-    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
-    a.back:hover { color: #fff; }
-    .topbar select {
+    .topbar-right .who { font-size: 11px; color: rgba(255,255,255,0.85); }
+    .topbar-right select {
       background: rgba(255,255,255,0.12);
       color: #fff;
       border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 8px;
-      padding: 7px 10px;
-      font-size: 13px;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
     }
-    select option { color: #14201A; }
+    .topbar-right select option { color: #14201A; }
+    a.back {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 12px;
+    }
+    a.back:hover { color: #fff; }
 
+    /* ===== MAIN ===== */
     main {
-      max-width: 100%;
-      margin: 0;
-      padding: 28px 20px 60px;
+      height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      padding: 8px 16px 8px 16px;
+      overflow: hidden;
     }
+
     .page-heading {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 10px;
+      align-items: baseline;
+      flex-shrink: 0;
+      margin-bottom: 6px;
     }
-    .page-heading h1 { font-size: 22px; margin: 0 0 4px; }
-    .page-heading p { margin: 0; color: var(--text-muted); font-size: 13px; }
+    .page-heading h1 { font-size: 18px; margin: 0; }
+    .page-heading p { font-size: 11px; color: var(--text-muted); margin: 0; }
 
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 22px;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-bottom: 6px;
     }
     .stat-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 18px 20px;
+      border-radius: 10px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .stat-card .icon {
-      width: 30px; height: 30px; border-radius: 8px;
-      background: var(--green-soft); color: var(--green-mid);
+      width: 28px; height: 28px; border-radius: 6px;
+      background: var(--green-soft);
+      color: var(--green-mid);
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px; font-weight: 700;
-      margin-bottom: 10px;
+      font-size: 14px; font-weight: 700;
+      flex-shrink: 0;
     }
-    .stat-card .num { font-size: 24px; font-weight: 700; line-height: 1.1; }
-    .stat-card .lbl { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+    .stat-card .num { font-size: 18px; font-weight: 700; line-height: 1.2; }
+    .stat-card .lbl { font-size: 10px; color: var(--text-muted); }
 
-    .grid-2 {
+    /* ===== GRID UTAMA ===== */
+    .dashboard-grid {
       display: grid;
-      grid-template-columns: 1.5fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
+      grid-template-columns: 1.4fr 0.9fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
     }
+
     .panel {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    .panel h2 { font-size: 15px; margin: 0 0 2px; }
-    .panel .sub { font-size: 12px; color: var(--text-muted); margin: 0 0 16px; }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-shrink: 0;
+      margin-bottom: 4px;
+    }
+    .panel-header h2 { font-size: 13px; margin: 0; }
+    .panel-header .sub { font-size: 10px; color: var(--text-muted); }
 
+    .panel-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
+    .panel-body canvas {
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 100%;
+    }
+
+    /* ===== GAUGE ===== */
     .gauge-wrap {
       display: flex;
       flex-direction: column;
@@ -121,79 +164,98 @@
       justify-content: center;
       height: 100%;
     }
-    .gauge-num {
-      font-size: 30px;
-      font-weight: 700;
-      color: var(--green-mid);
-      margin-top: -78px;
+    .gauge-wrap canvas {
+      max-height: 120px;
+      width: auto !important;
     }
-    .gauge-lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .gauge-num {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: -50px;
+    }
+    .gauge-lbl { font-size: 10px; color: var(--text-muted); }
 
+    /* ===== TABEL & LIST ===== */
+    .table-wrap {
+      overflow-y: auto;
+      flex: 1;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 11px;
     }
     th, td {
-      text-align: left;
-      padding: 10px 8px;
+      padding: 4px 6px;
       border-bottom: 1px solid var(--border);
+      text-align: left;
     }
     th {
       color: var(--text-muted);
       font-weight: 600;
-      font-size: 12px;
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.3px;
+      position: sticky;
+      top: 0;
+      background: var(--card);
+      z-index: 2;
     }
     td.num-cell, th.num-cell { text-align: right; }
 
     .list-item {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
+      padding: 4px 0;
+      font-size: 11px;
       border-bottom: 1px solid var(--border);
-      font-size: 13px;
     }
     .list-item:last-child { border-bottom: none; }
-    .list-item .name { font-weight: 500; }
-    .list-item .val { color: var(--text-muted); font-size: 12.5px; }
-
-    .empty-mini {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 12.5px;
-      padding: 20px 0;
-    }
+    .list-item .val { color: var(--text-muted); }
 
     .mini-stat-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      gap: 6px;
+      margin-top: 4px;
     }
-    .mini-num { font-size: 17px; font-weight: 700; }
-    .mini-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .mini-stat-row .mini-num { font-size: 15px; font-weight: 700; }
+    .mini-stat-row .mini-lbl { font-size: 9px; color: var(--text-muted); }
 
-    footer.note {
+    .empty-mini {
       text-align: center;
       color: var(--text-muted);
-      font-size: 11.5px;
-      margin-top: 18px;
-    }
-
-    @media (max-width: 900px) {
-      .stat-grid { grid-template-columns: repeat(2, 1fr); }
-      .grid-2 { grid-template-columns: 1fr; }
+      font-size: 11px;
+      padding: 10px 0;
     }
 
     .error-box {
       background: #FBEAE7;
       color: var(--coral);
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 15px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
       border: 1px solid var(--coral);
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+
+    footer.note {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 9px;
+      padding: 4px 0;
+      flex-shrink: 0;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+      main { overflow-y: auto; height: auto; }
+      body { overflow-y: auto; }
     }
   </style>
 </head>
@@ -204,113 +266,119 @@
     <div class="mark">RS</div>
     <div>
       <div class="title">RKO RSAMP</div>
-      <div class="label">Dashboard RKO — rangkuman rekapan unit</div>
+      <div class="label">Dashboard RKO</div>
     </div>
   </div>
   <div class="topbar-right">
     <span class="who" id="whoLabel"></span>
     <select id="bulanSelect"></select>
     <select id="tahunSelect"></select>
-    <a class="back" href="index.html">&#8592; Menu utama</a>
+    <a class="back" href="index.html">&#8592; Menu</a>
   </div>
 </header>
 
 <main>
+  <!-- HEADING -->
   <div class="page-heading">
     <div>
       <h1>Ringkasan bulan berjalan</h1>
-      <p>Data digabung dari seluruh unit pelayanan</p>
+      <p>Data gabungan seluruh unit</p>
     </div>
   </div>
 
-  <!-- ERROR CONTAINER -->
+  <!-- ERROR -->
   <div id="errorContainer" style="display:none;" class="error-box"></div>
 
   <!-- STATISTIK -->
   <section class="stat-grid">
-    <div class="stat-card">
-      <div class="icon">Rp</div>
-      <div class="num" id="statBelanja">-</div>
-      <div class="lbl">Total rencana belanja</div>
-    </div>
-    <div class="stat-card">
-      <div class="icon">#</div>
-      <div class="num" id="statItem">-</div>
-      <div class="lbl">Item obat &amp; BMHP aktif</div>
-    </div>
-    <div class="stat-card">
-      <div class="icon">U</div>
-      <div class="num" id="statUnit">-</div>
-      <div class="lbl">Unit sudah input kebutuhan</div>
-    </div>
-    <div class="stat-card">
-      <div class="icon">%</div>
-      <div class="num" id="statCapaian">-</div>
-      <div class="lbl">Efisiensi belanja/kunjungan vs bulan lalu</div>
-    </div>
+    <div class="stat-card"><div class="icon">Rp</div><div><div class="num" id="statBelanja">-</div><div class="lbl">Total rencana</div></div></div>
+    <div class="stat-card"><div class="icon">#</div><div><div class="num" id="statItem">-</div><div class="lbl">Item aktif</div></div></div>
+    <div class="stat-card"><div class="icon">U</div><div><div class="num" id="statUnit">-</div><div class="lbl">Unit input</div></div></div>
+    <div class="stat-card"><div class="icon">%</div><div><div class="num" id="statCapaian">-</div><div class="lbl">Efisiensi</div></div></div>
   </section>
 
-  <!-- CHART 1 & GAUGE -->
-  <section class="grid-2">
-    <div class="panel">
-      <h2>Estimasi nilai kebutuhan per instalasi</h2>
-      <p class="sub">Kebutuhan unit &times; HPP beli, dalam juta rupiah</p>
-      <canvas id="chartInstalasi" height="140"></canvas>
-      <div class="empty-mini" id="chartInstalasiEmpty" style="display:none;">Belum ada data kebutuhan untuk periode ini.</div>
-    </div>
-    <div class="panel">
-      <h2>Efisiensi belanja per kunjungan</h2>
-      <p class="sub" id="targetLabel">Bulan ini vs bulan lalu &middot; target &le; -</p>
-      <div class="gauge-wrap">
-        <canvas id="chartGauge" width="180" height="180"></canvas>
-        <div class="gauge-num" id="gaugeNum">-</div>
-        <div class="gauge-lbl" id="gaugeLbl">dari bulan lalu</div>
+  <!-- GRID UTAMA -->
+  <div class="dashboard-grid">
+    <!-- CHART INSTALASI -->
+    <div class="panel" style="grid-row: span 2;">
+      <div class="panel-header">
+        <h2>Estimasi nilai kebutuhan per instalasi</h2>
+        <span class="sub">Juta Rp</span>
+      </div>
+      <div class="panel-body">
+        <canvas id="chartInstalasi"></canvas>
+        <div class="empty-mini" id="chartInstalasiEmpty" style="display:none;">Belum ada data</div>
       </div>
     </div>
-  </section>
 
-  <!-- TABEL & DISTRIBUTOR -->
-  <section class="grid-2">
+    <!-- GAUGE EFFISIENSI -->
     <div class="panel">
-      <h2>Rekap per instalasi</h2>
-      <p class="sub">Estimasi nilai kebutuhan, diurutkan dari terbesar</p>
-      <table>
-        <thead><tr><th>Instalasi</th><th class="num-cell">Estimasi nilai kebutuhan</th></tr></thead>
-        <tbody id="tableInstalasi"><tr><td colspan="2" class="empty-mini">Memuat data...</td></tr></tbody>
-      </table>
-    </div>
-    <div class="panel">
-      <h2>Distributor terbesar</h2>
-      <p class="sub">Berdasarkan nilai rencana belanja</p>
-      <div id="listDistributor"><div class="empty-mini">Memuat data...</div></div>
-    </div>
-  </section>
-
-  <!-- PENJUALAN & PEMBELIAN -->
-  <section class="grid-2">
-    <div class="panel">
-      <h2>Penjualan &amp; margin</h2>
-      <p class="sub">Dari data upload menu Penjualan bulan ini</p>
-      <div class="mini-stat-row">
-        <div><div class="mini-num" id="statHargaJual">-</div><div class="mini-lbl">Harga jual</div></div>
-        <div><div class="mini-num" id="statHppTerjual">-</div><div class="mini-lbl">HPP terjual</div></div>
-        <div><div class="mini-num" id="statSurplus">-</div><div class="mini-lbl">Surplus/margin</div></div>
+      <div class="panel-header">
+        <h2>Efisiensi belanja</h2>
+        <span class="sub" id="targetLabel">target ≤ 90%</span>
       </div>
-      <div class="empty-mini" id="penjualanEmpty" style="display:none;">Belum ada data penjualan untuk periode ini.</div>
-    </div>
-    <div class="panel">
-      <h2>Status pembelian &amp; penerimaan</h2>
-      <p class="sub">Dari PO yang dibuat bulan ini</p>
-      <div class="mini-stat-row">
-        <div><div class="mini-num" id="statJumlahPO">-</div><div class="mini-lbl">Jumlah PO dibuat</div></div>
-        <div><div class="mini-num" id="statPoBelumTerima">-</div><div class="mini-lbl">PO belum diterima</div></div>
-        <div><div class="mini-num" id="statPersenDatang">-</div><div class="mini-lbl">Barang sudah datang</div></div>
+      <div class="panel-body" style="display:flex; align-items:center; justify-content:center;">
+        <div class="gauge-wrap">
+          <canvas id="chartGauge" width="140" height="140"></canvas>
+          <div class="gauge-num" id="gaugeNum">-</div>
+          <div class="gauge-lbl" id="gaugeLbl">vs bulan lalu</div>
+        </div>
       </div>
-      <div class="empty-mini" id="pembelianEmpty" style="display:none;">Belum ada PO untuk periode ini.</div>
     </div>
-  </section>
 
-  <footer class="note">Data ditarik langsung dari Supabase.</footer>
+    <!-- TABEL INSTALASI -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Rekap per instalasi</h2>
+        <span class="sub">nilai kebutuhan</span>
+      </div>
+      <div class="panel-body table-wrap">
+        <table>
+          <thead><tr><th>Instalasi</th><th class="num-cell">Nilai</th></tr></thead>
+          <tbody id="tableInstalasi"><tr><td colspan="2" class="empty-mini">Memuat...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARIS KEDUA: DISTRIBUTOR + PENJUALAN + PEMBELIAN -->
+  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; flex-shrink: 0; margin-top: 6px;">
+    <!-- DISTRIBUTOR -->
+    <div class="panel" style="padding: 6px 10px;">
+      <div class="panel-header"><h2>Distributor terbesar</h2><span class="sub">rencana</span></div>
+      <div class="panel-body table-wrap" style="max-height: 80px;">
+        <div id="listDistributor"><div class="empty-mini">Memuat...</div></div>
+      </div>
+    </div>
+
+    <!-- PENJUALAN -->
+    <div class="panel" style="padding: 6px 10px;">
+      <div class="panel-header"><h2>Penjualan &amp; margin</h2><span class="sub">bulan ini</span></div>
+      <div class="panel-body">
+        <div class="mini-stat-row">
+          <div><div class="mini-num" id="statHargaJual">-</div><div class="mini-lbl">Harga jual</div></div>
+          <div><div class="mini-num" id="statHppTerjual">-</div><div class="mini-lbl">HPP</div></div>
+          <div><div class="mini-num" id="statSurplus">-</div><div class="mini-lbl">Surplus</div></div>
+        </div>
+        <div class="empty-mini" id="penjualanEmpty" style="display:none;">Belum ada data</div>
+      </div>
+    </div>
+
+    <!-- PEMBELIAN -->
+    <div class="panel" style="padding: 6px 10px;">
+      <div class="panel-header"><h2>Status pembelian</h2><span class="sub">PO bulan ini</span></div>
+      <div class="panel-body">
+        <div class="mini-stat-row">
+          <div><div class="mini-num" id="statJumlahPO">-</div><div class="mini-lbl">Total PO</div></div>
+          <div><div class="mini-num" id="statPoBelumTerima">-</div><div class="mini-lbl">Belum diterima</div></div>
+          <div><div class="mini-num" id="statPersenDatang">-</div><div class="mini-lbl">% datang</div></div>
+        </div>
+        <div class="empty-mini" id="pembelianEmpty" style="display:none;">Belum ada PO</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">Data real-time dari Supabase</footer>
 </main>
 
 <script>
@@ -320,109 +388,73 @@
   const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
   window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  console.log('✅ Dashboard: Supabase client initialized');
 
   // ============================================================
   //  CEK SESSION
   // ============================================================
-  (function checkSession() {
+  (function() {
     const userStr = sessionStorage.getItem('rko_user');
-    if (!userStr) {
-      window.location.href = 'index.html';
-      return;
-    }
+    if (!userStr) { window.location.href = 'index.html'; return; }
     const currentUser = JSON.parse(userStr);
     document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
     window.currentUser = currentUser;
   })();
 
   // ============================================================
-  //  VARIABLES & UTILITY
+  //  VARIABLES
   // ============================================================
-  let chartInstalasi = null;
-  let chartGauge = null;
+  let chartInstalasi = null, chartGauge = null;
   const NAMA_BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   let isLoading = false;
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, s => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[s]));
-  }
-
+  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
   function formatRpSingkat(v) {
     const n = Number(v) || 0;
-    if (n >= 1000000000) return 'Rp ' + (n / 1000000000).toFixed(2).replace('.', ',') + ' M';
-    if (n >= 1000000) return 'Rp ' + (n / 1000000).toFixed(1).replace('.', ',') + ' Jt';
+    if (n >= 1e9) return 'Rp ' + (n/1e9).toFixed(2).replace('.',',') + ' M';
+    if (n >= 1e6) return 'Rp ' + (n/1e6).toFixed(1).replace('.',',') + ' Jt';
     return 'Rp ' + n.toLocaleString('id-ID');
   }
-
   function showError(msg) {
-    const container = document.getElementById('errorContainer');
-    container.style.display = 'block';
-    container.textContent = '⚠️ ' + msg;
+    const el = document.getElementById('errorContainer');
+    el.style.display = 'block';
+    el.textContent = '⚠️ ' + msg;
   }
-
-  function hideError() {
-    document.getElementById('errorContainer').style.display = 'none';
-  }
+  function hideError() { document.getElementById('errorContainer').style.display = 'none'; }
 
   // ============================================================
-  //  FILL PERIODE OPTIONS
+  //  PERIODE OPTIONS
   // ============================================================
   function fillPeriodOptions(curBulan, curTahun) {
     const bulanSel = document.getElementById('bulanSelect');
     const tahunSel = document.getElementById('tahunSelect');
-    bulanSel.innerHTML = '';
-    tahunSel.innerHTML = '';
-
-    NAMA_BULAN.forEach((nm, i) => {
-      const opt = document.createElement('option');
-      opt.value = i + 1;
-      opt.textContent = nm;
-      if (i + 1 === curBulan) opt.selected = true;
-      bulanSel.appendChild(opt);
+    bulanSel.innerHTML = ''; tahunSel.innerHTML = '';
+    NAMA_BULAN.forEach((nm,i) => {
+      const o = document.createElement('option');
+      o.value = i+1; o.textContent = nm;
+      if (i+1 === curBulan) o.selected = true;
+      bulanSel.appendChild(o);
     });
-
-    const tahunAwal = curTahun - 2;
-    const tahunAkhir = curTahun + 2;
-    for (let y = tahunAwal; y <= tahunAkhir; y++) {
-      const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y;
-      if (y === curTahun) opt.selected = true;
-      tahunSel.appendChild(opt);
+    for (let y = curTahun-2; y <= curTahun+2; y++) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      if (y === curTahun) o.selected = true;
+      tahunSel.appendChild(o);
     }
-    console.log('✅ Dashboard: periode options diisi');
   }
 
   // ============================================================
-  //  LOAD DASHBOARD DATA
+  //  LOAD DASHBOARD
   // ============================================================
   async function loadDashboard() {
     if (isLoading) return;
     isLoading = true;
     hideError();
-
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
-    console.log(`🔍 Dashboard: memuat data untuk bulan=${bulan}, tahun=${tahun}`);
-
-    // Tampilkan loading
-    document.querySelectorAll('.stat-card .num').forEach(el => el.textContent = '...');
 
     try {
-      // Query semua data yang dibutuhkan secara paralel
-      const [
-        rencanaRes,
-        kebutuhanRes,
-        barangRes,
-        distributorRes,
-        penjualanRes,
-        pembelianRes,
-        kunjunganRes
-      ] = await Promise.all([
+      // Query data
+      const [rencanaRes, kebutuhanRes, barangRes, distributorRes, penjualanRes, pembelianRes, kunjunganRes] = await Promise.all([
         window.supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun),
         window.supabase.from('kebutuhan').select('*, master_ruangan(nama_ruangan), master_barang(hpp_beli)').eq('bulan', bulan).eq('tahun', tahun),
         window.supabase.from('master_barang').select('*').eq('status_aktif', true),
@@ -431,15 +463,13 @@
         window.supabase.from('pembelian').select('*').eq('bulan', bulan).eq('tahun', tahun),
         window.supabase.from('kunjungan').select('*').eq('bulan', bulan).eq('tahun', tahun)
       ]);
-
-      // Cek error
-      if (rencanaRes.error) throw new Error('Rencana belanja: ' + rencanaRes.error.message);
-      if (kebutuhanRes.error) throw new Error('Kebutuhan: ' + kebutuhanRes.error.message);
-      if (barangRes.error) throw new Error('Barang: ' + barangRes.error.message);
-      if (distributorRes.error) throw new Error('Distributor: ' + distributorRes.error.message);
-      if (penjualanRes.error) throw new Error('Penjualan: ' + penjualanRes.error.message);
-      if (pembelianRes.error) throw new Error('Pembelian: ' + pembelianRes.error.message);
-      if (kunjunganRes.error) throw new Error('Kunjungan: ' + kunjunganRes.error.message);
+      if (rencanaRes.error) throw new Error(rencanaRes.error.message);
+      if (kebutuhanRes.error) throw new Error(kebutuhanRes.error.message);
+      if (barangRes.error) throw new Error(barangRes.error.message);
+      if (distributorRes.error) throw new Error(distributorRes.error.message);
+      if (penjualanRes.error) throw new Error(penjualanRes.error.message);
+      if (pembelianRes.error) throw new Error(pembelianRes.error.message);
+      if (kunjunganRes.error) throw new Error(kunjunganRes.error.message);
 
       const rencana = rencanaRes.data || [];
       const kebutuhan = kebutuhanRes.data || [];
@@ -447,41 +477,28 @@
       const distributor = distributorRes.data || [];
       const penjualan = penjualanRes.data || [];
       const pembelian = pembelianRes.data || [];
-      const kunjungan = kunjunganRes.data || [];
 
-      console.log(`✅ Dashboard: rencana=${rencana.length}, kebutuhan=${kebutuhan.length}, barang=${barang.length}`);
-
-      // ---- STAT 1: Total rencana belanja ----
-      const totalRencana = rencana.reduce((sum, r) => sum + Number(r.rencana_rp || 0), 0);
+      // STATS
+      const totalRencana = rencana.reduce((s,r) => s + Number(r.rencana_rp||0), 0);
       document.getElementById('statBelanja').textContent = formatRpSingkat(totalRencana);
-
-      // ---- STAT 2: Total item aktif ----
-      document.getElementById('statItem').textContent = barang.length.toLocaleString('id-ID');
-
-      // ---- STAT 3: Unit yang sudah input kebutuhan ----
+      document.getElementById('statItem').textContent = barang.length.toLocaleString();
       const unitIds = new Set(kebutuhan.map(k => k.ruangan_id));
-      document.getElementById('statUnit').textContent = unitIds.size.toLocaleString('id-ID');
+      document.getElementById('statUnit').textContent = unitIds.size.toLocaleString();
 
-      // ---- STAT 4: Efisiensi (perbandingan dengan bulan lalu) ----
+      // Efisiensi vs bulan lalu
       const bulanLalu = bulan == 1 ? 12 : bulan - 1;
       const tahunLalu = bulan == 1 ? tahun - 1 : tahun;
-      const { data: rencanaLalu } = await window.supabase
-        .from('rencana_belanja')
-        .select('rencana_rp')
-        .eq('bulan', bulanLalu)
-        .eq('tahun', tahunLalu);
-      const totalRencanaLalu = (rencanaLalu || []).reduce((sum, r) => sum + Number(r.rencana_rp || 0), 0);
-      const targetEfisiensi = 90;
+      const { data: rencanaLalu } = await window.supabase.from('rencana_belanja').select('rencana_rp').eq('bulan', bulanLalu).eq('tahun', tahunLalu);
+      const totalRencanaLalu = (rencanaLalu||[]).reduce((s,r) => s + Number(r.rencana_rp||0), 0);
+      const target = 90;
       let efisiensi = null;
-      if (totalRencanaLalu > 0) {
-        efisiensi = Math.round((totalRencana / totalRencanaLalu) * 100);
-      }
-      const overTarget = efisiensi !== null && efisiensi > targetEfisiensi;
+      if (totalRencanaLalu > 0) efisiensi = Math.round((totalRencana / totalRencanaLalu) * 100);
+      const overTarget = efisiensi !== null && efisiensi > target;
       document.getElementById('statCapaian').textContent = efisiensi !== null ? efisiensi + '%' : '-';
       document.getElementById('statCapaian').style.color = efisiensi !== null ? (overTarget ? 'var(--coral)' : 'var(--green-mid)') : 'var(--text-dark)';
-      document.getElementById('targetLabel').textContent = 'Bulan ini vs bulan lalu · target ≤ ' + targetEfisiensi + '%';
+      document.getElementById('targetLabel').textContent = 'target ≤ ' + target + '%';
 
-      // ---- CHART Instalasi ----
+      // CHART INSTALASI
       const perInstalasi = {};
       kebutuhan.forEach(k => {
         const nama = k.master_ruangan?.nama_ruangan || 'Unit ' + k.ruangan_id;
@@ -490,109 +507,74 @@
         perInstalasi[nama] = (perInstalasi[nama] || 0) + nilai;
       });
       const labels = Object.keys(perInstalasi);
-      const values = labels.map(l => Math.round(perInstalasi[l] / 1000000));
+      const values = labels.map(l => Math.round(perInstalasi[l] / 1e6));
       const chartEmpty = document.getElementById('chartInstalasiEmpty');
       const canvas = document.getElementById('chartInstalasi');
-
       if (labels.length === 0) {
-        canvas.style.display = 'none';
-        chartEmpty.style.display = 'block';
+        canvas.style.display = 'none'; chartEmpty.style.display = 'block';
       } else {
-        canvas.style.display = 'block';
-        chartEmpty.style.display = 'none';
+        canvas.style.display = 'block'; chartEmpty.style.display = 'none';
         if (chartInstalasi) chartInstalasi.destroy();
         chartInstalasi = new Chart(canvas, {
           type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [{
-              data: values,
-              backgroundColor: '#16A34A',
-              borderRadius: 6,
-              maxBarThickness: 34
-            }]
-          },
+          data: { labels, datasets: [{ data: values, backgroundColor: '#16A34A', borderRadius: 4, maxBarThickness: 20 }] },
           options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-              y: { grid: { color: '#EEF2EE' }, ticks: { callback: v => v + ' Jt' } },
-              x: { grid: { display: false } }
+              y: { grid: { color: '#EEF2EE' }, ticks: { font: { size: 9 }, callback: v => v + ' Jt' } },
+              x: { grid: { display: false }, ticks: { font: { size: 9 } } }
             }
           }
         });
       }
 
-      // ---- GAUGE Efisiensi ----
+      // GAUGE
       const gaugeNum = document.getElementById('gaugeNum');
       const gaugeLbl = document.getElementById('gaugeLbl');
       if (efisiensi === null) {
-        gaugeNum.textContent = 'N/A';
-        gaugeLbl.textContent = 'Data bulan lalu belum lengkap';
+        gaugeNum.textContent = 'N/A'; gaugeLbl.textContent = 'Data bulan lalu kurang';
       } else {
         gaugeNum.textContent = efisiensi + '%';
         gaugeNum.style.color = overTarget ? 'var(--coral)' : 'var(--green-mid)';
-        gaugeLbl.textContent = overTarget ? 'di atas target (boros)' : 'di bawah/sama target';
+        gaugeLbl.textContent = overTarget ? 'di atas target' : 'di bawah/sama';
       }
       if (chartGauge) chartGauge.destroy();
       const gaugeColor = overTarget ? '#DC5B45' : '#16A34A';
       const gaugeValue = efisiensi !== null ? Math.min(100, efisiensi) : 0;
       chartGauge = new Chart(document.getElementById('chartGauge'), {
         type: 'doughnut',
-        data: {
-          datasets: [{
-            data: [gaugeValue, Math.max(0, 100 - gaugeValue)],
-            backgroundColor: [gaugeColor, '#EEF2EE'],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          cutout: '78%',
-          circumference: 360,
-          plugins: { legend: { display: false }, tooltip: { enabled: false } }
-        }
+        data: { datasets: [{ data: [gaugeValue, Math.max(0, 100 - gaugeValue)], backgroundColor: [gaugeColor, '#EEF2EE'], borderWidth: 0 }] },
+        options: { cutout: '78%', circumference: 360, plugins: { legend: { display: false }, tooltip: { enabled: false } }, maintainAspectRatio: false }
       });
 
-      // ---- TABEL Instalasi ----
-      const sorted = labels.map(l => ({ nama: l, nilai: perInstalasi[l] }))
-        .sort((a, b) => b.nilai - a.nilai);
+      // TABEL INSTALASI
+      const sorted = labels.map(l => ({ nama: l, nilai: perInstalasi[l] })).sort((a,b) => b.nilai - a.nilai);
       const tbody = document.getElementById('tableInstalasi');
       if (sorted.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2" class="empty-mini">Belum ada data untuk periode ini.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="2" class="empty-mini">Belum ada data</td></tr>';
       } else {
-        tbody.innerHTML = sorted.map(row => `
-          <tr>
-            <td>${escapeHtml(row.nama)}</td>
-            <td class="num-cell">Rp ${Math.round(row.nilai).toLocaleString('id-ID')}</td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = sorted.map(row => `<tr><td>${escapeHtml(row.nama)}</td><td class="num-cell">Rp ${Math.round(row.nilai).toLocaleString()}</td></tr>`).join('');
       }
 
-      // ---- DISTRIBUTOR terbesar ----
-      const perDistributor = {};
+      // DISTRIBUTOR
+      const perDist = {};
       rencana.forEach(r => {
-        const dist = distributor.find(d => d.id === r.distributor_id);
-        const nama = dist ? dist.nama_distributor : 'Distributor ' + r.distributor_id;
-        perDistributor[nama] = (perDistributor[nama] || 0) + Number(r.rencana_rp || 0);
+        const nama = distributor.find(d => d.id === r.distributor_id)?.nama_distributor || 'Distributor ' + r.distributor_id;
+        perDist[nama] = (perDist[nama] || 0) + Number(r.rencana_rp||0);
       });
-      const topDist = Object.keys(perDistributor)
-        .map(nama => ({ nama, nilai: perDistributor[nama] }))
-        .sort((a, b) => b.nilai - a.nilai);
+      const topDist = Object.keys(perDist).map(n => ({ nama: n, nilai: perDist[n] })).sort((a,b) => b.nilai - a.nilai);
       const distContainer = document.getElementById('listDistributor');
       if (topDist.length === 0) {
-        distContainer.innerHTML = '<div class="empty-mini">Belum ada rencana belanja untuk periode ini.</div>';
+        distContainer.innerHTML = '<div class="empty-mini">Belum ada rencana</div>';
       } else {
-        distContainer.innerHTML = topDist.map(item => `
-          <div class="list-item">
-            <span class="name">${escapeHtml(item.nama)}</span>
-            <span class="val">Rp ${Math.round(item.nilai).toLocaleString('id-ID')}</span>
-          </div>
-        `).join('');
+        distContainer.innerHTML = topDist.map(item => `<div class="list-item"><span>${escapeHtml(item.nama)}</span><span class="val">Rp ${Math.round(item.nilai).toLocaleString()}</span></div>`).join('');
       }
 
-      // ---- PENJUALAN ----
-      const totalHpp = penjualan.reduce((s, p) => s + Number(p.hpp_terjual || 0), 0);
-      const totalJual = penjualan.reduce((s, p) => s + Number(p.harga_jual || 0), 0);
+      // PENJUALAN
+      const totalHpp = penjualan.reduce((s,p) => s + Number(p.hpp_terjual||0), 0);
+      const totalJual = penjualan.reduce((s,p) => s + Number(p.harga_jual||0), 0);
       const surplus = totalJual - totalHpp;
       const penjualanEmpty = document.getElementById('penjualanEmpty');
       if (totalHpp === 0 && totalJual === 0) {
@@ -604,12 +586,12 @@
         penjualanEmpty.style.display = 'none';
         document.getElementById('statHargaJual').textContent = formatRpSingkat(totalJual);
         document.getElementById('statHppTerjual').textContent = formatRpSingkat(totalHpp);
-        const surplusEl = document.getElementById('statSurplus');
-        surplusEl.textContent = formatRpSingkat(surplus);
-        surplusEl.style.color = surplus >= 0 ? 'var(--green-mid)' : 'var(--coral)';
+        const surEl = document.getElementById('statSurplus');
+        surEl.textContent = formatRpSingkat(surplus);
+        surEl.style.color = surplus >= 0 ? 'var(--green-mid)' : 'var(--coral)';
       }
 
-      // ---- PEMBELIAN ----
+      // PEMBELIAN
       const pembelianEmpty = document.getElementById('pembelianEmpty');
       if (pembelian.length === 0) {
         pembelianEmpty.style.display = 'block';
@@ -618,17 +600,15 @@
         document.getElementById('statPersenDatang').textContent = '-';
       } else {
         pembelianEmpty.style.display = 'none';
-        document.getElementById('statJumlahPO').textContent = pembelian.length.toLocaleString('id-ID');
-        const belum = pembelian.filter(p => p.status !== 'SELESAI' && p.status !== 'DITERIMA_SEBAGIAN').length;
+        document.getElementById('statJumlahPO').textContent = pembelian.length.toLocaleString();
+        const belum = pembelian.filter(p => p.status === 'DIKIRIM').length;
         document.getElementById('statPoBelumTerima').textContent = belum;
         const selesai = pembelian.filter(p => p.status === 'SELESAI').length;
-        const persen = pembelian.length > 0 ? Math.round((selesai / pembelian.length) * 100) : 0;
-        document.getElementById('statPersenDatang').textContent = persen + '%';
+        document.getElementById('statPersenDatang').textContent = Math.round((selesai / pembelian.length) * 100) + '%';
       }
 
-      console.log('✅ Dashboard: selesai dimuat');
     } catch (err) {
-      console.error('❌ Dashboard error:', err);
+      console.error(err);
       showError('Gagal memuat dashboard: ' + err.message);
     } finally {
       isLoading = false;
@@ -636,21 +616,13 @@
   }
 
   // ============================================================
-  //  INISIALISASI
+  //  START
   // ============================================================
   document.addEventListener('DOMContentLoaded', function() {
     const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-
-    document.getElementById('bulanSelect').addEventListener('change', function() {
-      console.log('📅 Bulan berubah ke:', this.value);
-      loadDashboard();
-    });
-    document.getElementById('tahunSelect').addEventListener('change', function() {
-      console.log('📅 Tahun berubah ke:', this.value);
-      loadDashboard();
-    });
-
+    fillPeriodOptions(now.getMonth()+1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadDashboard);
+    document.getElementById('tahunSelect').addEventListener('change', loadDashboard);
     loadDashboard();
   });
 </script>
