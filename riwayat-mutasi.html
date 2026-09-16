@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riwayat Mutasi — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+    select option { color: #14201A; }
+
+    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+    .layout-split { display: grid; grid-template-columns: 1fr 2.5fr; gap: 16px; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
+    .side-panel { padding: 18px 20px; }
+    .side-title { font-size: 14px; margin: 0 0 12px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+    .info-note { background: var(--green-soft); color: var(--green-deep); padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+    @media (max-width: 900px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
+
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+    .stat-card .num { font-size: 20px; font-weight: 700; }
+    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+    .mut-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
+    .mut-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; cursor: pointer; gap: 12px; flex-wrap: wrap; }
+    .mut-head:hover { background: #FAFBFA; }
+    .mut-main { flex: 1; min-width: 0; }
+    .mut-name { font-weight: 600; font-size: 14px; }
+    .mut-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+    .mut-right { display: flex; align-items: center; gap: 16px; }
+    .mut-total { text-align: right; }
+    .mut-total .rp { font-weight: 700; font-size: 14px; color: var(--green-mid); }
+    .mut-total .cnt { font-size: 11px; color: var(--text-muted); }
+    .mut-body { display: none; border-top: 1px solid var(--border); padding: 12px 18px 16px; }
+    .mut-card.open .mut-body { display: block; }
+
+    .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .badge.aktif { background: var(--green-soft); color: var(--green-mid); }
+    .badge.batal { background: #F1F1EE; color: var(--text-muted); }
+    .badge.aksi { background: #E9EEFB; color: #3B5BDB; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num { text-align: right; }
+
+    .log-list { margin-top: 12px; padding: 10px 12px; background: #FAFBFA; border-radius: 8px; font-size: 12px; }
+    .log-list .log-item { padding: 4px 0; border-bottom: 1px dashed var(--border); }
+    .log-list .log-item:last-child { border-bottom: none; }
+    .log-list .log-item .meta { color: var(--text-muted); font-size: 11px; }
+
+    .actions-row { display: flex; gap: 8px; margin-top: 10px; }
+    .btn { padding: 7px 14px; border: none; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-primary { background: var(--green-mid); color: #fff; }
+    .btn-primary:hover { background: #128a3e; }
+    .btn-primary:disabled { background: #A9C9B5; cursor: default; }
+    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
+    .btn-danger { background: var(--coral); color: #fff; }
+    .btn-danger:hover { background: #B84733; }
+    .btn-mini { padding: 5px 10px; font-size: 11.5px; }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+    .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
+
+    #modalOverlay, #modalBatal { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
+    #modalOverlay.show, #modalBatal.show { display: flex; }
+    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 26px; }
+    .modal h2 { font-size: 16px; margin: 0 0 6px; }
+    .modal .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+    .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
+    .help-text { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Riwayat mutasi — log &amp; koreksi</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="bulanSelect"></select>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div class="stat-row">
+    <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl">Total mutasi periode ini</div></div>
+    <div class="stat-card"><div class="num" id="statAktif">-</div><div class="lbl">Mutasi aktif</div></div>
+    <div class="stat-card"><div class="num" id="statBatal">-</div><div class="lbl">Mutasi dibatalkan</div></div>
+  </div>
+
+  <div class="layout-split">
+    <aside class="left-col">
+      <div class="panel side-panel">
+        <h2 class="side-title">Filter</h2>
+        <div class="field">
+          <label>Cari nama barang / no. PO</label>
+          <input type="text" id="searchBox" placeholder="Cari barang atau PO...">
+        </div>
+        <div class="field">
+          <label>Status mutasi</label>
+          <select id="filterStatus">
+            <option value="">Semua</option>
+            <option value="AKTIF">Aktif</option>
+            <option value="DIBATALKAN">Dibatalkan</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel side-panel">
+        <h2 class="side-title">Hak aksi</h2>
+        <div class="info-note" id="hakInfo">-</div>
+      </div>
+    </aside>
+
+    <section class="right-col">
+      <div id="mutasiList"><div class="loading-note">Memuat data mutasi...</div></div>
+    </section>
+  </div>
+</main>
+
+<!-- MODAL KOREKSI -->
+<div id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Koreksi Jatah Mutasi</h2>
+    <div class="sub" id="modalSub"></div>
+    <div id="koreksiInfo" style="background:#FDF1E0; border-radius:8px; padding:10px 12px; font-size:12.5px; margin-bottom:14px;">
+      Ubah jatah sesuai kebutuhan. Total setelah koreksi tidak harus sama dengan stok awal, sistem akan menyesuaikan stok ruangan otomatis.
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Ruangan</th>
+          <th class="num">RKO</th>
+          <th class="num">Jatah lama</th>
+          <th class="num">Jatah baru</th>
+        </tr>
+      </thead>
+      <tbody id="koreksiBody"></tbody>
+    </table>
+    <div class="field" style="margin-top:14px;">
+      <label>Alasan koreksi <span style="color:var(--coral);">*</span></label>
+      <input type="text" id="fAlasanKoreksi" placeholder="mis. salah hitung, koreksi RKO, dll">
+    </div>
+    <div class="form-msg" id="koreksiMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeKoreksi()">Batal</button>
+      <button class="btn btn-primary" id="btnSubmitKoreksi" onclick="window.submitKoreksi()">Simpan Koreksi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BATAL -->
+<div id="modalBatal">
+  <div class="modal" style="max-width:520px;">
+    <h2>Batalkan Mutasi</h2>
+    <div class="sub" id="batalSub"></div>
+    <div style="background:#FBEAE7; border-radius:8px; padding:10px 12px; font-size:12.5px; margin-bottom:14px; color:var(--coral);">
+      ⚠️ Mutasi akan dibatalkan, stok ruangan dikurangi sesuai jatah awal, dan penerimaan ditandai <strong>belum dimutasi</strong> supaya bisa dijalankan ulang.
+    </div>
+    <div class="field">
+      <label>Alasan pembatalan <span style="color:var(--coral);">*</span></label>
+      <input type="text" id="fAlasanBatal" placeholder="mis. salah input penerimaan, salah pilih barang">
+    </div>
+    <div class="form-msg" id="batalMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeBatal()">Batal</button>
+      <button class="btn btn-danger" id="btnSubmitBatal" onclick="window.submitBatal()">Ya, Batalkan Mutasi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (function() {
+    let user = null;
+    try {
+      const stored = sessionStorage.getItem('rko_user');
+      if (stored) user = JSON.parse(stored);
+    } catch (e) {}
+    if (!user) {
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
+    }
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+  })();
+
+  // ============================================================
+  //  HAK AKSI
+  // ============================================================
+  function getHakAksi() {
+    const role = window.currentUser.role;
+    if (role === 'KEPALA_INSTALASI_FARMASI') return { koreksi: true, batal: true };
+    if (role === 'KOORDINATOR_LOGISTIK_FARMASI') return { koreksi: true, batal: false };
+    if (role === 'PETUGAS_MUTASI_OBAT') return { koreksi: true, batal: false, gudang: 'OBAT' };
+    if (role === 'PETUGAS_MUTASI_BMHP') return { koreksi: true, batal: false, gudang: 'BMHP' };
+    // SUPER_ADMIN / ADMIN: read only
+    return { koreksi: false, batal: false };
+  }
+
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+  function formatDT(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
+  let barangMap = {};
+  let ruanganMap = {};
+  let pembelianMap = {};
+  let penerimaanMap = {};
+  let mutasiList = [];
+  let detailMap = {};   // mutasi_id -> [detail]
+  let logMap = {};      // mutasi_id -> [log]
+  let filteredList = [];
+  let window_mutasiAktif = null;
+
+  // ============================================================
+  //  PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1; opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+    for (let y = curTahun - 2; y <= curTahun + 2; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
+  async function loadAllData() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+    document.getElementById('mutasiList').innerHTML = '<div class="loading-note">Memuat data mutasi...</div>';
+
+    try {
+      const [barangData, ruanganData, pembelianData, penerimaanData, mutasiData] = await Promise.all([
+        fetchAllRows('master_barang'),
+        fetchAllRows('master_ruangan'),
+        fetchAllRows('pembelian'),
+        fetchAllRows('penerimaan'),
+        fetchAllRows('mutasi_ruangan', q => q.eq('bulan', bulan).eq('tahun', tahun).order('id', { ascending: false }))
+      ]);
+
+      barangMap = {}; barangData.forEach(b => { barangMap[b.id] = b; });
+      ruanganMap = {}; ruanganData.forEach(r => { ruanganMap[r.id] = r; });
+      pembelianMap = {}; pembelianData.forEach(p => { pembelianMap[p.id] = p; });
+      penerimaanMap = {}; penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
+      mutasiList = mutasiData;
+
+      // Ambil detail & log untuk mutasi yang ada
+      if (mutasiList.length > 0) {
+        const ids = mutasiList.map(m => m.id);
+
+        const [detailData, logData] = await Promise.all([
+          fetchAllRows('mutasi_ruangan_detail', q => q.in('mutasi_id', ids)),
+          fetchAllRows('mutasi_log', q => q.in('mutasi_id', ids).order('id', { ascending: false }))
+        ]);
+
+        detailMap = {};
+        detailData.forEach(d => {
+          if (!detailMap[d.mutasi_id]) detailMap[d.mutasi_id] = [];
+          detailMap[d.mutasi_id].push(d);
+        });
+        logMap = {};
+        logData.forEach(l => {
+          if (!logMap[l.mutasi_id]) logMap[l.mutasi_id] = [];
+          logMap[l.mutasi_id].push(l);
+        });
+      }
+
+      // Filter hak akses untuk PETUGAS_MUTASI_*
+      const hak = getHakAksi();
+      if (hak.gudang) {
+        mutasiList = mutasiList.filter(m => {
+          const barang = barangMap[m.barang_id];
+          return barang && barang.gudang_penyimpanan === hak.gudang;
+        });
+      }
+
+      applyFilter();
+      updateStats();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('mutasiList').innerHTML =
+        '<div class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</div>';
+    }
+  }
+
+  function updateStats() {
+    const total = mutasiList.length;
+    const aktif = mutasiList.filter(m => m.status !== 'DIBATALKAN').length;
+    const batal = total - aktif;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statAktif').textContent = aktif;
+    document.getElementById('statBatal').textContent = batal;
+
+    const hak = getHakAksi();
+    const label = [];
+    if (hak.koreksi) label.push('bisa koreksi');
+    if (hak.batal) label.push('bisa batal');
+    const gud = hak.gudang ? ` (gudang ${hak.gudang})` : '';
+    document.getElementById('hakInfo').innerHTML = label.length
+      ? 'Peran Anda: <strong>' + label.join(', ') + '</strong>' + gud
+      : 'Peran Anda hanya bisa melihat. Koreksi & batal tidak tersedia.';
+  }
+
+  // ============================================================
+  //  FILTER
+  // ============================================================
+  document.getElementById('searchBox').addEventListener('input', applyFilter);
+  document.getElementById('filterStatus').addEventListener('change', applyFilter);
+
+  function applyFilter() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+
+    filteredList = mutasiList.filter(m => {
+      const barang = barangMap[m.barang_id] || {};
+      const penerimaan = penerimaanMap[m.penerimaan_id];
+      const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+      const nama = String(barang.nama_barang || '').toLowerCase();
+      const noPo = String(po ? po.no_po : '').toLowerCase();
+      const matchQ = !q || nama.includes(q) || noPo.includes(q);
+      const matchS = !status || m.status === status;
+      return matchQ && matchS;
+    });
+
+    renderList();
+  }
+
+  // ============================================================
+  //  RENDER LIST
+  // ============================================================
+  function renderList() {
+    const container = document.getElementById('mutasiList');
+    if (filteredList.length === 0) {
+      container.innerHTML = '<div class="empty-state">Belum ada mutasi untuk periode ini.</div>';
+      return;
+    }
+
+    const hak = getHakAksi();
+
+    container.innerHTML = filteredList.map(m => {
+      const barang = barangMap[m.barang_id] || {};
+      const penerimaan = penerimaanMap[m.penerimaan_id];
+      const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+      const detail = detailMap[m.id] || [];
+      const totalAlokasi = detail.reduce((s, d) => s + Number(d.qty_dialokasikan || 0), 0);
+      const isBatal = m.status === 'DIBATALKAN';
+
+      const badgeStatus = isBatal
+        ? '<span class="badge batal">DIBATALKAN</span>'
+        : '<span class="badge aktif">AKTIF</span>';
+
+      const detailRows = detail.map(d => {
+        const r = ruanganMap[d.ruangan_id] || {};
+        const persen = (Number(d.persentase || 0) * 100).toFixed(1);
+        return `<tr>
+          <td>${escapeHtml(r.nama_ruangan || '-')}</td>
+          <td class="num">${Number(d.qty_rko || 0).toLocaleString('id-ID')}</td>
+          <td class="num">${persen}%</td>
+          <td class="num"><strong>${Number(d.qty_dialokasikan || 0).toLocaleString('id-ID')}</strong></td>
+        </tr>`;
+      }).join('');
+
+      const logList = (logMap[m.id] || []).map(l => `
+        <div class="log-item">
+          <strong>${escapeHtml(l.aksi)}</strong> · ${escapeHtml(l.alasan || '-')}
+          <div class="meta">${formatDT(l.dilakukan_pada)}</div>
+        </div>
+      `).join('');
+
+      // Tombol aksi
+      let actionButtons = '';
+      if (!isBatal) {
+        if (hak.koreksi) actionButtons += `<button class="btn btn-secondary btn-mini" onclick="event.stopPropagation(); window.openKoreksi(${m.id})">Koreksi</button>`;
+        if (hak.batal) actionButtons += `<button class="btn btn-danger btn-mini" onclick="event.stopPropagation(); window.openBatal(${m.id})">Batalkan</button>`;
+      }
+      if (!actionButtons) actionButtons = '<span style="font-size:11.5px; color:var(--text-muted);">tidak ada aksi</span>';
+
+      return `<div class="mut-card" id="card-${m.id}">
+        <div class="mut-head" onclick="window.toggleCard(${m.id})">
+          <div class="mut-main">
+            <div class="mut-name">${escapeHtml(barang.nama_barang || 'Tidak dikenal')}</div>
+            <div class="mut-sub">
+              PO: ${escapeHtml(po ? po.no_po : '-')} · ${formatDT(m.tanggal_mutasi)} · ${badgeStatus}
+            </div>
+          </div>
+          <div class="mut-right">
+            <div class="mut-total">
+              <div class="rp">${totalAlokasi.toLocaleString('id-ID')} unit</div>
+              <div class="cnt">${detail.length} ruangan</div>
+            </div>
+          </div>
+        </div>
+        <div class="mut-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Ruangan</th>
+                <th class="num">RKO</th>
+                <th class="num">Persen</th>
+                <th class="num">Jatah dialokasikan</th>
+              </tr>
+            </thead>
+            <tbody>${detailRows || '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Tidak ada detail</td></tr>'}</tbody>
+          </table>
+
+          <div style="margin-top:12px; font-size:12px; color:var(--text-muted);">
+            Stok tersedia saat mutasi: <strong>${Number(m.stok_tersedia_saat_mutasi || 0).toLocaleString('id-ID')}</strong> ·
+            Total RKO: <strong>${Number(m.total_rko_saat_mutasi || 0).toLocaleString('id-ID')}</strong>
+          </div>
+
+          ${logList ? '<div class="log-list"><strong style="font-size:11.5px;">Log:</strong>' + logList + '</div>' : ''}
+
+          <div class="actions-row">${actionButtons}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  window.toggleCard = function(id) {
+    const el = document.getElementById('card-' + id);
+    if (el) el.classList.toggle('open');
+  };
+
+  // ============================================================
+  //  MODAL KOREKSI
+  // ============================================================
+  window.openKoreksi = function(mutasiId) {
+    const m = mutasiList.find(x => x.id === mutasiId);
+    if (!m) return;
+    const barang = barangMap[m.barang_id] || {};
+    const penerimaan = penerimaanMap[m.penerimaan_id];
+    const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+    const detail = detailMap[m.id] || [];
+
+    window_mutasiAktif = m;
+
+    document.getElementById('modalSub').innerHTML =
+      `📦 <strong>${escapeHtml(barang.nama_barang || '-')}</strong> · PO ${escapeHtml(po ? po.no_po : '-')} · ${formatDT(m.tanggal_mutasi)}`;
+
+    document.getElementById('koreksiBody').innerHTML = detail.map(d => {
+      const r = ruanganMap[d.ruangan_id] || {};
+      return `<tr data-ruangan="${d.ruangan_id}">
+        <td>${escapeHtml(r.nama_ruangan || '-')}</td>
+        <td class="num">${Number(d.qty_rko || 0).toLocaleString('id-ID')}</td>
+        <td class="num">${Number(d.qty_dialokasikan || 0).toLocaleString('id-ID')}</td>
+        <td class="num"><input type="number" class="qty-baru" data-ruangan="${d.ruangan_id}" value="${Number(d.qty_dialokasikan || 0)}" min="0" style="width:90px; padding:6px 8px; border:1px solid var(--border); border-radius:6px; text-align:right; font-size:12.5px;"></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('fAlasanKoreksi').value = '';
+    document.getElementById('koreksiMsg').textContent = '';
+    document.getElementById('btnSubmitKoreksi').disabled = false;
+    document.getElementById('modalOverlay').classList.add('show');
+  };
+
+  window.closeKoreksi = function() {
+    document.getElementById('modalOverlay').classList.remove('show');
+    window_mutasiAktif = null;
+  };
+
+  window.submitKoreksi = async function() {
+    if (!window_mutasiAktif) return;
+    const alasan = document.getElementById('fAlasanKoreksi').value.trim();
+    const msg = document.getElementById('koreksiMsg');
+    const btn = document.getElementById('btnSubmitKoreksi');
+
+    if (!alasan) { msg.textContent = 'Alasan koreksi wajib diisi.'; return; }
+
+    const inputs = document.querySelectorAll('#koreksiBody .qty-baru');
+    const detail = [];
+    let adaPerubahan = false;
+
+    inputs.forEach(inp => {
+      const ruanganId = Number(inp.dataset.ruangan);
+      const qtyBaru = Number(inp.value);
+      if (isNaN(qtyBaru) || qtyBaru < 0) {
+        msg.textContent = 'Jatah baru tidak boleh negatif.';
+        return;
+      }
+      const currentDetail = (detailMap[window_mutasiAktif.id] || []).find(d => Number(d.ruangan_id) === ruanganId);
+      const qtyLama = currentDetail ? Number(currentDetail.qty_dialokasikan || 0) : 0;
+      if (qtyBaru !== qtyLama) adaPerubahan = true;
+      detail.push({ ruangan_id: ruanganId, qty_baru: qtyBaru });
+    });
+
+    if (!adaPerubahan) { msg.textContent = 'Tidak ada perubahan jatah.'; return; }
+
+    btn.disabled = true;
+    msg.textContent = 'Menyimpan...';
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      const { error } = await window.supabase.rpc('koreksi_mutasi', {
+        p_mutasi_id: window_mutasiAktif.id,
+        p_detail: detail,
+        p_alasan: alasan,
+        p_petugas_id: window.currentUser.id || null
+      });
+      if (error) throw error;
+
+      msg.textContent = '✅ Koreksi tersimpan.';
+      msg.style.color = 'var(--green-mid)';
+      setTimeout(() => {
+        closeKoreksi();
+        loadAllData();
+      }, 800);
+    } catch (err) {
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
+  //  MODAL BATAL
+  // ============================================================
+  window.openBatal = function(mutasiId) {
+    const m = mutasiList.find(x => x.id === mutasiId);
+    if (!m) return;
+    const barang = barangMap[m.barang_id] || {};
+    const penerimaan = penerimaanMap[m.penerimaan_id];
+    const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+
+    window_mutasiAktif = m;
+
+    document.getElementById('batalSub').innerHTML =
+      `📦 <strong>${escapeHtml(barang.nama_barang || '-')}</strong> · PO ${escapeHtml(po ? po.no_po : '-')} · ${formatDT(m.tanggal_mutasi)}`;
+
+    document.getElementById('fAlasanBatal').value = '';
+    document.getElementById('batalMsg').textContent = '';
+    document.getElementById('btnSubmitBatal').disabled = false;
+    document.getElementById('modalBatal').classList.add('show');
+  };
+
+  window.closeBatal = function() {
+    document.getElementById('modalBatal').classList.remove('show');
+    window_mutasiAktif = null;
+  };
+
+  window.submitBatal = async function() {
+    if (!window_mutasiAktif) return;
+    const alasan = document.getElementById('fAlasanBatal').value.trim();
+    const msg = document.getElementById('batalMsg');
+    const btn = document.getElementById('btnSubmitBatal');
+
+    if (!alasan) { msg.textContent = 'Alasan pembatalan wajib diisi.'; return; }
+    if (!confirm('Yakin ingin membatalkan mutasi ini? Stok ruangan akan dikurangi sesuai jatah awal.')) return;
+
+    btn.disabled = true;
+    msg.textContent = 'Memproses...';
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      const { error } = await window.supabase.rpc('batal_mutasi', {
+        p_mutasi_id: window_mutasiAktif.id,
+        p_alasan: alasan,
+        p_petugas_id: window.currentUser.id || null
+      });
+      if (error) throw error;
+
+      msg.textContent = '✅ Mutasi dibatalkan.';
+      msg.style.color = 'var(--green-mid)';
+      setTimeout(() => {
+        closeBatal();
+        loadAllData();
+      }, 800);
+    } catch (err) {
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    loadAllData();
+  });
+</script>
+</body>
+</html>
