@@ -257,37 +257,24 @@
   //  LOAD DATA
   // ============================================================
   async function loadAllData() {
-    document.getElementById('requestList').innerHTML = '<div class="loading-note">Memuat pengajuan...</div>';
+  document.getElementById('requestList').innerHTML = '<div class="loading-note">Memuat pengajuan...</div>';
 
-    try {
-      hakApproval = await cekHakApproval();
-      renderRoleInfo();
+  try {
+    hakApproval = await cekHakApproval();
+    // HAPUS baris ini: renderRoleInfo();
 
-      const [requestData, penerimaanData, pembelianData, barangData, userData] = await Promise.all([
-        fetchAllRows('approval_request', q => q.order('id', { ascending: false })),
-        fetchAllRows('penerimaan'),
-        fetchAllRows('pembelian'),
-        fetchAllRows('master_barang'),
-        fetchAllRows('users')
-      ]);
+    const [requestData, penerimaanData, pembelianData, barangData, userData] = await Promise.all([...]);
 
-      allRequests = requestData;
-      penerimaanMap = {};
-      penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
-      pembelianMap = {};
-      pembelianData.forEach(p => { pembelianMap[p.id] = p; });
-      barangMap = {};
-      barangData.forEach(b => { barangMap[b.id] = b; });
-      userMap = {};
-      userData.forEach(u => { userMap[u.id] = u; });
+    allRequests = requestData;
+    penerimaanMap = {}; penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
+    pembelianMap = {}; pembelianData.forEach(p => { pembelianMap[p.id] = p; });
+    barangMap = {}; barangData.forEach(b => { barangMap[b.id] = b; });
+    userMap = {}; userData.forEach(u => { userMap[u.id] = u; });
 
-      updateStats();
-      renderList();
-    } catch (err) {
-      console.error(err);
-      document.getElementById('requestList').innerHTML =
-        '<div class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</div>';
-    }
+    renderRoleInfo();   // <-- TAMBAHKAN di sini
+    updateStats();
+    renderList();
+   } catch (err) { ... }
   }
 
   function renderRoleInfo() {
