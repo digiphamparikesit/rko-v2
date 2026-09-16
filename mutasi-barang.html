@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mutasi ke Ruangan — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--green-deep); color: #fff; padding: 18px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+    select option { color: #14201A; }
+    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+    .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
+    .side-panel { padding: 18px 20px; }
+    .side-title { font-size: 14px; margin: 0 0 12px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+    @media (max-width: 860px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
+
+    .info-note { background: var(--green-soft); color: var(--green-deep); padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+    .stat-card .num { font-size: 20px; font-weight: 700; }
+    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 900px; }
+    th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num { text-align: right; }
+
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .badge.ok { background: var(--green-soft); color: var(--green-mid); }
+    .badge.warn { background: #FDF1E0; color: var(--amber); }
+    .badge.err { background: #FBEAE7; color: var(--coral); }
+
+    .btn { padding: 8px 14px; border: none; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-primary { background: var(--green-mid); color: #fff; }
+    .btn-primary:hover { background: #128a3e; }
+    .btn-primary:disabled { background: #A9C9B5; cursor: default; }
+    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
+
+    #modalOverlay { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
+    #modalOverlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 26px; }
+    .modal h2 { font-size: 16px; margin: 0 0 6px; }
+    .modal .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+    .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+    .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
+
+    .summary-box { background: #FAFBFA; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; font-size: 13px; }
+    .summary-box .row { display: flex; justify-content: space-between; padding: 3px 0; }
+    .summary-box .row.total { font-weight: 700; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Mutasi ke ruangan — bagi proporsional RKO</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="bulanSelect"></select>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div class="stat-row">
+    <div class="stat-card"><div class="num" id="statPending">-</div><div class="lbl">Penerimaan BAIK menunggu mutasi</div></div>
+    <div class="stat-card"><div class="num" id="statMutasiHariIni">-</div><div class="lbl">Mutasi hari ini</div></div>
+    <div class="stat-card"><div class="num" id="statTanpaRKO">-</div><div class="lbl">Barang tanpa RKO (perlu tinjau)</div></div>
+  </div>
+
+  <div class="layout-split">
+    <aside class="left-col">
+      <div class="panel side-panel">
+        <h2 class="side-title">Filter</h2>
+        <div class="field">
+          <label>Cari nama barang / no. PO</label>
+          <input type="text" id="searchBox" placeholder="Cari nama barang atau no. PO...">
+        </div>
+        <div class="field">
+          <label>Gudang (otomatis dari peran)</label>
+          <input type="text" id="gudangInfo" readonly>
+        </div>
+      </div>
+      <div class="panel side-panel">
+        <h2 class="side-title">Keterangan</h2>
+        <div class="info-note">
+          Mutasi dijalankan per kedatangan, dibagi <strong>proporsional</strong> sesuai RKO semua ruangan. Barang yang sudah dimutasi tidak akan muncul lagi di daftar ini.
+        </div>
+      </div>
+    </aside>
+
+    <section class="right-col">
+      <div class="panel">
+        <table>
+          <thead>
+            <tr>
+              <th>No. PO</th>
+              <th>Nama barang</th>
+              <th class="num">Qty baik</th>
+              <th class="num">Total RKO</th>
+              <th>Status RKO</th>
+              <th>Tgl terima</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- MODAL PREVIEW MUTASI -->
+<div id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Konfirmasi Mutasi</h2>
+    <div class="sub" id="modalSub"></div>
+
+    <div class="summary-box" id="summaryBox"></div>
+
+    <table style="min-width:auto;">
+      <thead>
+        <tr>
+          <th>Ruangan</th>
+          <th class="num">RKO</th>
+          <th class="num">Persen</th>
+          <th class="num">Jatah</th>
+        </tr>
+      </thead>
+      <tbody id="allocBody"></tbody>
+    </table>
+
+    <div class="form-msg" id="formMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeModal()">Batal</button>
+      <button class="btn btn-primary" id="btnKonfirmasi" onclick="window.submitMutasi()">Konfirmasi &amp; Jalankan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (function() {
+    let user = null;
+    try {
+      const stored = sessionStorage.getItem('rko_user');
+      if (stored) user = JSON.parse(stored);
+    } catch (e) {}
+    if (!user) {
+      user = { id: 999, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
+    }
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+  })();
+
+  // ============================================================
+  //  TENTUKAN GUDANG BERDASARKAN PERAN
+  // ============================================================
+  function getGudangFilter() {
+    const role = window.currentUser.role;
+    if (role === 'PETUGAS_MUTASI_OBAT') return 'OBAT';
+    if (role === 'PETUGAS_MUTASI_BMHP') return 'BMHP';
+    return 'ALL'; // SUPER_ADMIN, ADMIN, KOORDINATOR_LOGISTIK_FARMASI
+  }
+
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
+  let barangMap = {};
+  let pembelianMap = {};
+  let penerimaanList = [];   // yang sudah difilter: BAIK & belum dimutasi
+  let kebutuhanMap = {};     // barang_id -> array {ruangan_id, kebutuhan}
+  let ruanganMap = {};
+  let filteredList = [];
+  let mutasiHariIniCount = 0;
+  let window_penerimaanAktif = null;
+
+  // ============================================================
+  //  PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1; opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+    for (let y = curTahun - 2; y <= curTahun + 2; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
+  async function loadAllData() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
+
+    try {
+      const gudangFilter = getGudangFilter();
+
+      const [barangData, distData, pembelianData, penerimaanData, kebutuhanData, ruanganData, mutasiData] = await Promise.all([
+        fetchAllRows('master_barang'),
+        fetchAllRows('master_distributor'),
+        fetchAllRows('pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('penerimaan', q => q.eq('kondisi', 'BAIK').eq('sudah_dimutasi', false)),
+        fetchAllRows('kebutuhan', q => q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)),
+        fetchAllRows('master_ruangan'),
+        fetchAllRows('mutasi_ruangan', q => q.eq('bulan', bulan).eq('tahun', tahun))
+      ]);
+
+      barangMap = {};
+      barangData.forEach(b => { barangMap[b.id] = b; });
+      ruanganMap = {};
+      ruanganData.forEach(r => { ruanganMap[r.id] = r; });
+
+      // map pembelian yang periode ini saja
+      pembelianMap = {};
+      const pembelianIds = new Set();
+      pembelianData.forEach(p => { pembelianMap[p.id] = p; pembelianIds.add(p.id); });
+
+      // kebutuhanMap: barang_id -> [{ruangan_id, kebutuhan}]
+      kebutuhanMap = {};
+      kebutuhanData.forEach(k => {
+        if (!kebutuhanMap[k.barang_id]) kebutuhanMap[k.barang_id] = [];
+        kebutuhanMap[k.barang_id].push({ ruangan_id: k.ruangan_id, kebutuhan: Number(k.kebutuhan) || 0 });
+      });
+
+      // Filter penerimaan: hanya yang pembeliannya periode ini & sesuai gudang
+      penerimaanList = penerimaanData.filter(r => {
+        if (!pembelianIds.has(r.pembelian_id)) return false;
+        const barang = barangMap[r.barang_id];
+        if (!barang) return false;
+        if (gudangFilter !== 'ALL' && barang.gudang_penyimpanan !== gudangFilter) return false;
+        return true;
+      });
+
+      // Statistik
+      const today = new Date().toDateString();
+      mutasiHariIniCount = mutasiData.filter(m => {
+        const d = new Date(m.tanggal_mutasi);
+        return d.toDateString() === today;
+      }).length;
+
+      applyFilter();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
+    }
+  }
+
+  // ============================================================
+  //  FILTER
+  // ============================================================
+  document.getElementById('searchBox').addEventListener('input', applyFilter);
+
+  function applyFilter() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+
+    filteredList = penerimaanList.filter(r => {
+      const barang = barangMap[r.barang_id] || {};
+      const po = pembelianMap[r.pembelian_id];
+      const nama = String(barang.nama_barang || '').toLowerCase();
+      const noPo = String(po ? po.no_po : '').toLowerCase();
+      return !q || nama.includes(q) || noPo.includes(q);
+    });
+
+    renderTable();
+    updateStats();
+  }
+
+  function updateStats() {
+    let tanpaRKO = 0;
+    penerimaanList.forEach(r => {
+      const total = (kebutuhanMap[r.barang_id] || []).reduce((s, k) => s + k.kebutuhan, 0);
+      if (total === 0) tanpaRKO++;
+    });
+    document.getElementById('statPending').textContent = penerimaanList.length;
+    document.getElementById('statMutasiHariIni').textContent = mutasiHariIniCount;
+    document.getElementById('statTanpaRKO').textContent = tanpaRKO;
+
+    const gf = getGudangFilter();
+    document.getElementById('gudangInfo').value = gf === 'ALL' ? 'Semua gudang' : ('Gudang ' + gf);
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    if (filteredList.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Tidak ada penerimaan BAIK yang menunggu mutasi.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filteredList.map(r => {
+      const barang = barangMap[r.barang_id] || {};
+      const po = pembelianMap[r.pembelian_id];
+      const keb = kebutuhanMap[r.barang_id] || [];
+      const totalRKO = keb.reduce((s, k) => s + k.kebutuhan, 0);
+      const jmlRuangan = keb.length;
+
+      let badgeRKO;
+      if (totalRKO === 0) {
+        badgeRKO = '<span class="badge err">Tidak ada RKO</span>';
+      } else {
+        badgeRKO = `<span class="badge ok">${jmlRuangan} ruangan</span>`;
+      }
+
+      return `<tr>
+        <td>${escapeHtml(po ? po.no_po : '-')}</td>
+        <td>${escapeHtml(barang.nama_barang || 'Tidak dikenal')}</td>
+        <td class="num">${Number(r.qty_diterima || 0).toLocaleString('id-ID')}</td>
+        <td class="num">${totalRKO.toLocaleString('id-ID')}</td>
+        <td>${badgeRKO}</td>
+        <td>${escapeHtml(r.tanggal_terima || '-')}</td>
+        <td><button class="btn btn-primary" onclick="window.openPreview(${r.id})" ${totalRKO === 0 ? 'disabled' : ''}>Jalankan Mutasi</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ============================================================
+  //  PREVIEW MUTASI
+  // ============================================================
+  window.openPreview = function(penerimaanId) {
+    const r = penerimaanList.find(x => x.id === penerimaanId);
+    if (!r) return;
+
+    const barang = barangMap[r.barang_id] || {};
+    const po = pembelianMap[r.pembelian_id];
+    const keb = kebutuhanMap[r.barang_id] || [];
+    const totalRKO = keb.reduce((s, k) => s + k.kebutuhan, 0);
+    const stokTersedia = Number(r.qty_diterima) || 0;
+
+    if (totalRKO === 0) {
+      alert('Barang ini tidak punya RKO di periode ini. Tidak bisa dimutasi otomatis.');
+      return;
+    }
+
+    window_penerimaanAktif = r;
+
+    // Hitung alokasi client-side (untuk preview)
+    const alloc = keb.map(k => {
+      const exact = (k.kebutuhan / totalRKO) * stokTersedia;
+      return {
+        ruangan_id: k.ruangan_id,
+        ruangan_nama: ruanganMap[k.ruangan_id]?.nama_ruangan || ('Ruangan #' + k.ruangan_id),
+        qty_rko: k.kebutuhan,
+        persentase: (k.kebutuhan / totalRKO) * 100,
+        exact: exact,
+        floor: Math.floor(exact),
+        remainder: exact - Math.floor(exact)
+      };
+    });
+
+    const totalFloor = alloc.reduce((s, a) => s + a.floor, 0);
+    const sisa = stokTersedia - totalFloor;
+
+    // Urutkan berdasarkan remainder terbesar
+    const sorted = [...alloc].sort((a, b) => b.remainder - a.remainder || b.qty_rko - a.qty_rko);
+    sorted.forEach((a, i) => {
+      a.qty_dialokasikan = a.floor + (i < sisa ? 1 : 0);
+    });
+
+    // Kembalikan urutan sesuai aslinya
+    const result = alloc.map(a => {
+      const s = sorted.find(x => x.ruangan_id === a.ruangan_id);
+      return { ...a, qty_dialokasikan: s.qty_dialokasikan };
+    });
+
+    // Render
+    document.getElementById('modalTitle').textContent = 'Konfirmasi Mutasi';
+    document.getElementById('modalSub').innerHTML =
+      `📦 <strong>${escapeHtml(barang.nama_barang || '-')}</strong> · PO ${escapeHtml(po ? po.no_po : '-')}`;
+
+    document.getElementById('summaryBox').innerHTML = `
+      <div class="row"><span>Stok tersedia (BAIK)</span><span><strong>${stokTersedia.toLocaleString('id-ID')}</strong></span></div>
+      <div class="row"><span>Total RKO semua ruangan</span><span><strong>${totalRKO.toLocaleString('id-ID')}</strong></span></div>
+      <div class="row"><span>Jumlah ruangan penerima</span><span><strong>${result.length}</strong></span></div>
+      <div class="row total"><span>Total dialokasikan</span><span>${result.reduce((s,a)=>s+a.qty_dialokasikan,0).toLocaleString('id-ID')}</span></div>
+    `;
+
+    document.getElementById('allocBody').innerHTML = result.map(a => `
+      <tr>
+        <td>${escapeHtml(a.ruangan_nama)}</td>
+        <td class="num">${a.qty_rko.toLocaleString('id-ID')}</td>
+        <td class="num">${a.persentase.toFixed(1)}%</td>
+        <td class="num"><strong>${a.qty_dialokasikan.toLocaleString('id-ID')}</strong></td>
+      </tr>
+    `).join('');
+
+    document.getElementById('formMsg').textContent = '';
+    document.getElementById('btnKonfirmasi').disabled = false;
+    document.getElementById('modalOverlay').classList.add('show');
+  };
+
+  window.closeModal = function() {
+    document.getElementById('modalOverlay').classList.remove('show');
+    window_penerimaanAktif = null;
+  };
+
+  // ============================================================
+  //  SUBMIT MUTASI (panggil RPC)
+  // ============================================================
+  window.submitMutasi = async function() {
+    if (!window_penerimaanAktif) return;
+    const msg = document.getElementById('formMsg');
+    const btn = document.getElementById('btnKonfirmasi');
+    btn.disabled = true;
+    msg.textContent = 'Menjalankan mutasi...';
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      const { data, error } = await window.supabase.rpc('jalankan_mutasi', {
+        p_penerimaan_id: window_penerimaanAktif.id,
+        p_petugas_id: window.currentUser.id || null,
+        p_catatan: null
+      });
+      if (error) throw error;
+
+      msg.textContent = '✅ Mutasi berhasil (id: ' + data + ')';
+      msg.style.color = 'var(--green-mid)';
+
+      setTimeout(() => {
+        closeModal();
+        loadAllData();
+      }, 1000);
+    } catch (err) {
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    loadAllData();
+  });
+</script>
+</body>
+</html>
