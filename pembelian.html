@@ -277,33 +277,57 @@
     }
   }
 
-  function fillFormOptions() {
-    const bSel = document.getElementById('fBarang');
-    bSel.innerHTML = '<option value="">Pilih barang...</option>';
-    rencanaList.forEach(r => {
-      const barang = barangMap[r.barang_id];
-      if (!barang) return;
-      const opt = document.createElement('option');
-      opt.value = r.barang_id;
-      opt.dataset.distributor = r.distributor_id;
-      opt.textContent = barang.nama_barang + ' (rencana: ' + r.rencana_qty_satuan_beli + ')';
-      bSel.appendChild(opt);
-    });
-    const dSel = document.getElementById('fDistributor');
-    dSel.innerHTML = '<option value="">Pilih distributor...</option>';
-    distributorList.forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = d.nama_distributor;
-      dSel.appendChild(opt);
-    });
-    bSel.addEventListener('change', () => {
-      const selected = bSel.options[bSel.selectedIndex];
-      if (selected && selected.dataset.distributor) {
-        document.getElementById('fDistributor').value = selected.dataset.distributor;
-      }
-    });
-  }
+  async function fillFormOptions() {
+  const bulan = document.getElementById('bulanSelect').value;
+  const tahun = document.getElementById('tahunSelect').value;
+
+  // Ambil kebutuhan (RKO) periode ini
+  const kebutuhanData = await fetchAllRows('kebutuhan', q =>
+    q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)
+  );
+
+  // Kumpulkan barang unik yang punya RKO
+  const barangIds = [...new Set(kebutuhanData.map(k => k.barang_id))];
+
+  const bSel = document.getElementById('fBarang');
+  bSel.innerHTML = '<option value="">Pilih barang...</option>';
+
+  // Map rencana (kalau ada) untuk tampilkan qty rencana
+  const rencanaByBarang = {};
+  rencanaList.forEach(r => { rencanaByBarang[r.barang_id] = r; });
+
+  barangIds.forEach(id => {
+    const barang = barangMap[id];
+    if (!barang) return;
+    const rencana = rencanaByBarang[id];
+    const opt = document.createElement('option');
+    opt.value = id;
+    if (rencana && rencana.distributor_id) {
+      opt.dataset.distributor = rencana.distributor_id;
+    }
+    const label = rencana
+      ? `${barang.nama_barang} (rencana: ${rencana.rencana_qty_satuan_beli})`
+      : `${barang.nama_barang} (belum ada rencana)`;
+    opt.textContent = label;
+    bSel.appendChild(opt);
+  });
+
+  const dSel = document.getElementById('fDistributor');
+  dSel.innerHTML = '<option value="">Pilih distributor...</option>';
+  distributorList.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = d.nama_distributor;
+    dSel.appendChild(opt);
+  });
+
+  bSel.addEventListener('change', () => {
+    const selected = bSel.options[bSel.selectedIndex];
+    if (selected && selected.dataset.distributor) {
+      document.getElementById('fDistributor').value = selected.dataset.distributor;
+    }
+  });
+}
 
   // ============================================================
   //  FILTER & TABEL
