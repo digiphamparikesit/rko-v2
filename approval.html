@@ -175,7 +175,6 @@
     return window.currentUser.role === 'KEPALA_INSTALASI_FARMASI';
   }
 
-  // Cek apakah user adalah penerima delegasi aktif
   async function getDelegasiAktif() {
     const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await window.supabase
@@ -257,24 +256,37 @@
   //  LOAD DATA
   // ============================================================
   async function loadAllData() {
-  document.getElementById('requestList').innerHTML = '<div class="loading-note">Memuat pengajuan...</div>';
+    document.getElementById('requestList').innerHTML = '<div class="loading-note">Memuat pengajuan...</div>';
 
-  try {
-    hakApproval = await cekHakApproval();
-    // HAPUS baris ini: renderRoleInfo();
+    try {
+      hakApproval = await cekHakApproval();
 
-    const [requestData, penerimaanData, pembelianData, barangData, userData] = await Promise.all([...]);
+      const [requestData, penerimaanData, pembelianData, barangData, userData] = await Promise.all([
+        fetchAllRows('approval_request', q => q.order('id', { ascending: false })),
+        fetchAllRows('penerimaan'),
+        fetchAllRows('pembelian'),
+        fetchAllRows('master_barang'),
+        fetchAllRows('users')
+      ]);
 
-    allRequests = requestData;
-    penerimaanMap = {}; penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
-    pembelianMap = {}; pembelianData.forEach(p => { pembelianMap[p.id] = p; });
-    barangMap = {}; barangData.forEach(b => { barangMap[b.id] = b; });
-    userMap = {}; userData.forEach(u => { userMap[u.id] = u; });
+      allRequests = requestData;
+      penerimaanMap = {};
+      penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
+      pembelianMap = {};
+      pembelianData.forEach(p => { pembelianMap[p.id] = p; });
+      barangMap = {};
+      barangData.forEach(b => { barangMap[b.id] = b; });
+      userMap = {};
+      userData.forEach(u => { userMap[u.id] = u; });
 
-    renderRoleInfo();   // <-- TAMBAHKAN di sini
-    updateStats();
-    renderList();
-   } catch (err) { ... }
+      renderRoleInfo();
+      updateStats();
+      renderList();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('requestList').innerHTML =
+        '<div class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</div>';
+    }
   }
 
   function renderRoleInfo() {
@@ -294,8 +306,8 @@
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const pending = allRequests.filter(r => r.status === 'PENDING').length;
-    const approved = allRequests.filter(r => r.status === 'APPROVED' && new Date(r.disetujui_pada) > thirtyDaysAgo).length;
-    const rejected = allRequests.filter(r => r.status === 'REJECTED' && new Date(r.disetujui_pada) > thirtyDaysAgo).length;
+    const approved = allRequests.filter(r => r.status === 'APPROVED' && r.disetujui_pada && new Date(r.disetujui_pada) > thirtyDaysAgo).length;
+    const rejected = allRequests.filter(r => r.status === 'REJECTED' && r.disetujui_pada && new Date(r.disetujui_pada) > thirtyDaysAgo).length;
 
     document.getElementById('statPending').textContent = pending;
     document.getElementById('statApproved').textContent = approved;
@@ -336,7 +348,6 @@
       const dataLama = r.data_lama || {};
       const dataBaru = r.data_baru || {};
 
-      // Bandingkan field
       const fields = ['tanggal_terima', 'no_batch', 'tanggal_kadaluarsa'];
       const diffRows = fields.map(f => {
         const lama = dataLama[f] || '-';
