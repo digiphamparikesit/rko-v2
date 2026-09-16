@@ -14,15 +14,25 @@
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
-    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    header.topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--green-deep); color: #fff; padding: 18px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .mark {
+      width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: var(--green-deep);
+    }
     .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
     .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
     .topbar-right { display: flex; align-items: center; gap: 14px; }
     .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
     a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
     a.back:hover { color: #fff; }
+
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
     .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
     .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
@@ -36,30 +46,36 @@
     .unit-display { font-size: 13px; font-weight: 600; color: var(--green-deep); padding: 8px 0 0; }
     .periode-display { font-size: 12px; color: var(--text-muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
     @media (max-width: 860px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
-    .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; position: sticky; top: 84px; z-index: 90; background: var(--bg); padding: 12px 0; }
+
+    .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
     .toolbar input[type="text"] { flex: 1; min-width: 220px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 9px; font-size: 13.5px; }
     .toolbar select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px; font-size: 13.5px; }
+
     .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     th { color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
     input.qty { width: 90px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; }
+
     .btn { padding: 7px 14px; border: none; border-radius: 7px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-primary { background: var(--green-mid); color: #fff; }
     .btn-primary:hover { background: #128a3e; }
     .btn-upload { background: #6B7A72; color: #fff; }
     .btn-upload:hover { background: #5A6A62; }
     .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
+
     .status-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
     .status-tag.saved { background: var(--green-soft); color: var(--green-mid); }
     .status-tag.unsaved { background: #F1F1EE; color: var(--text-muted); }
+
     .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); }
     .pager button { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 12.5px; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
     .modal-overlay.show { display: flex; }
-    .modal-box { background: #fff; border-radius: 16px; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; padding: 24px; }
-    .modal-wide { max-width: 720px; }
+    .modal-box { background: #fff; border-radius: 16px; width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; padding: 24px; }
+    .modal-wide { max-width: 780px; }
     .search-result-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--border); font-size: 13px; gap: 10px; }
     .search-result-item:last-child { border-bottom: none; }
     .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -67,6 +83,7 @@
     .preview-table th { background: #FAFBFA; font-size: 11px; text-transform: uppercase; color: var(--text-muted); }
     .badge-status { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
+    .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
   </style>
 </head>
 <body>
@@ -92,7 +109,7 @@
         <h2 class="side-title">Unit &amp; Periode</h2>
         <div class="field">
           <label>Ruangan</label>
-          <select id="ruanganSelect" style="display:none;"></select>
+          <select id="ruanganSelect"></select>
           <div id="unitLabel" class="unit-display">Unit: -</div>
         </div>
         <div class="field-row-2">
@@ -105,9 +122,17 @@
       <div class="panel side-panel">
         <h2 class="side-title">Jumlah kunjungan pasien</h2>
         <p class="side-sub">Diisi 1 angka per unit</p>
-        <input type="number" id="kunjunganInput" class="qty" placeholder="0" />
+        <input type="number" id="kunjunganInput" class="qty" placeholder="0" style="width:100%;" />
         <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="window.saveKunjungan()">Simpan</button>
         <div style="margin-top:10px;"><span class="status-tag unsaved" id="kunjunganStatus">Belum diisi</span></div>
+      </div>
+
+      <div class="panel side-panel">
+        <h2 class="side-title">Pemakaian ruangan</h2>
+        <p class="side-sub">Catat barang yang sudah dipakai di ruangan ini.</p>
+        <a href="pemakaian-ruangan.html" class="btn btn-upload" style="display:block; text-align:center; text-decoration:none; padding:10px;">
+          Buka Pemakaian Ruangan
+        </a>
       </div>
     </aside>
 
@@ -170,7 +195,9 @@
     <h2 class="side-title">Tambah barang ke daftar ruangan</h2>
     <p class="side-sub" style="margin:-6px 0 12px; font-size:12px; color:var(--text-muted);">Cari dari seluruh master barang &amp; BMHP.</p>
     <input type="text" id="tambahBarangSearch" placeholder="Ketik nama barang..." oninput="window.searchTambahBarang()" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; margin-bottom:14px;" />
-    <div id="tambahBarangResults" style="max-height:360px; overflow-y:auto;"></div>
+    <div id="tambahBarangResults" style="max-height:360px; overflow-y:auto;">
+      <div class="loading-note">Memuat master barang...</div>
+    </div>
     <div style="text-align:right; margin-top:16px;">
       <button class="btn btn-secondary" onclick="window.closeTambahBarangModal()">Tutup</button>
     </div>
@@ -182,7 +209,7 @@
   <div class="modal-box modal-wide">
     <h2 class="side-title">Upload Barang Ruangan (CSV)</h2>
     <p class="side-sub" style="margin:-6px 0 12px; font-size:12px; color:var(--text-muted);">
-      Format CSV: kolom <code style="background:#F1F1EE; padding:2px 6px; border-radius:4px;">nama_barang</code> (wajib). Barang akan dicocokkan dengan master_barang. Barang yang sudah ada di ruangan ini akan dilewati.
+      Format CSV: kolom <code style="background:#F1F1EE; padding:2px 6px; border-radius:4px;">nama_barang</code> (wajib). Barang dicocokkan dengan master_barang. Barang yang sudah ada di ruangan ini akan dilewati.
     </p>
     <input type="file" id="uploadBarangFile" accept=".csv" onchange="window.handleUploadBarangFile(event)" style="margin-bottom:14px;">
     <div id="uploadBarangSummary" style="display:none; margin-bottom:12px; font-size:13px;"></div>
@@ -192,6 +219,7 @@
           <tr>
             <th>Nama Barang (CSV)</th>
             <th>Golongan</th>
+            <th>Gudang</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -207,26 +235,67 @@
 </div>
 
 <script>
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
   const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
   window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // BYPASS — sementara
-  const bypassUser = { id: 1, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
-  sessionStorage.setItem('rko_user', JSON.stringify(bypassUser));
-  document.getElementById('whoLabel').textContent = bypassUser.nama + ' · ' + bypassUser.role;
-  window.currentUser = bypassUser;
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (function() {
+    let user = null;
+    try {
+      const stored = sessionStorage.getItem('rko_user');
+      if (stored) user = JSON.parse(stored);
+    } catch (e) {}
+    if (!user) {
+      user = { id: 999, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
+    }
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+  })();
 
+  // ============================================================
+  //  HELPER: FETCH SEMUA BARIS (menembus batas 1000)
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  // ============================================================
+  //  GLOBAL VARIABLES
+  // ============================================================
   let ruanganList = [];
   let activeRuanganId = null;
-  let allBarang = [];
-  let fullMasterBarang = [];
+  let allBarang = [];            // barang yang terdaftar di ruangan aktif
+  let fullMasterBarang = [];     // seluruh master barang aktif
   let existingKebutuhan = {};
   let filteredBarang = [];
   let page = 1;
   const PAGE_SIZE = 15;
   let uploadBarangRows = [];
+  let masterBarangLoaded = false;
 
+  // ============================================================
+  //  UTILITY
+  // ============================================================
   function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
@@ -236,8 +305,20 @@
     const bulanSel = document.getElementById('bulanSelect');
     const tahunSel = document.getElementById('tahunSelect');
     const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    namaBulan.forEach((nm, i) => { const opt = document.createElement('option'); opt.value = i+1; opt.textContent = nm; if (i+1 === curBulan) opt.selected = true; bulanSel.appendChild(opt); });
-    for (let y = curTahun-2; y <= curTahun+2; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; if (y === curTahun) opt.selected = true; tahunSel.appendChild(opt); }
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1;
+      opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+    for (let y = curTahun - 2; y <= curTahun + 2; y++) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
     updatePeriodeLabel();
   }
 
@@ -249,6 +330,19 @@
     }
   }
 
+  // ============================================================
+  //  LOAD MASTER BARANG (sekali saja, disimpan di memori)
+  // ============================================================
+  async function loadFullMasterBarang() {
+    if (masterBarangLoaded) return;
+    fullMasterBarang = await fetchAllRows('master_barang', q => q.eq('status_aktif', true));
+    masterBarangLoaded = true;
+    console.log('✅ Master barang dimuat:', fullMasterBarang.length, 'baris');
+  }
+
+  // ============================================================
+  //  LOAD BARANG RUANGAN + KEBUTUHAN + KUNJUNGAN
+  // ============================================================
   async function loadBarangDanKebutuhan() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
@@ -260,23 +354,39 @@
     }
 
     try {
-      const { data: barang } = await window.supabase.from('master_barang').select('*').eq('status_aktif', true);
-      fullMasterBarang = barang || [];
+      // 1. Barang ruangan aktif (sudah dipetakan)
+      const barangRuangan = await fetchAllRows('barang_ruangan', q =>
+        q.eq('ruangan_id', activeRuanganId).eq('status_aktif', true)
+      );
 
-      const { data: barangRuangan } = await window.supabase.from('barang_ruangan').select('barang_id').eq('ruangan_id', activeRuanganId).eq('status_aktif', true);
+      // 2. Master barang lengkap (untuk lookup)
+      await loadFullMasterBarang();
 
-      const aktifIds = barangRuangan.map(br => br.barang_id);
       const fullMap = {};
       fullMasterBarang.forEach(b => { fullMap[b.id] = b; });
+      const aktifIds = barangRuangan.map(br => br.barang_id);
       allBarang = aktifIds.map(id => fullMap[id]).filter(Boolean);
 
-      const { data: kebutuhan } = await window.supabase.from('kebutuhan').select('*').eq('ruangan_id', activeRuanganId).eq('bulan', bulan).eq('tahun', tahun);
+      // 3. Kebutuhan periode ini
+      const kebutuhan = await fetchAllRows('kebutuhan', q =>
+        q.eq('ruangan_id', activeRuanganId).eq('bulan', bulan).eq('tahun', tahun)
+      );
 
       existingKebutuhan = {};
-      (kebutuhan || []).forEach(k => { existingKebutuhan[k.barang_id] = { sisa: k.sisa_stok_ruangan, kebutuhan: k.kebutuhan, saved: true }; });
+      kebutuhan.forEach(k => {
+        existingKebutuhan[k.barang_id] = { sisa: k.sisa_stok_ruangan, kebutuhan: k.kebutuhan, saved: true };
+      });
 
-      const { data: kunjungan } = await window.supabase.from('kunjungan').select('*').eq('ruangan_id', activeRuanganId).eq('bulan', bulan).eq('tahun', tahun).maybeSingle();
+      // 4. Kunjungan
+      const { data: kunjunganList } = await window.supabase
+        .from('kunjungan')
+        .select('*')
+        .eq('ruangan_id', activeRuanganId)
+        .eq('bulan', bulan)
+        .eq('tahun', tahun)
+        .limit(1);
 
+      const kunjungan = kunjunganList && kunjunganList[0];
       if (kunjungan) {
         document.getElementById('kunjunganInput').value = kunjungan.jumlah_kunjungan;
         document.getElementById('kunjunganStatus').textContent = 'Tersimpan';
@@ -290,42 +400,80 @@
       applyFilter();
     } catch (err) {
       console.error(err);
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Gagal memuat data.</td></tr>';
+      document.getElementById('tableBody').innerHTML =
+        '<tr><td colspan="7" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
+  // ============================================================
+  //  INIT
+  // ============================================================
   async function initData() {
     const now = new Date();
     fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
 
     try {
-      const { data: ruangan } = await window.supabase.from('master_ruangan').select('*').order('nama_ruangan');
-      ruanganList = ruangan || [];
-    } catch (err) { console.error(err); ruanganList = []; }
+      const ruangan = await fetchAllRows('master_ruangan', q => q.order('nama_ruangan'));
+      // Filter hanya ruangan aktif
+      ruanganList = ruangan.filter(r => r.aktif !== false);
+    } catch (err) {
+      console.error('Gagal memuat ruangan:', err);
+      ruanganList = [];
+    }
 
     const sel = document.getElementById('ruanganSelect');
-    sel.style.display = 'block';
-    ruanganList.forEach(r => { const opt = document.createElement('option'); opt.value = r.id; opt.textContent = r.nama_ruangan; sel.appendChild(opt); });
+    sel.innerHTML = '<option value="">-- Pilih Ruangan --</option>';
+    ruanganList.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = r.nama_ruangan;
+      sel.appendChild(opt);
+    });
+
     if (ruanganList.length > 0) {
-      activeRuanganId = ruanganList[0].id;
-      sel.value = activeRuanganId;
-      document.getElementById('unitLabel').textContent = 'Unit: ' + ruanganList[0].nama_ruangan;
+      // Kalau currentUser punya ruangan_id dan rolenya USER, pakai itu
+      const userRuanganId = window.currentUser.ruangan_id;
+      if (userRuanganId && ruanganList.find(r => String(r.id) === String(userRuanganId))) {
+        activeRuanganId = Number(userRuanganId);
+        sel.value = userRuanganId;
+      } else {
+        activeRuanganId = ruanganList[0].id;
+        sel.value = activeRuanganId;
+      }
+      updateUnitLabel();
     }
+
     sel.addEventListener('change', () => {
       activeRuanganId = Number(sel.value);
-      const r = ruanganList.find(x => x.id === activeRuanganId);
-      document.getElementById('unitLabel').textContent = 'Unit: ' + (r ? r.nama_ruangan : '-');
+      updateUnitLabel();
       loadBarangDanKebutuhan();
     });
 
-    document.getElementById('bulanSelect').addEventListener('change', () => { updatePeriodeLabel(); loadBarangDanKebutuhan(); });
-    document.getElementById('tahunSelect').addEventListener('change', () => { updatePeriodeLabel(); loadBarangDanKebutuhan(); });
+    document.getElementById('bulanSelect').addEventListener('change', () => {
+      updatePeriodeLabel();
+      loadBarangDanKebutuhan();
+    });
+    document.getElementById('tahunSelect').addEventListener('change', () => {
+      updatePeriodeLabel();
+      loadBarangDanKebutuhan();
+    });
     document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
     document.getElementById('filterGolongan').addEventListener('change', () => { page = 1; applyFilter(); });
+
+    // Preload master barang di background (biar modal tambah cepat)
+    loadFullMasterBarang().catch(err => console.warn('Preload master gagal:', err));
 
     await loadBarangDanKebutuhan();
   }
 
+  function updateUnitLabel() {
+    const r = ruanganList.find(x => x.id === activeRuanganId);
+    document.getElementById('unitLabel').textContent = 'Unit: ' + (r ? r.nama_ruangan : '-');
+  }
+
+  // ============================================================
+  //  FILTER & TABEL
+  // ============================================================
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
     const golongan = document.getElementById('filterGolongan').value;
@@ -373,95 +521,173 @@
   }
 
   window.changePage = function(d) { page += d; renderTable(); };
-  window.markUnsaved = function(id) { const t = document.getElementById('status-'+id); if (t) { t.textContent = 'Belum disimpan'; t.className = 'status-tag unsaved'; } };
-  window.hitungEstimasi = function(id) {
-    const row = document.querySelector(`tr[data-id="${id}"]`); if (!row) return;
-    const keb = Number(row.querySelector('[data-field="kebutuhan"]').value) || 0;
-    const hpp = Number(row.dataset.hpp) || 0;
-    const el = document.getElementById('estimasi-'+id);
-    if (el) el.textContent = 'Rp ' + (keb*hpp).toLocaleString('id-ID');
+
+  window.markUnsaved = function(id) {
+    const t = document.getElementById('status-' + id);
+    if (t) { t.textContent = 'Belum disimpan'; t.className = 'status-tag unsaved'; }
   };
 
+  window.hitungEstimasi = function(id) {
+    const row = document.querySelector(`tr[data-id="${id}"]`);
+    if (!row) return;
+    const keb = Number(row.querySelector('[data-field="kebutuhan"]').value) || 0;
+    const hpp = Number(row.dataset.hpp) || 0;
+    const el = document.getElementById('estimasi-' + id);
+    if (el) el.textContent = 'Rp ' + (keb * hpp).toLocaleString('id-ID');
+  };
+
+  // ============================================================
+  //  SAVE PER BARIS
+  // ============================================================
   window.saveRow = async function(id) {
     const row = document.querySelector(`tr[data-id="${id}"]`);
     const sisa = row.querySelector('[data-field="sisa"]').value;
     const keb = row.querySelector('[data-field="kebutuhan"]').value;
-    const btn = row.querySelector('button'); btn.disabled = true; btn.textContent = '...';
+    const btn = row.querySelector('button');
+    btn.disabled = true; btn.textContent = '...';
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
+
     try {
       const { error } = await window.supabase.from('kebutuhan').upsert({
-        ruangan_id: activeRuanganId, barang_id: id, bulan, tahun,
-        sisa_stok_ruangan: Number(sisa) || 0, kebutuhan: Number(keb) || 0
+        ruangan_id: activeRuanganId,
+        barang_id: id,
+        bulan, tahun,
+        sisa_stok_ruangan: Number(sisa) || 0,
+        kebutuhan: Number(keb) || 0
       }, { onConflict: 'ruangan_id,barang_id,bulan,tahun' });
       if (error) throw error;
-      const t = document.getElementById('status-'+id); t.textContent = 'Tersimpan'; t.className = 'status-tag saved';
+      const t = document.getElementById('status-' + id);
+      t.textContent = 'Tersimpan';
+      t.className = 'status-tag saved';
       existingKebutuhan[id] = { sisa, kebutuhan: keb, saved: true };
-    } catch (e) { alert('Gagal: ' + e.message); }
-    finally { btn.disabled = false; btn.textContent = 'Simpan'; }
+    } catch (e) {
+      alert('Gagal: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Simpan';
+    }
   };
 
+  // ============================================================
+  //  SAVE KUNJUNGAN
+  // ============================================================
   window.saveKunjungan = async function() {
     const jml = Number(document.getElementById('kunjunganInput').value) || 0;
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
     const t = document.getElementById('kunjunganStatus');
-    t.textContent = 'Menyimpan...'; t.className = 'status-tag unsaved';
+    t.textContent = 'Menyimpan...';
+    t.className = 'status-tag unsaved';
+
     try {
-      const { error } = await window.supabase.from('kunjungan').upsert({ ruangan_id: activeRuanganId, bulan, tahun, jumlah_kunjungan: jml }, { onConflict: 'ruangan_id,bulan,tahun' });
+      const { error } = await window.supabase.from('kunjungan').upsert({
+        ruangan_id: activeRuanganId,
+        bulan, tahun,
+        jumlah_kunjungan: jml
+      }, { onConflict: 'ruangan_id,bulan,tahun' });
       if (error) throw error;
-      t.textContent = 'Tersimpan'; t.className = 'status-tag saved';
-    } catch (e) { alert(e.message); t.textContent = 'Gagal'; }
+      t.textContent = 'Tersimpan';
+      t.className = 'status-tag saved';
+    } catch (e) {
+      alert(e.message);
+      t.textContent = 'Gagal';
+    }
   };
 
+  // ============================================================
+  //  HAPUS BARANG DARI RUANGAN
+  // ============================================================
   window.removeFromRuangan = async function(id) {
     const b = allBarang.find(x => x.id === id);
     if (!confirm(`Hapus "${b ? b.nama_barang : 'barang'}" dari daftar ruangan?`)) return;
     try {
-      const { error } = await window.supabase.from('barang_ruangan').update({ status_aktif: false }).eq('ruangan_id', activeRuanganId).eq('barang_id', id);
+      const { error } = await window.supabase
+        .from('barang_ruangan')
+        .update({ status_aktif: false })
+        .eq('ruangan_id', activeRuanganId)
+        .eq('barang_id', id);
       if (error) throw error;
       await loadBarangDanKebutuhan();
-    } catch (e) { alert(e.message); }
+    } catch (e) {
+      alert(e.message);
+    }
   };
 
-  // ====== TAMBAH BARANG (MANUAL) ======
-  window.openTambahBarangModal = function() {
+  // ============================================================
+  //  MODAL TAMBAH BARANG
+  // ============================================================
+  window.openTambahBarangModal = async function() {
     document.getElementById('tambahBarangSearch').value = '';
-    document.getElementById('tambahBarangResults').innerHTML = '<div class="empty-state">Ketik nama barang...</div>';
+    document.getElementById('tambahBarangResults').innerHTML = '<div class="loading-note">Memuat master barang...</div>';
     document.getElementById('modalTambahBarang').classList.add('show');
     document.getElementById('tambahBarangSearch').focus();
-  };
-  window.closeTambahBarangModal = function() { document.getElementById('modalTambahBarang').classList.remove('show'); };
 
-  window.searchTambahBarang = async function() {
+    try {
+      await loadFullMasterBarang();
+      document.getElementById('tambahBarangResults').innerHTML = '<div class="empty-state">Ketik nama barang...</div>';
+    } catch (err) {
+      document.getElementById('tambahBarangResults').innerHTML =
+        '<div class="empty-state">Gagal memuat master: ' + escapeHtml(err.message) + '</div>';
+    }
+  };
+
+  window.closeTambahBarangModal = function() {
+    document.getElementById('modalTambahBarang').classList.remove('show');
+  };
+
+  window.searchTambahBarang = function() {
     const q = document.getElementById('tambahBarangSearch').value.trim().toLowerCase();
     const c = document.getElementById('tambahBarangResults');
     if (!q) { c.innerHTML = '<div class="empty-state">Ketik nama barang...</div>'; return; }
+
     const sudahAda = new Set(allBarang.map(b => b.id));
-    const hasil = fullMasterBarang.filter(b => b.nama_barang.toLowerCase().includes(q) && !sudahAda.has(b.id)).slice(0, 30);
-    if (hasil.length === 0) { c.innerHTML = '<div class="empty-state">Tidak ada barang yang cocok.</div>'; return; }
+    const hasil = fullMasterBarang
+      .filter(b => String(b.nama_barang).toLowerCase().includes(q) && !sudahAda.has(b.id))
+      .slice(0, 30);
+
+    if (hasil.length === 0) {
+      c.innerHTML = '<div class="empty-state">Tidak ada barang yang cocok.</div>';
+      return;
+    }
     c.innerHTML = hasil.map(b => `
       <div class="search-result-item">
-        <span>${escapeHtml(b.nama_barang)} <span style="color:var(--text-muted); font-size:11.5px;">(${escapeHtml(b.satuan_jual || '-')})</span></span>
+        <span>${escapeHtml(b.nama_barang)} <span style="color:var(--text-muted); font-size:11.5px;">(${escapeHtml(b.satuan_jual || '-')}, ${escapeHtml(b.golongan || '-')})</span></span>
         <button class="btn btn-primary" style="padding:6px 12px;" onclick="window.tambahBarangKeRuangan(${b.id})">+ Tambah</button>
       </div>`).join('');
   };
 
   window.tambahBarangKeRuangan = async function(barangId) {
     try {
-      const { data: existing } = await window.supabase.from('barang_ruangan').select('id, status_aktif').eq('ruangan_id', activeRuanganId).eq('barang_id', barangId).maybeSingle();
-      if (existing) {
-        if (existing.status_aktif) { alert('Sudah ada.'); window.closeTambahBarangModal(); return; }
-        await window.supabase.from('barang_ruangan').update({ status_aktif: true }).eq('id', existing.id);
+      const { data: existing } = await window.supabase
+        .from('barang_ruangan')
+        .select('id, status_aktif')
+        .eq('ruangan_id', activeRuanganId)
+        .eq('barang_id', barangId)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        if (existing[0].status_aktif) {
+          alert('Barang sudah ada di ruangan ini.');
+          window.closeTambahBarangModal();
+          return;
+        }
+        await window.supabase.from('barang_ruangan')
+          .update({ status_aktif: true })
+          .eq('id', existing[0].id);
       } else {
-        await window.supabase.from('barang_ruangan').insert({ ruangan_id: activeRuanganId, barang_id: barangId, status_aktif: true });
+        await window.supabase.from('barang_ruangan')
+          .insert({ ruangan_id: activeRuanganId, barang_id: barangId, status_aktif: true });
       }
       window.closeTambahBarangModal();
       await loadBarangDanKebutuhan();
-    } catch (e) { alert(e.message); }
+    } catch (e) {
+      alert(e.message);
+    }
   };
 
-  // ====== 🟢 UPLOAD CSV BARANG RUANGAN ======
+  // ============================================================
+  //  UPLOAD CSV BARANG RUANGAN
+  // ============================================================
   window.openUploadBarangModal = function() {
     document.getElementById('uploadBarangFile').value = '';
     document.getElementById('uploadBarangSummary').style.display = 'none';
@@ -472,7 +698,9 @@
     document.getElementById('modalUploadBarang').classList.add('show');
   };
 
-  window.closeUploadBarangModal = function() { document.getElementById('modalUploadBarang').classList.remove('show'); };
+  window.closeUploadBarangModal = function() {
+    document.getElementById('modalUploadBarang').classList.remove('show');
+  };
 
   window.handleUploadBarangFile = function(evt) {
     const file = evt.target.files[0];
@@ -480,21 +708,28 @@
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: function(res) { processUploadBarangRows(res.data); },
-      error: function(err) { document.getElementById('uploadBarangMsg').textContent = 'Gagal baca CSV: ' + err.message; }
+      complete: async function(res) {
+        // Pastikan master barang sudah dimuat
+        try { await loadFullMasterBarang(); } catch (e) {
+          document.getElementById('uploadBarangMsg').textContent = 'Gagal memuat master: ' + e.message;
+          return;
+        }
+        processUploadBarangRows(res.data);
+      },
+      error: function(err) {
+        document.getElementById('uploadBarangMsg').textContent = 'Gagal baca CSV: ' + err.message;
+      }
     });
   };
 
   function processUploadBarangRows(rawRows) {
-    // Buat map nama barang (uppercase, trim) -> objek barang
     const barangMap = {};
-    fullMasterBarang.forEach(b => { barangMap[String(b.nama_barang).trim().toUpperCase()] = b; });
-
-    // Set barang yang sudah ada di ruangan ini
+    fullMasterBarang.forEach(b => {
+      barangMap[String(b.nama_barang).trim().toUpperCase()] = b;
+    });
     const sudahAdaIds = new Set(allBarang.map(b => b.id));
 
     uploadBarangRows = rawRows.map(row => {
-      // Cari kolom nama barang — dukung berbagai nama header
       const namaCsv = String(row.nama_barang || row['NAMA BARANG'] || row['Nama Barang'] || row.nama || '').trim();
       const key = namaCsv.toUpperCase();
       const barang = barangMap[key];
@@ -511,6 +746,7 @@
         barang_id: barang ? barang.id : null,
         nama_barang: barang ? barang.nama_barang : '-',
         golongan: barang ? (barang.golongan || '-') : '-',
+        gudang: barang ? (barang.gudang_penyimpanan || '-') : '-',
         status, alasan
       };
     });
@@ -538,6 +774,7 @@
       return `<tr>
         <td>${escapeHtml(r.nama_csv || '-')}</td>
         <td>${escapeHtml(r.golongan)}</td>
+        <td>${escapeHtml(r.gudang)}</td>
         <td><span class="badge-status" style="color:${color}; background:${bg};">${escapeHtml(label)}</span></td>
       </tr>`;
     }).join('');
@@ -553,12 +790,16 @@
     document.getElementById('btnConfirmUploadBarang').disabled = true;
 
     try {
-      const items = valid.map(r => ({ ruangan_id: activeRuanganId, barang_id: r.barang_id, status_aktif: true }));
-      // Insert dalam batch 500 baris
+      const items = valid.map(r => ({
+        ruangan_id: activeRuanganId,
+        barang_id: r.barang_id,
+        status_aktif: true
+      }));
       const BATCH = 500;
       for (let i = 0; i < items.length; i += BATCH) {
         const chunk = items.slice(i, i + BATCH);
-        const { error } = await window.supabase.from('barang_ruangan').upsert(chunk, { onConflict: 'ruangan_id,barang_id' });
+        const { error } = await window.supabase.from('barang_ruangan')
+          .upsert(chunk, { onConflict: 'ruangan_id,barang_id' });
         if (error) throw error;
       }
       msg.textContent = `✅ Berhasil import ${valid.length} barang ke ruangan.`;
@@ -572,6 +813,9 @@
     }
   };
 
+  // ============================================================
+  //  START
+  // ============================================================
   initData();
 </script>
 </body>
