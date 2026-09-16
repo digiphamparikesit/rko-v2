@@ -60,6 +60,7 @@
     .badge.selisih { background: #FBEAE7; color: var(--coral); }
     .badge.lebih { background: #FDF1E0; color: var(--amber); }
     .badge.rusak { background: #FBEAE7; color: var(--coral); }
+    .badge.netral { background: #F1F1EE; color: var(--text-muted); }
 
     .btn { padding: 7px 14px; border: none; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-primary { background: var(--green-mid); color: #fff; }
@@ -137,16 +138,6 @@
             <option value="PROGRAM COVID">Program Covid</option>
             <option value="PROGRAM STUNTING">Program Stunting</option>
             <option value="PROGRAM IMUNISASI">Program Imunisasi</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Status PO</label>
-          <select id="filterStatusPO">
-            <option value="">Semua status</option>
-            <option value="DRAFT">Draft</option>
-            <option value="DIKIRIM">Dikirim</option>
-            <option value="DITERIMA_SEBAGIAN">Diterima sebagian</option>
-            <option value="SELESAI">Selesai</option>
           </select>
         </div>
       </div>
@@ -287,7 +278,7 @@
       if (stored) user = JSON.parse(stored);
     } catch (e) {}
     if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
       try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
     }
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
@@ -295,7 +286,7 @@
   })();
 
   // ============================================================
-  //  HELPER
+  //  HELPER: FETCH SEMUA BARIS
   // ============================================================
   async function fetchAllRows(tableName, buildQuery) {
     const PAGE = 1000;
@@ -326,6 +317,7 @@
   let distributorMap = {};
   let pembelianList = [];
   let penerimaanList = [];
+  let window_rusakGroupId = null;
 
   // ============================================================
   //  LOAD DATA
@@ -388,7 +380,6 @@
       }
     });
 
-    // Selisih belum ditindaklanjuti: baris RUSAK yang status_rusak = MENUNGGU_RETUR
     const selisihCount = penerimaanList.filter(p =>
       p.kondisi === 'RUSAK' && p.status_rusak === 'MENUNGGU_RETUR'
     ).length;
@@ -404,14 +395,12 @@
   function getFilterState() {
     return {
       q: (document.getElementById('searchBox').value || '').toLowerCase(),
-      golongan: document.getElementById('filterGolongan').value,
-      statusPO: document.getElementById('filterStatusPO').value
+      golongan: document.getElementById('filterGolongan').value
     };
   }
 
   document.getElementById('searchBox').addEventListener('input', () => { renderOpenPO(); renderRiwayat(); });
   document.getElementById('filterGolongan').addEventListener('change', () => { renderOpenPO(); renderRiwayat(); });
-  document.getElementById('filterStatusPO').addEventListener('change', () => { renderOpenPO(); renderRiwayat(); });
 
   // ============================================================
   //  RENDER PO MENUNGGU
@@ -455,7 +444,6 @@
     const { q, golongan } = getFilterState();
     const tbody = document.getElementById('tableRiwayat');
 
-    // Kelompokkan per group_id
     const groups = {};
     penerimaanList.forEach(r => {
       const gid = r.group_id || ('LEGACY-' + r.id);
@@ -472,7 +460,8 @@
           qty_rusak: 0,
           rusak_ids: [],
           status_rusak: null,
-          sudah_dimutasi: false
+          sudah_dimutasi: false,
+          ada_pending_approval: false
         };
       }
       if (r.kondisi === 'BAIK') {
@@ -487,7 +476,6 @@
 
     let list = Object.values(groups);
 
-    // Filter
     list = list.filter(g => {
       const barang = barangMap[g.barang_id];
       const po = pembelianList.find(p => p.id === g.pembelian_id);
@@ -504,7 +492,6 @@
       return;
     }
 
-    // Urutkan terbaru di atas
     list.sort((a, b) => String(b.group_id).localeCompare(String(a.group_id)));
 
     tbody.innerHTML = list.map(g => {
@@ -517,7 +504,6 @@
       else if (selisih < 0) selisihBadge = `<span class="badge lebih">+${Math.abs(selisih)}</span>`;
       else selisihBadge = `<span class="badge ok">Sesuai</span>`;
 
-      // Status barang khusus
       let statusBarang = '';
       if (g.qty_rusak > 0) {
         const labelRusak = { MENUNGGU_RETUR: 'Rusak · Menunggu retur', SUDAH_RETUR: 'Rusak · Sudah retur', DIMUSNAHKAN: 'Rusak · Dimusnahkan' }[g.status_rusak] || 'Rusak';
@@ -543,7 +529,10 @@
         <td>${escapeHtml(g.tanggal_terima || '-')}</td>
         <td>${statusBarang}</td>
         <td>${escapeHtml(statusPO)}</td>
-        <td>${g.sudah_dimutasi ? '<span class="badge ok">Sudah mutasi</span>' : '<span class="badge">Belum mutasi</span>'}</td>
+        <td>
+          ${g.sudah_dimutasi ? '<span class="badge ok">Sudah mutasi</span>' : '<span class="badge netral">Belum mutasi</span>'}
+          ${!g.sudah_dimutasi ? `<button class="btn btn-secondary btn-mini" style="margin-left:6px;" onclick="event.stopPropagation(); window.openEdit('${escapeHtml(g.group_id)}', ${g.pembelian_id}, ${g.barang_id})">Edit</button>` : ''}
+        </td>
       </tr>`;
     }).join('');
   }
@@ -582,13 +571,14 @@
     const qtyPesan = Number(document.getElementById('fQtyPesan').value) || 0;
 
     const baik = Math.max(0, total - rusak);
+
     const totalDiterimaSebelumnya = (() => {
       const pembelianId = Number(document.getElementById('fPembelianId').value);
       return penerimaanList
         .filter(r => r.pembelian_id === pembelianId)
         .reduce((s, r) => s + Number(r.qty_diterima || 0), 0);
     })();
-    const sisa = qtyPesan - (totalDiterimaSebelumnya + total + rusak - rusak); // = qtyPesan - (diterima sebelum + total datang baru)
+
     const sisaFinal = qtyPesan - (totalDiterimaSebelumnya + total);
 
     document.getElementById('calcBaik').textContent = baik.toLocaleString('id-ID');
@@ -610,7 +600,6 @@
 
     const baik = total - rusak;
 
-    // Cek over-receive
     const totalDiterimaSebelumnya = penerimaanList
       .filter(r => r.pembelian_id === pembelianId)
       .reduce((s, r) => s + Number(r.qty_diterima || 0), 0);
@@ -661,10 +650,8 @@
   // ============================================================
   //  UBAH STATUS RUSAK
   // ============================================================
-  window._rusakGroupId = null;
-
   window.openRusakModal = function(groupId, namaBarang) {
-    window._rusakGroupId = groupId;
+    window_rusakGroupId = groupId;
     document.getElementById('rusakInfo').textContent = 'Barang: ' + namaBarang;
     document.getElementById('fStatusRusak').value = 'MENUNGGU_RETUR';
     document.getElementById('rusakMsg').textContent = '';
@@ -673,11 +660,11 @@
 
   window.closeRusakModal = function() {
     document.getElementById('modalRusak').style.display = 'none';
-    window._rusakGroupId = null;
+    window_rusakGroupId = null;
   };
 
   window.submitRusakStatus = async function() {
-    if (!window._rusakGroupId) return;
+    if (!window_rusakGroupId) return;
     const status = document.getElementById('fStatusRusak').value;
     const msg = document.getElementById('rusakMsg');
     msg.textContent = 'Menyimpan...';
@@ -686,13 +673,153 @@
       const { error } = await window.supabase
         .from('penerimaan')
         .update({ status_rusak: status })
-        .eq('group_id', window._rusakGroupId)
+        .eq('group_id', window_rusakGroupId)
         .eq('kondisi', 'RUSAK');
       if (error) throw error;
       closeRusakModal();
       await loadAllData();
     } catch (err) {
       msg.textContent = 'Gagal: ' + err.message;
+    }
+  };
+
+  // ============================================================
+  //  EDIT PENERIMAAN — AJUKAN APPROVAL
+  //  Hanya boleh ubah: tanggal_terima, no_batch, tanggal_kadaluarsa
+  // ============================================================
+  window.openEdit = function(groupId, pembelianId, barangId) {
+    if (!groupId || groupId === 'null') {
+      alert('Baris penerimaan ini tidak punya group_id, tidak bisa diedit.');
+      return;
+    }
+
+    const barisGroup = penerimaanList.filter(p => p.group_id === groupId);
+    if (barisGroup.length === 0) {
+      alert('Baris penerimaan tidak ditemukan.');
+      return;
+    }
+
+    const referensi = barisGroup.find(p => p.kondisi === 'BAIK') || barisGroup[0];
+    const barang = barangMap[barangId] || {};
+    const po = pembelianList.find(p => p.id === pembelianId);
+    const totalDatang = barisGroup.reduce((s, p) => s + Number(p.qty_diterima || 0), 0);
+    const totalBaik = barisGroup.filter(p => p.kondisi === 'BAIK')
+                       .reduce((s, p) => s + Number(p.qty_diterima || 0), 0);
+    const totalRusak = barisGroup.filter(p => p.kondisi === 'RUSAK')
+                       .reduce((s, p) => s + Number(p.qty_diterima || 0), 0);
+
+    const html = `
+      <div style="position:fixed; inset:0; background:rgba(15,61,46,0.45); display:flex; align-items:center; justify-content:center; z-index:60; padding:20px;" id="editOverlay">
+        <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; padding:26px;">
+          <h2 style="font-size:16px; margin:0 0 6px;">Ajukan Edit Penerimaan</h2>
+          <div style="font-size:12.5px; color:var(--text-muted); margin-bottom:14px;">
+            📦 PO: <strong>${escapeHtml(po ? po.no_po : '-')}</strong> · ${escapeHtml(barang.nama_barang || '-')}
+          </div>
+
+          <div style="background:#FDF1E0; border-radius:8px; padding:10px 12px; font-size:12px; margin-bottom:14px; line-height:1.5;">
+            Perubahan akan masuk antrian approval <strong>Kepala Instalasi Farmasi</strong>. Data lama tetap berlaku sampai disetujui.<br>
+            <span style="color:#D97706;">Hanya tanggal terima, no. batch, dan tanggal kadaluarsa yang bisa diubah. Untuk koreksi qty, batalkan mutasi terlebih dahulu.</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; font-size:12.5px;">
+            <div style="background:#FAFBFA; border-radius:8px; padding:8px 10px;">
+              <div style="color:var(--text-muted); font-size:11px; margin-bottom:2px;">Total datang</div>
+              <div style="font-weight:700;">${totalDatang.toLocaleString('id-ID')}</div>
+            </div>
+            <div style="background:#FAFBFA; border-radius:8px; padding:8px 10px;">
+              <div style="color:var(--text-muted); font-size:11px; margin-bottom:2px;">Baik / Rusak</div>
+              <div style="font-weight:700;">${totalBaik.toLocaleString('id-ID')} / ${totalRusak.toLocaleString('id-ID')}</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:5px;">Tanggal terima</label>
+            <input type="date" id="editTanggal" value="${referensi.tanggal_terima || ''}" style="width:100%; padding:9px 11px; border:1px solid #E4EAE5; border-radius:8px; font-size:13.5px;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:5px;">No. batch</label>
+            <input type="text" id="editBatch" value="${escapeHtml(referensi.no_batch || '')}" style="width:100%; padding:9px 11px; border:1px solid #E4EAE5; border-radius:8px; font-size:13.5px;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:5px;">Tanggal kadaluarsa</label>
+            <input type="date" id="editKadaluarsa" value="${referensi.tanggal_kadaluarsa || ''}" style="width:100%; padding:9px 11px; border:1px solid #E4EAE5; border-radius:8px; font-size:13.5px;">
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:5px;">Alasan edit <span style="color:#DC5B45;">*</span></label>
+            <input type="text" id="editAlasan" placeholder="mis. salah tanggal, salah nomor batch" style="width:100%; padding:9px 11px; border:1px solid #E4EAE5; border-radius:8px; font-size:13.5px;">
+          </div>
+
+          <div id="editMsg" style="font-size:12.5px; color:#DC5B45; min-height:16px; margin-bottom:6px;"></div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button class="btn btn-secondary" onclick="window.closeEdit()">Batal</button>
+            <button class="btn btn-primary" onclick="window.submitEdit('${groupId}', ${referensi.id})">Ajukan Approval</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+  };
+
+  window.closeEdit = function() {
+    const el = document.getElementById('editOverlay');
+    if (el) el.remove();
+  };
+
+  window.submitEdit = async function(groupId, penerimaanId) {
+    const msg = document.getElementById('editMsg');
+    const tanggal = document.getElementById('editTanggal').value || null;
+    const batch = document.getElementById('editBatch').value.trim();
+    const kadaluarsa = document.getElementById('editKadaluarsa').value || null;
+    const alasan = document.getElementById('editAlasan').value.trim();
+
+    if (!alasan) { msg.textContent = 'Alasan wajib diisi.'; return; }
+
+    const referensi = penerimaanList.find(p => p.id === penerimaanId);
+    if (!referensi) { msg.textContent = 'Baris penerimaan tidak ditemukan.'; return; }
+
+    const lama = {
+      tanggal_terima: referensi.tanggal_terima || null,
+      no_batch: referensi.no_batch || '',
+      tanggal_kadaluarsa: referensi.tanggal_kadaluarsa || null
+    };
+    const baru = {
+      tanggal_terima: tanggal,
+      no_batch: batch,
+      tanggal_kadaluarsa: kadaluarsa
+    };
+
+    const adaPerubahan = (lama.tanggal_terima || null) !== (baru.tanggal_terima || null)
+                      || (lama.no_batch || '') !== (baru.no_batch || '')
+                      || (lama.tanggal_kadaluarsa || null) !== (baru.tanggal_kadaluarsa || null);
+
+    if (!adaPerubahan) {
+      msg.textContent = 'Tidak ada perubahan yang diajukan.';
+      return;
+    }
+
+    msg.textContent = 'Mengajukan approval...';
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      const { error } = await window.supabase.from('approval_request').insert({
+        jenis: 'EDIT_PENERIMAAN',
+        referensi_id: penerimaanId,
+        data_lama: lama,
+        data_baru: baru,
+        diajukan_oleh: window.currentUser.id || null,
+        status: 'PENDING'
+      });
+      if (error) throw error;
+
+      msg.textContent = '✅ Pengajuan terkirim. Menunggu approval Kepala Instalasi Farmasi.';
+      msg.style.color = 'var(--green-mid)';
+      setTimeout(() => {
+        window.closeEdit();
+      }, 1500);
+    } catch (err) {
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
     }
   };
 
