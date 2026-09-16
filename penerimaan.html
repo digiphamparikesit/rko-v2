@@ -641,7 +641,7 @@
         p_tanggal_terima: document.getElementById('fTanggalTerima').value || null,
         p_no_batch: document.getElementById('fNoBatch').value.trim() || null,
         p_tanggal_kadaluarsa: document.getElementById('fKadaluarsa').value || null,
-        p_dicatat_oleh: window.currentUser.id > 1000 ? window.currentUser.id : null
+        p_dicatat_oleh: window.currentUser.id || null
       });
       if (error) throw error;
 
