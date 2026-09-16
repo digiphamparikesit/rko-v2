@@ -7,24 +7,14 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    /* ===== GAYA SAMA SEPERTI SEBELUMNYA ===== */
     :root {
-      --green-deep: #0F3D2E;
-      --green-mid: #16A34A;
-      --green-bright: #3FCF6A;
-      --green-soft: #E7F5EC;
-      --bg: #F4F7F4;
-      --card: #FFFFFF;
-      --text-dark: #14201A;
-      --text-muted: #6B7A72;
-      --amber: #D97706;
-      --coral: #DC5B45;
-      --border: #E4EAE5;
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0;
-      background: var(--bg);
+      margin: 0; background: var(--bg);
       font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       color: var(--text-dark);
     }
@@ -76,6 +66,7 @@
     .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
     .badge.obat { background: var(--green-soft); color: var(--green-mid); }
     .badge.bmhp { background: #E9EEFB; color: #3B5BDB; }
+    .badge.gol { background: #F1F1EE; color: var(--text-muted); }
     .badge.off { background: #F1F1EE; color: var(--text-muted); }
 
     .row-actions { display: flex; gap: 8px; }
@@ -100,23 +91,17 @@
     .btn-upload { background: #6B7A72; color: #fff; }
     .btn-upload:hover { background: #5A6A62; }
 
-    /* MODAL */
     #modalOverlay, #modalUpload {
       display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45);
       align-items: center; justify-content: center; z-index: 40; padding: 20px;
     }
     #modalOverlay.show, #modalUpload.show { display: flex; }
     .modal {
-      background: #fff; border-radius: 16px; width: 100%; max-width: 480px;
+      background: #fff; border-radius: 16px; width: 100%; max-width: 520px;
       max-height: 90vh; overflow-y: auto; padding: 26px;
     }
-    .modal-wide { max-width: 720px; }
+    .modal-wide { max-width: 780px; }
     .modal h2 { font-size: 16px; margin: 0 0 16px; }
-    .field { margin-bottom: 12px; }
-    .field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
-    .field input, .field select {
-      width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px;
-    }
     .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
@@ -130,11 +115,16 @@
     .badge-status { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
 
     .error-box { background: #FBEAE7; color: var(--coral); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--coral); }
+    .info-note {
+      background: var(--green-soft); color: var(--green-deep);
+      padding: 10px 12px; border-radius: 8px; font-size: 12px;
+      margin-bottom: 12px; line-height: 1.5;
+    }
+    .help-text { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
   </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
 <header class="topbar">
   <div class="brand">
     <div class="mark">RS</div>
@@ -149,7 +139,6 @@
   </div>
 </header>
 
-<!-- MAIN -->
 <main>
   <div class="layout-split">
     <aside class="left-col">
@@ -158,6 +147,14 @@
         <div class="field">
           <label>Cari nama barang</label>
           <input type="text" id="searchBox" placeholder="Cari nama barang...">
+        </div>
+        <div class="field">
+          <label>Gudang penyimpanan</label>
+          <select id="filterGudang">
+            <option value="">Semua gudang</option>
+            <option value="OBAT">Gudang Obat</option>
+            <option value="BMHP">Gudang BMHP</option>
+          </select>
         </div>
         <div class="field">
           <label>Golongan</label>
@@ -190,6 +187,14 @@
         <button class="btn btn-primary" style="width:100%;" onclick="window.openForm()">+ Tambah Barang</button>
         <button class="btn btn-upload" style="width:100%; margin-top:8px;" onclick="window.openUploadModal()">&#8593; Upload CSV Master Barang</button>
       </div>
+
+      <div class="panel side-panel">
+        <h2 class="side-title">Keterangan</h2>
+        <div class="info-note">
+          <strong>Gudang Obat</strong> — barang golongan OBAT, dimutasi oleh Petugas Mutasi Obat.<br><br>
+          <strong>Gudang BMHP</strong> — barang BMHP, BHP, B3, Nutrisi, Program, dimutasi oleh Petugas Mutasi BMHP.
+        </div>
+      </div>
     </aside>
 
     <section class="right-col">
@@ -201,6 +206,7 @@
               <th>Nama barang</th>
               <th>Kelas terapi</th>
               <th>Golongan</th>
+              <th>Gudang</th>
               <th>Satuan</th>
               <th class="num">HPP beli</th>
               <th>Status</th>
@@ -208,7 +214,7 @@
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
+            <tr><td colspan="8" class="empty-state">Memuat data...</td></tr>
           </tbody>
         </table>
         <div class="pager">
@@ -242,8 +248,28 @@
         <select id="fGolongan">
           <option value="OBAT">Obat</option>
           <option value="BMHP">BMHP</option>
+          <option value="BHP">BHP</option>
+          <option value="B3">B3</option>
+          <option value="NUTRISI ENTERAL">Nutrisi Enteral</option>
+          <option value="PROGRAM">Program</option>
+          <option value="PROGRAM TB">Program TB</option>
+          <option value="PROGRAM HIV">Program HIV</option>
+          <option value="PROGRAM MALARIA">Program Malaria</option>
+          <option value="PROGRAM RABIES">Program Rabies</option>
+          <option value="PROGRAM BKKBN">Program BKKBN</option>
+          <option value="PROGRAM COVID">Program Covid</option>
+          <option value="PROGRAM STUNTING">Program Stunting</option>
+          <option value="PROGRAM IMUNISASI">Program Imunisasi</option>
         </select>
       </div>
+    </div>
+    <div class="field">
+      <label>Gudang penyimpanan</label>
+      <select id="fGudang">
+        <option value="OBAT">Gudang Obat</option>
+        <option value="BMHP">Gudang BMHP</option>
+      </select>
+      <div class="help-text" id="gudangHelp">Gudang Obat untuk golongan OBAT. Gudang BMHP untuk selain OBAT.</div>
     </div>
     <div class="field-row">
       <div class="field">
@@ -258,22 +284,16 @@
     <div class="field-row">
       <div class="field">
         <label>Content (isi per kemasan)</label>
-        <input type="number" id="fContent">
+        <input type="number" id="fContent" value="1">
       </div>
       <div class="field">
         <label>HPP beli (Rp)</label>
-        <input type="number" id="fHpp">
+        <input type="number" id="fHpp" value="0">
       </div>
     </div>
-    <div class="field-row">
-      <div class="field">
-        <label>Prinsipal</label>
-        <select id="fPrinsipal"><option value="">-</option></select>
-      </div>
-      <div class="field">
-        <label>Distributor</label>
-        <select id="fDistributor"><option value="">-</option></select>
-      </div>
+    <div class="field">
+      <label>Prinsipal</label>
+      <select id="fPrinsipal"><option value="">-</option></select>
     </div>
     <div class="form-msg" id="formMsg"></div>
     <div class="modal-actions">
@@ -283,16 +303,17 @@
   </div>
 </div>
 
-<!-- MODAL UPLOAD -->
+<!-- MODAL UPLOAD CSV -->
 <div id="modalUpload">
   <div class="modal modal-wide">
     <h2>Upload Master Barang (CSV)</h2>
     <p style="font-size:12.5px; color:var(--text-muted); margin:-8px 0 16px;">
       Format CSV wajib memiliki kolom (header): <br>
       <code style="background:#F1F1EE; padding:2px 6px; border-radius:5px; font-size:11.5px;">
-        nama_barang, kelas_terapi, golongan, satuan_jual, satuan_beli, content, hpp_beli, prinsipal, distributor, status_aktif
+        nama_barang, kelas_terapi, golongan, gudang_penyimpanan, satuan_jual, satuan_beli, content, hpp_beli, prinsipal, status_aktif
       </code>
-      <br><span style="color:var(--amber);">* Kolom prinsipal dan distributor diisi dengan NAMA (akan dicocokkan dengan master).</span>
+      <br><span style="color:var(--amber);">* Kolom prinsipal diisi dengan NAMA (akan dicocokkan dengan master).</span>
+      <br><span style="color:var(--amber);">* Kolom gudang_penyimpanan: OBAT atau BMHP. Kalau kosong, otomatis dari golongan.</span>
       <br><span style="color:var(--text-muted); font-size:11px;">* status_aktif: true/false atau 1/0</span>
     </p>
     <input type="file" id="uploadFileInput" accept=".csv" onchange="window.handleUploadFile(event)" style="margin-bottom:14px;">
@@ -303,9 +324,9 @@
           <tr>
             <th>Nama Barang</th>
             <th>Golongan</th>
+            <th>Gudang</th>
             <th class="num">HPP</th>
             <th>Prinsipal</th>
-            <th>Distributor</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -322,17 +343,14 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE - GUNAKAN ANON KEY (AMAN)
+  //  KONFIGURASI SUPABASE
   // ============================================================
-  const _supabaseUrl = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-
-  window.supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
-
-  console.log('✅ Supabase client initialized with ANON key');
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ============================================================
-  //  BYPASS SESSION
+  //  SESSION BYPASS
   // ============================================================
   (function() {
     let user = null;
@@ -357,7 +375,6 @@
   // ============================================================
   let allBarang = [];
   let prinsipalList = [];
-  let distributorList = [];
   let filteredBarang = [];
   let page = 1;
   const PAGE_SIZE = 15;
@@ -373,16 +390,19 @@
     }[s]));
   }
   function formatRp(v) {
-    const n = Number(v) || 0;
-    return n.toLocaleString('id-ID');
+    return (Number(v) || 0).toLocaleString('id-ID');
   }
   function showError(msg) {
-    const container = document.getElementById('errorContainer');
-    container.style.display = 'block';
-    container.textContent = '⚠️ ' + msg;
+    const c = document.getElementById('errorContainer');
+    c.style.display = 'block';
+    c.textContent = '⚠️ ' + msg;
   }
   function hideError() {
     document.getElementById('errorContainer').style.display = 'none';
+  }
+  // Tentukan gudang default dari golongan
+  function gudangDariGolongan(golongan) {
+    return String(golongan || '').toUpperCase() === 'OBAT' ? 'OBAT' : 'BMHP';
   }
 
   // ============================================================
@@ -391,67 +411,58 @@
   async function initData() {
     hideError();
     try {
-      console.log('🔍 Memuat data dari Supabase dengan ANON key...');
-      const [br, pr, dr] = await Promise.all([
-        window.supabase.from('master_barang').select('*'),
-        window.supabase.from('master_prinsipal').select('*'),
-        window.supabase.from('master_distributor').select('*')
+      const [br, pr] = await Promise.all([
+        window.supabase.from('master_barang').select('*').order('nama_barang'),
+        window.supabase.from('master_prinsipal').select('*').order('nama_prinsipal')
       ]);
-
-      if (br.error) {
-        console.error('❌ Error master_barang:', br.error);
-        throw new Error('Barang: ' + br.error.message + ' (code: ' + br.error.code + ')');
-      }
-      if (pr.error) {
-        console.error('❌ Error master_prinsipal:', pr.error);
-        throw new Error('Prinsipal: ' + pr.error.message);
-      }
-      if (dr.error) {
-        console.error('❌ Error master_distributor:', dr.error);
-        throw new Error('Distributor: ' + dr.error.message);
-      }
+      if (br.error) throw br.error;
+      if (pr.error) throw pr.error;
 
       allBarang = br.data || [];
       prinsipalList = pr.data || [];
-      distributorList = dr.data || [];
 
-      console.log('✅ Data dimuat: ' + allBarang.length + ' barang');
       fillSelectOptions();
       applyFilter();
     } catch (err) {
-      console.error('❌ ERROR di initData:', err);
       showError('Gagal memuat data: ' + err.message);
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Error: ' + err.message + '</td></tr>';
+      document.getElementById('tableBody').innerHTML =
+        '<tr><td colspan="8" class="empty-state">Error: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
   function fillSelectOptions() {
     const pSel = document.getElementById('fPrinsipal');
-    const dSel = document.getElementById('fDistributor');
     pSel.innerHTML = '<option value="">-</option>' +
       prinsipalList.map(p => `<option value="${p.id}">${escapeHtml(p.nama_prinsipal)}</option>`).join('');
-    dSel.innerHTML = '<option value="">-</option>' +
-      distributorList.map(d => `<option value="${d.id}">${escapeHtml(d.nama_distributor)}</option>`).join('');
+  }
+
+  function getPrinsipalNama(id) {
+    if (!id) return '-';
+    const p = prinsipalList.find(x => String(x.id) === String(id));
+    return p ? p.nama_prinsipal : '-';
   }
 
   // ============================================================
   //  FILTER & TABEL
   // ============================================================
   document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
+  document.getElementById('filterGudang').addEventListener('change', () => { page = 1; applyFilter(); });
   document.getElementById('filterGolongan').addEventListener('change', () => { page = 1; applyFilter(); });
   document.getElementById('filterStatus').addEventListener('change', () => { page = 1; applyFilter(); });
 
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
+    const gudang = document.getElementById('filterGudang').value;
     const golongan = document.getElementById('filterGolongan').value;
     const status = document.getElementById('filterStatus').value;
 
     filteredBarang = allBarang.filter(b => {
       const matchQ = !q || String(b.nama_barang).toLowerCase().includes(q);
+      const matchGud = !gudang || b.gudang_penyimpanan === gudang;
       const matchG = !golongan || b.golongan === golongan;
       const isActive = b.status_aktif === true;
       const matchS = !status || (status === 'aktif' ? isActive : !isActive);
-      return matchQ && matchG && matchS;
+      return matchQ && matchGud && matchG && matchS;
     });
     renderTable();
   }
@@ -462,16 +473,18 @@
     const pageItems = filteredBarang.slice(start, start + PAGE_SIZE);
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Tidak ada data yang cocok.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Tidak ada data yang cocok.</td></tr>';
     } else {
       tbody.innerHTML = pageItems.map(b => {
         const isActive = b.status_aktif === true;
-        const golBadge = b.golongan === 'BMHP' ? 'bmhp' : 'obat';
+        const gudang = b.gudang_penyimpanan || gudangDariGolongan(b.golongan);
+        const gudangBadge = gudang === 'OBAT' ? 'obat' : 'bmhp';
         return `
           <tr class="${isActive ? '' : 'inactive'}">
             <td>${escapeHtml(b.nama_barang)}</td>
             <td>${escapeHtml(b.kelas_terapi || '-')}</td>
-            <td><span class="badge ${golBadge}">${escapeHtml(b.golongan || '-')}</span></td>
+            <td><span class="badge gol">${escapeHtml(b.golongan || '-')}</span></td>
+            <td><span class="badge ${gudangBadge}">${gudang}</span></td>
             <td>${escapeHtml(b.satuan_jual || '-')} / ${escapeHtml(b.satuan_beli || '-')}</td>
             <td class="num">Rp ${formatRp(b.hpp_beli)}</td>
             <td>${isActive ? '<span class="badge obat">Aktif</span>' : '<span class="badge off">Nonaktif</span>'}</td>
@@ -512,18 +525,24 @@
       document.getElementById('fNama').value = b.nama_barang || '';
       document.getElementById('fKelas').value = b.kelas_terapi || '';
       document.getElementById('fGolongan').value = b.golongan || 'OBAT';
+      document.getElementById('fGudang').value = b.gudang_penyimpanan || gudangDariGolongan(b.golongan);
       document.getElementById('fSatuanJual').value = b.satuan_jual || '';
       document.getElementById('fSatuanBeli').value = b.satuan_beli || '';
-      document.getElementById('fContent').value = b.content || '';
-      document.getElementById('fHpp').value = b.hpp_beli || '';
+      document.getElementById('fContent').value = b.content || 1;
+      document.getElementById('fHpp').value = b.hpp_beli || 0;
       document.getElementById('fPrinsipal').value = b.prinsipal_id || '';
-      document.getElementById('fDistributor').value = b.distributor_id || '';
     } else {
       document.getElementById('modalTitle').textContent = 'Tambah Barang';
-      ['fId','fNama','fKelas','fSatuanJual','fSatuanBeli','fContent','fHpp'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('fId').value = '';
+      document.getElementById('fNama').value = '';
+      document.getElementById('fKelas').value = '';
       document.getElementById('fGolongan').value = 'OBAT';
+      document.getElementById('fGudang').value = 'OBAT';
+      document.getElementById('fSatuanJual').value = '';
+      document.getElementById('fSatuanBeli').value = '';
+      document.getElementById('fContent').value = 1;
+      document.getElementById('fHpp').value = 0;
       document.getElementById('fPrinsipal').value = '';
-      document.getElementById('fDistributor').value = '';
     }
     document.getElementById('modalOverlay').classList.add('show');
   };
@@ -532,6 +551,12 @@
     document.getElementById('modalOverlay').classList.remove('show');
   };
 
+  // Auto set gudang saat golongan berubah (kalau user belum override manual)
+  document.getElementById('fGolongan').addEventListener('change', function() {
+    const gol = this.value;
+    document.getElementById('fGudang').value = gudangDariGolongan(gol);
+  });
+
   window.submitForm = async function() {
     const id = document.getElementById('fId').value;
     const nama = document.getElementById('fNama').value.trim();
@@ -539,16 +564,22 @@
 
     if (!nama) { msg.textContent = 'Nama barang wajib diisi.'; return; }
 
+    const golongan = document.getElementById('fGolongan').value;
+    const gudang = document.getElementById('fGudang').value;
+    if (!['OBAT', 'BMHP'].includes(gudang)) {
+      msg.textContent = 'Gudang penyimpanan tidak valid.'; return;
+    }
+
     const payload = {
       nama_barang: nama,
-      kelas_terapi: document.getElementById('fKelas').value.trim(),
-      golongan: document.getElementById('fGolongan').value,
-      satuan_jual: document.getElementById('fSatuanJual').value.trim(),
-      satuan_beli: document.getElementById('fSatuanBeli').value.trim(),
-      content: Number(document.getElementById('fContent').value) || 0,
+      kelas_terapi: document.getElementById('fKelas').value.trim() || null,
+      golongan: golongan,
+      gudang_penyimpanan: gudang,
+      satuan_jual: document.getElementById('fSatuanJual').value.trim() || null,
+      satuan_beli: document.getElementById('fSatuanBeli').value.trim() || null,
+      content: Number(document.getElementById('fContent').value) || 1,
       hpp_beli: Number(document.getElementById('fHpp').value) || 0,
-      prinsipal_id: document.getElementById('fPrinsipal').value || null,
-      distributor_id: document.getElementById('fDistributor').value || null
+      prinsipal_id: document.getElementById('fPrinsipal').value || null
     };
 
     msg.textContent = 'Menyimpan...';
@@ -600,44 +631,41 @@
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: function(res) {
-        processUploadRows(res.data);
-      },
+      complete: function(res) { processUploadRows(res.data); },
       error: function(err) {
         document.getElementById('uploadMsg').textContent = 'Gagal membaca file CSV: ' + err.message;
       }
     });
   };
 
-  async function processUploadRows(rawRows) {
-    // Ambil mapping nama → id untuk prinsipal & distributor
-    const { data: prinsipalData } = await window.supabase.from('master_prinsipal').select('id, nama_prinsipal');
-    const { data: distributorData } = await window.supabase.from('master_distributor').select('id, nama_distributor');
-
+  function processUploadRows(rawRows) {
+    // Mapping nama prinsipal → id
     const prinsipalMap = {};
-    (prinsipalData || []).forEach(p => {
+    prinsipalList.forEach(p => {
       prinsipalMap[String(p.nama_prinsipal).trim().toUpperCase()] = p.id;
     });
-    const distributorMap = {};
-    (distributorData || []).forEach(d => {
-      distributorMap[String(d.nama_distributor).trim().toUpperCase()] = d.id;
-    });
 
-    // Ambil nama barang yang sudah ada untuk cek duplikat
-    const { data: existingBarang } = await window.supabase.from('master_barang').select('nama_barang');
-    const existingNames = new Set((existingBarang || []).map(b => String(b.nama_barang).trim().toUpperCase()));
+    // Set nama barang yang sudah ada (case-insensitive)
+    const existingNames = new Set(allBarang.map(b => String(b.nama_barang).trim().toUpperCase()));
 
     uploadRows = rawRows.map(row => {
-      const namaBarang = (row.nama_barang || '').trim();
-      const kelas = (row.kelas_terapi || '').trim();
-      const golongan = (row.golongan || '').trim();
-      const satuanJual = (row.satuan_jual || '').trim();
-      const satuanBeli = (row.satuan_beli || '').trim();
+      const namaBarang = String(row.nama_barang || '').trim();
+      const kelas = String(row.kelas_terapi || '').trim();
+      const golongan = String(row.golongan || '').trim();
+      const gudangCsv = String(row.gudang_penyimpanan || '').trim().toUpperCase();
+      const satuanJual = String(row.satuan_jual || '').trim();
+      const satuanBeli = String(row.satuan_beli || '').trim();
       const content = Number(row.content) || 1;
       const hpp = Number(row.hpp_beli) || 0;
-      const prinsipalNama = (row.prinsipal || '').trim();
-      const distributorNama = (row.distributor || '').trim();
-      const statusAktif = (row.status_aktif || '').toLowerCase() === 'true' || row.status_aktif === '1';
+      const prinsipalNama = String(row.prinsipal || '').trim();
+      const statusRaw = String(row.status_aktif || '').toLowerCase();
+      const statusAktif = statusRaw === 'true' || statusRaw === '1';
+
+      // Tentukan gudang: pakai CSV kalau valid, kalau tidak dari golongan
+      let gudang = gudangCsv;
+      if (!['OBAT', 'BMHP'].includes(gudang)) {
+        gudang = gudangDariGolongan(golongan);
+      }
 
       let statusBaris = 'valid';
       let alasan = '';
@@ -650,13 +678,9 @@
         alasan = 'Sudah ada di master, dilewati';
       } else {
         const prinsipalId = prinsipalNama ? prinsipalMap[prinsipalNama.toUpperCase()] : null;
-        const distributorId = distributorNama ? distributorMap[distributorNama.toUpperCase()] : null;
         if (prinsipalNama && !prinsipalId) {
           statusBaris = 'invalid';
           alasan = 'Prinsipal "' + prinsipalNama + '" tidak ditemukan';
-        } else if (distributorNama && !distributorId) {
-          statusBaris = 'invalid';
-          alasan = 'Distributor "' + distributorNama + '" tidak ditemukan';
         }
       }
 
@@ -664,12 +688,12 @@
         nama_barang: namaBarang,
         kelas_terapi: kelas,
         golongan,
+        gudang_penyimpanan: gudang,
         satuan_jual: satuanJual,
         satuan_beli: satuanBeli,
         content,
         hpp_beli: hpp,
         prinsipal: prinsipalNama,
-        distributor: distributorNama,
         status_aktif: statusAktif,
         statusBaris,
         alasan
@@ -702,9 +726,9 @@
       return `<tr>
         <td>${escapeHtml(r.nama_barang)}</td>
         <td>${escapeHtml(r.golongan)}</td>
+        <td>${escapeHtml(r.gudang_penyimpanan)}</td>
         <td class="num">${r.hpp_beli}</td>
         <td>${escapeHtml(r.prinsipal)}</td>
-        <td>${escapeHtml(r.distributor)}</td>
         <td><span class="badge-status" style="color:${badgeColor}; background:${badgeBg};">${escapeHtml(label)}</span></td>
       </tr>`;
     }).join('');
@@ -722,36 +746,34 @@
     document.getElementById('btnConfirmUpload').disabled = true;
 
     try {
-      // Ambil ulang mapping ID untuk prinsipal & distributor
-      const { data: prinsipalData } = await window.supabase.from('master_prinsipal').select('id, nama_prinsipal');
-      const { data: distributorData } = await window.supabase.from('master_distributor').select('id, nama_distributor');
+      // Mapping prinsipal ulang
       const prinsipalMap = {};
-      (prinsipalData || []).forEach(p => {
+      prinsipalList.forEach(p => {
         prinsipalMap[String(p.nama_prinsipal).trim().toUpperCase()] = p.id;
-      });
-      const distributorMap = {};
-      (distributorData || []).forEach(d => {
-        distributorMap[String(d.nama_distributor).trim().toUpperCase()] = d.id;
       });
 
       const items = valid.map(r => ({
         nama_barang: r.nama_barang,
-        kelas_terapi: r.kelas_terapi,
+        kelas_terapi: r.kelas_terapi || null,
         golongan: r.golongan,
-        satuan_jual: r.satuan_jual,
-        satuan_beli: r.satuan_beli,
+        gudang_penyimpanan: r.gudang_penyimpanan,
+        satuan_jual: r.satuan_jual || null,
+        satuan_beli: r.satuan_beli || null,
         content: r.content,
         hpp_beli: r.hpp_beli,
         prinsipal_id: r.prinsipal ? prinsipalMap[r.prinsipal.toUpperCase()] : null,
-        distributor_id: r.distributor ? distributorMap[r.distributor.toUpperCase()] : null,
         status_aktif: r.status_aktif
       }));
 
-      const { error } = await window.supabase.from('master_barang').insert(items);
-      if (error) throw error;
+      // Insert dalam batch 500 untuk hindari limit
+      const BATCH = 500;
+      for (let i = 0; i < items.length; i += BATCH) {
+        const chunk = items.slice(i, i + BATCH);
+        const { error } = await window.supabase.from('master_barang').insert(chunk);
+        if (error) throw error;
+      }
 
       msg.textContent = `Berhasil! ${valid.length} barang diimpor.`;
-      document.getElementById('btnConfirmUpload').disabled = true;
       setTimeout(() => {
         closeUploadModal();
         initData();
