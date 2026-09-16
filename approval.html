@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Approval Edit Penerimaan — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--green-deep); color: #fff; padding: 18px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+    .stat-card.warn { border-color: #F3D0C4; background: #FDF6F3; }
+    .stat-card .num { font-size: 20px; font-weight: 700; }
+    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+    .info-box {
+      background: var(--green-soft); color: var(--green-deep);
+      border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;
+      font-size: 13px; line-height: 1.5;
+    }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 8px 16px; border: 1px solid var(--border); background: var(--card);
+      border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer;
+      color: var(--text-muted);
+    }
+    .tab-btn.active { background: var(--green-mid); color: #fff; border-color: var(--green-mid); }
+
+    .req-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 12px; }
+    .req-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .req-title { font-size: 14px; font-weight: 600; }
+    .req-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+    .req-time { font-size: 11.5px; color: var(--text-muted); text-align: right; }
+
+    .diff-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+    .diff-table th, .diff-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .diff-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; background: #FAFBFA; }
+    .diff-table .col-lama { color: var(--coral); text-decoration: line-through; }
+    .diff-table .col-baru { color: var(--green-mid); font-weight: 600; }
+    .diff-table .col-field { font-weight: 600; }
+
+    .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
+    .btn { padding: 8px 16px; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .btn-primary { background: var(--green-mid); color: #fff; }
+    .btn-primary:hover { background: #128a3e; }
+    .btn-primary:disabled { background: #A9C9B5; cursor: default; }
+    .btn-danger { background: var(--coral); color: #fff; }
+    .btn-danger:hover { background: #B84733; }
+    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
+
+    .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .badge.pending { background: #FDF1E0; color: var(--amber); }
+    .badge.approved { background: var(--green-soft); color: var(--green-mid); }
+    .badge.rejected { background: #FBEAE7; color: var(--coral); }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+    .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
+
+    #modalOverlay { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
+    #modalOverlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 26px; }
+    .modal h2 { font-size: 16px; margin: 0 0 8px; }
+    .modal .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+    .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Approval edit penerimaan</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div id="warningBox"></div>
+
+  <div class="stat-row">
+    <div class="stat-card warn"><div class="num" id="statPending">-</div><div class="lbl">Menunggu approval</div></div>
+    <div class="stat-card"><div class="num" id="statApproved">-</div><div class="lbl">Disetujui (30 hari terakhir)</div></div>
+    <div class="stat-card"><div class="num" id="statRejected">-</div><div class="lbl">Ditolak (30 hari terakhir)</div></div>
+  </div>
+
+  <div class="info-box" id="roleInfo">-</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabPending" onclick="window.switchTab('PENDING')">Menunggu</button>
+    <button class="tab-btn" id="tabApproved" onclick="window.switchTab('APPROVED')">Disetujui</button>
+    <button class="tab-btn" id="tabRejected" onclick="window.switchTab('REJECTED')">Ditolak</button>
+  </div>
+
+  <div id="requestList"><div class="loading-note">Memuat pengajuan...</div></div>
+</main>
+
+<!-- MODAL TOLAK -->
+<div id="modalOverlay">
+  <div class="modal">
+    <h2>Tolak Pengajuan</h2>
+    <div class="sub" id="tolakSub"></div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block; font-size:12.5px; font-weight:600; color:var(--text-muted); margin-bottom:5px;">Alasan penolakan <span style="color:#DC5B45;">*</span></label>
+      <input type="text" id="fAlasanTolak" placeholder="mis. data tidak sesuai, perlu dikonfirmasi ulang" style="width:100%; padding:9px 11px; border:1px solid #E4EAE5; border-radius:8px; font-size:13.5px;">
+    </div>
+    <div class="form-msg" id="tolakMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeTolak()">Batal</button>
+      <button class="btn btn-danger" id="btnSubmitTolak" onclick="window.submitTolak()">Tolak Pengajuan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (function() {
+    let user = null;
+    try {
+      const stored = sessionStorage.getItem('rko_user');
+      if (stored) user = JSON.parse(stored);
+    } catch (e) {}
+    if (!user) {
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
+    }
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+  })();
+
+  // ============================================================
+  //  HAK AKSES
+  // ============================================================
+  function isKepalaInstalasiFarmasi() {
+    return window.currentUser.role === 'KEPALA_INSTALASI_FARMASI';
+  }
+
+  // Cek apakah user adalah penerima delegasi aktif
+  async function getDelegasiAktif() {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await window.supabase
+      .from('delegasi_approval')
+      .select('*')
+      .eq('penerima', window.currentUser.id)
+      .eq('status', 'AKTIF')
+      .lte('mulai', today)
+      .gte('berakhir', today);
+    if (error || !data || data.length === 0) return null;
+    return data[0];
+  }
+
+  async function cekHakApproval() {
+    if (isKepalaInstalasiFarmasi()) {
+      return { boleh: true, atasDelegasiDari: null };
+    }
+    const delegasi = await getDelegasiAktif();
+    if (delegasi) {
+      return { boleh: true, atasDelegasiDari: delegasi.pemberi };
+    }
+    return { boleh: false };
+  }
+
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  function formatDT(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function labelField(field) {
+    const map = {
+      tanggal_terima: 'Tanggal terima',
+      no_batch: 'No. batch',
+      tanggal_kadaluarsa: 'Tanggal kadaluarsa'
+    };
+    return map[field] || field;
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
+  let allRequests = [];
+  let penerimaanMap = {};
+  let pembelianMap = {};
+  let barangMap = {};
+  let userMap = {};
+  let currentTab = 'PENDING';
+  let hakApproval = { boleh: false };
+  let window_requestAktif = null;
+
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
+  async function loadAllData() {
+    document.getElementById('requestList').innerHTML = '<div class="loading-note">Memuat pengajuan...</div>';
+
+    try {
+      hakApproval = await cekHakApproval();
+      renderRoleInfo();
+
+      const [requestData, penerimaanData, pembelianData, barangData, userData] = await Promise.all([
+        fetchAllRows('approval_request', q => q.order('id', { ascending: false })),
+        fetchAllRows('penerimaan'),
+        fetchAllRows('pembelian'),
+        fetchAllRows('master_barang'),
+        fetchAllRows('users')
+      ]);
+
+      allRequests = requestData;
+      penerimaanMap = {};
+      penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
+      pembelianMap = {};
+      pembelianData.forEach(p => { pembelianMap[p.id] = p; });
+      barangMap = {};
+      barangData.forEach(b => { barangMap[b.id] = b; });
+      userMap = {};
+      userData.forEach(u => { userMap[u.id] = u; });
+
+      updateStats();
+      renderList();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('requestList').innerHTML =
+        '<div class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</div>';
+    }
+  }
+
+  function renderRoleInfo() {
+    const el = document.getElementById('roleInfo');
+    if (isKepalaInstalasiFarmasi()) {
+      el.innerHTML = '✅ Anda login sebagai <strong>Kepala Instalasi Farmasi</strong>. Anda berhak menyetujui atau menolak pengajuan edit penerimaan.';
+    } else if (hakApproval.boleh && hakApproval.atasDelegasiDari) {
+      const pemberi = userMap[hakApproval.atasDelegasiDari];
+      el.innerHTML = '🔑 Anda bertindak <strong>atas delegasi dari ' + escapeHtml(pemberi ? pemberi.nama : 'Kepala Instalasi Farmasi') + '</strong>. Hak approval berlaku sampai batas waktu delegasi berakhir.';
+    } else {
+      el.innerHTML = '👁️ Anda hanya bisa melihat daftar pengajuan. Hak approval hanya untuk <strong>Kepala Instalasi Farmasi</strong> atau penerima delegasi aktif.';
+    }
+  }
+
+  function updateStats() {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const pending = allRequests.filter(r => r.status === 'PENDING').length;
+    const approved = allRequests.filter(r => r.status === 'APPROVED' && new Date(r.disetujui_pada) > thirtyDaysAgo).length;
+    const rejected = allRequests.filter(r => r.status === 'REJECTED' && new Date(r.disetujui_pada) > thirtyDaysAgo).length;
+
+    document.getElementById('statPending').textContent = pending;
+    document.getElementById('statApproved').textContent = approved;
+    document.getElementById('statRejected').textContent = rejected;
+  }
+
+  // ============================================================
+  //  TAB
+  // ============================================================
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    document.getElementById('tabPending').classList.toggle('active', tab === 'PENDING');
+    document.getElementById('tabApproved').classList.toggle('active', tab === 'APPROVED');
+    document.getElementById('tabRejected').classList.toggle('active', tab === 'REJECTED');
+    renderList();
+  };
+
+  // ============================================================
+  //  RENDER LIST
+  // ============================================================
+  function renderList() {
+    const container = document.getElementById('requestList');
+    const list = allRequests.filter(r => r.status === currentTab);
+
+    if (list.length === 0) {
+      const label = { PENDING: 'menunggu', APPROVED: 'disetujui', REJECTED: 'ditolak' }[currentTab];
+      container.innerHTML = '<div class="empty-state">Belum ada pengajuan yang ' + label + '.</div>';
+      return;
+    }
+
+    container.innerHTML = list.map(r => {
+      const penerimaan = penerimaanMap[r.referensi_id];
+      const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+      const barang = penerimaan ? barangMap[penerimaan.barang_id] : null;
+      const pengaju = userMap[r.diajukan_oleh];
+      const penyetuju = userMap[r.disetujui_oleh];
+
+      const dataLama = r.data_lama || {};
+      const dataBaru = r.data_baru || {};
+
+      // Bandingkan field
+      const fields = ['tanggal_terima', 'no_batch', 'tanggal_kadaluarsa'];
+      const diffRows = fields.map(f => {
+        const lama = dataLama[f] || '-';
+        const baru = dataBaru[f] || '-';
+        const berubah = String(lama) !== String(baru);
+        if (!berubah) return '';
+        return `<tr>
+          <td class="col-field">${escapeHtml(labelField(f))}</td>
+          <td class="col-lama">${escapeHtml(String(lama))}</td>
+          <td class="col-baru">${escapeHtml(String(baru))}</td>
+        </tr>`;
+      }).filter(Boolean).join('');
+
+      let statusBadge = '';
+      if (r.status === 'PENDING') statusBadge = '<span class="badge pending">PENDING</span>';
+      else if (r.status === 'APPROVED') statusBadge = '<span class="badge approved">DISETUJUI</span>';
+      else if (r.status === 'REJECTED') statusBadge = '<span class="badge rejected">DITOLAK</span>';
+
+      const aksiBtns = r.status === 'PENDING' && hakApproval.boleh
+        ? `<button class="btn btn-primary" onclick="window.approveRequest(${r.id})">Setujui</button>
+           <button class="btn btn-danger" onclick="window.openTolak(${r.id})">Tolak</button>`
+        : '';
+
+      return `<div class="req-card">
+        <div class="req-head">
+          <div>
+            <div class="req-title">${escapeHtml(barang ? barang.nama_barang : 'Barang tidak dikenal')}</div>
+            <div class="req-sub">
+              PO: ${escapeHtml(po ? po.no_po : '-')} ·
+              Diajukan oleh: ${escapeHtml(pengaju ? pengaju.nama : 'User #' + r.diajukan_oleh)}
+            </div>
+          </div>
+          <div class="req-time">
+            ${statusBadge}<br>
+            ${formatDT(r.diajukan_pada)}
+          </div>
+        </div>
+
+        ${r.status === 'PENDING' && !hakApproval.boleh ? '<div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Anda hanya bisa melihat, tidak bisa menyetujui.</div>' : ''}
+
+        <table class="diff-table">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Data lama</th>
+              <th>Data baru</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${diffRows || '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Tidak ada perubahan</td></tr>'}
+          </tbody>
+        </table>
+
+        ${r.status !== 'PENDING' ? `
+          <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">
+            ${r.status === 'APPROVED'
+              ? '✅ Disetujui oleh ' + escapeHtml(penyetuju ? penyetuju.nama : 'User #' + r.disetujui_oleh) + ' pada ' + formatDT(r.disetujui_pada)
+              : '❌ Ditolak oleh ' + escapeHtml(penyetuju ? penyetuju.nama : 'User #' + r.disetujui_oleh) + ' pada ' + formatDT(r.disetujui_pada) + ' · Alasan: ' + escapeHtml(r.catatan_penolakan || '-')}
+          </div>
+        ` : ''}
+
+        ${aksiBtns ? '<div class="actions">' + aksiBtns + '</div>' : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // ============================================================
+  //  APPROVE
+  // ============================================================
+  window.approveRequest = async function(id) {
+    if (!confirm('Setujui pengajuan ini? Data penerimaan akan diubah dan tercatat di log.')) return;
+
+    try {
+      const { error } = await window.supabase.rpc('apply_approval', {
+        p_approval_id: id,
+        p_disetujui_oleh: window.currentUser.id || null
+      });
+      if (error) throw error;
+      await loadAllData();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    }
+  };
+
+  // ============================================================
+  //  REJECT
+  // ============================================================
+  window.openTolak = function(id) {
+    window_requestAktif = id;
+    const r = allRequests.find(x => x.id === id);
+    const penerimaan = r ? penerimaanMap[r.referensi_id] : null;
+    const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+    const barang = penerimaan ? barangMap[penerimaan.barang_id] : null;
+
+    document.getElementById('tolakSub').innerHTML =
+      'Pengajuan untuk: <strong>' + escapeHtml(barang ? barang.nama_barang : '-') + '</strong> · PO ' + escapeHtml(po ? po.no_po : '-');
+
+    document.getElementById('fAlasanTolak').value = '';
+    document.getElementById('tolakMsg').textContent = '';
+    document.getElementById('btnSubmitTolak').disabled = false;
+    document.getElementById('modalOverlay').classList.add('show');
+  };
+
+  window.closeTolak = function() {
+    document.getElementById('modalOverlay').classList.remove('show');
+    window_requestAktif = null;
+  };
+
+  window.submitTolak = async function() {
+    if (!window_requestAktif) return;
+    const alasan = document.getElementById('fAlasanTolak').value.trim();
+    const msg = document.getElementById('tolakMsg');
+    const btn = document.getElementById('btnSubmitTolak');
+
+    if (!alasan) { msg.textContent = 'Alasan penolakan wajib diisi.'; return; }
+
+    btn.disabled = true;
+    msg.textContent = 'Memproses...';
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      const { error } = await window.supabase.from('approval_request').update({
+        status: 'REJECTED',
+        disetujui_oleh: window.currentUser.id || null,
+        disetujui_pada: new Date().toISOString(),
+        catatan_penolakan: alasan
+      }).eq('id', window_requestAktif);
+      if (error) throw error;
+
+      closeTolak();
+      await loadAllData();
+    } catch (err) {
+      msg.textContent = 'Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
+  //  START
+  // ============================================================
+  loadAllData();
+</script>
+</body>
+</html>
