@@ -364,7 +364,7 @@
       }
     } catch (e) {}
     if (!user) {
-      user = { id: 999, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
       sessionStorage.setItem('rko_user', JSON.stringify(user));
     }
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
