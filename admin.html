@@ -381,6 +381,26 @@
   })();
 
   // ============================================================
+  //  HELPER: FETCH SEMUA BARIS (menembus batas 1000)
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  // ============================================================
   //  GLOBAL VARIABLES
   // ============================================================
   let allBarang = [];
@@ -420,15 +440,13 @@
   async function initData() {
     hideError();
     try {
-      const [br, pr] = await Promise.all([
-        window.supabase.from('master_barang').select('*').order('nama_barang'),
-        window.supabase.from('master_prinsipal').select('*').order('nama_prinsipal')
+      const [brData, prData] = await Promise.all([
+        fetchAllRows('master_barang', q => q.order('nama_barang')),
+        fetchAllRows('master_prinsipal', q => q.order('nama_prinsipal'))
       ]);
-      if (br.error) throw br.error;
-      if (pr.error) throw pr.error;
 
-      allBarang = br.data || [];
-      prinsipalList = pr.data || [];
+      allBarang = brData;
+      prinsipalList = prData;
 
       fillSelectOptions();
       applyFilter();
@@ -583,7 +601,6 @@
 
     const id = Number(idInput);
 
-    // Cek bentrok ID (hanya saat tambah)
     if (mode === 'tambah') {
       const bentrok = allBarang.find(b => String(b.id) === String(id));
       if (bentrok) {
@@ -672,9 +689,7 @@
       prinsipalMap[String(p.nama_prinsipal).trim().toUpperCase()] = p.id;
     });
 
-    // Set ID yang sudah ada di database
     const existingIds = new Set(allBarang.map(b => String(b.id)));
-    // Set untuk deteksi duplikat dalam satu file
     const seenIds = new Set();
 
     uploadRows = rawRows.map(row => {
