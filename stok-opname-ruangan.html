@@ -44,6 +44,10 @@
 
     .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1000px; }
+    table th:first-child,
+    table td:first-child { width: 90px; min-width: 90px; white-space: nowrap; }
+    table th:nth-child(2),
+    table td:nth-child(2) { min-width: 220px; }
     th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
     td.num { text-align: right; }
