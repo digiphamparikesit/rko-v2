@@ -121,6 +121,9 @@
       margin-bottom: 12px; line-height: 1.5;
     }
     .help-text { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+    .id-display {
+      font-family: "Courier New", monospace; font-weight: 700; color: var(--green-deep);
+    }
   </style>
 </head>
 <body>
@@ -145,8 +148,8 @@
       <div class="panel side-panel">
         <h2 class="side-title">Cari &amp; Filter</h2>
         <div class="field">
-          <label>Cari nama barang</label>
-          <input type="text" id="searchBox" placeholder="Cari nama barang...">
+          <label>Cari nama barang / ID</label>
+          <input type="text" id="searchBox" placeholder="Cari nama atau ID barang...">
         </div>
         <div class="field">
           <label>Gudang penyimpanan</label>
@@ -191,8 +194,7 @@
       <div class="panel side-panel">
         <h2 class="side-title">Keterangan</h2>
         <div class="info-note">
-          <strong>Gudang Obat</strong> — barang golongan OBAT, dimutasi oleh Petugas Mutasi Obat.<br><br>
-          <strong>Gudang BMHP</strong> — barang BMHP, BHP, B3, Nutrisi, Program, dimutasi oleh Petugas Mutasi BMHP.
+          <strong>ID Barang</strong> wajib diisi dengan ID dari NUHA. Setelah tersimpan, ID tidak bisa diubah. Kalau salah, hapus dan input ulang.
         </div>
       </div>
     </aside>
@@ -203,18 +205,17 @@
         <table>
           <thead>
             <tr>
+              <th>ID</th>
               <th>Nama barang</th>
-              <th>Kelas terapi</th>
               <th>Golongan</th>
               <th>Gudang</th>
-              <th>Satuan</th>
               <th class="num">HPP beli</th>
               <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="8" class="empty-state">Memuat data...</td></tr>
+            <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
           </tbody>
         </table>
         <div class="pager">
@@ -233,11 +234,19 @@
 <div id="modalOverlay">
   <div class="modal">
     <h2 id="modalTitle">Tambah Barang</h2>
-    <input type="hidden" id="fId">
+    <input type="hidden" id="fEditMode">
+
     <div class="field">
-      <label>Nama barang</label>
+      <label>ID Barang (dari NUHA) <span style="color:var(--coral);">*</span></label>
+      <input type="text" id="fId" placeholder="mis. 4501" inputmode="numeric">
+      <div class="help-text" id="idHelp">Angka dari NUHA. Setelah disimpan, ID tidak bisa diubah.</div>
+    </div>
+
+    <div class="field">
+      <label>Nama barang <span style="color:var(--coral);">*</span></label>
       <input type="text" id="fNama" placeholder="mis. Paracetamol Tab 500mg">
     </div>
+
     <div class="field-row">
       <div class="field">
         <label>Kelas terapi</label>
@@ -263,14 +272,15 @@
         </select>
       </div>
     </div>
+
     <div class="field">
       <label>Gudang penyimpanan</label>
       <select id="fGudang">
         <option value="OBAT">Gudang Obat</option>
         <option value="BMHP">Gudang BMHP</option>
       </select>
-      <div class="help-text" id="gudangHelp">Gudang Obat untuk golongan OBAT. Gudang BMHP untuk selain OBAT.</div>
     </div>
+
     <div class="field-row">
       <div class="field">
         <label>Satuan jual</label>
@@ -281,6 +291,7 @@
         <input type="text" id="fSatuanBeli" placeholder="mis. Box">
       </div>
     </div>
+
     <div class="field-row">
       <div class="field">
         <label>Content (isi per kemasan)</label>
@@ -291,10 +302,12 @@
         <input type="number" id="fHpp" value="0">
       </div>
     </div>
+
     <div class="field">
       <label>Prinsipal</label>
       <select id="fPrinsipal"><option value="">-</option></select>
     </div>
+
     <div class="form-msg" id="formMsg"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="window.closeForm()">Batal</button>
@@ -310,10 +323,11 @@
     <p style="font-size:12.5px; color:var(--text-muted); margin:-8px 0 16px;">
       Format CSV wajib memiliki kolom (header): <br>
       <code style="background:#F1F1EE; padding:2px 6px; border-radius:5px; font-size:11.5px;">
-        nama_barang, kelas_terapi, golongan, gudang_penyimpanan, satuan_jual, satuan_beli, content, hpp_beli, prinsipal, status_aktif
+        id_barang, nama_barang, kelas_terapi, golongan, gudang_penyimpanan, satuan_jual, satuan_beli, content, hpp_beli, prinsipal, status_aktif
       </code>
-      <br><span style="color:var(--amber);">* Kolom prinsipal diisi dengan NAMA (akan dicocokkan dengan master).</span>
-      <br><span style="color:var(--amber);">* Kolom gudang_penyimpanan: OBAT atau BMHP. Kalau kosong, otomatis dari golongan.</span>
+      <br><span style="color:var(--coral);">* Kolom id_barang WAJIB. ID dari NUHA.</span>
+      <br><span style="color:var(--amber);">* Kolom prinsipal diisi NAMA (akan dicocokkan dengan master).</span>
+      <br><span style="color:var(--amber);">* gudang_penyimpanan: OBAT atau BMHP. Kalau kosong, otomatis dari golongan.</span>
       <br><span style="color:var(--text-muted); font-size:11px;">* status_aktif: true/false atau 1/0</span>
     </p>
     <input type="file" id="uploadFileInput" accept=".csv" onchange="window.handleUploadFile(event)" style="margin-bottom:14px;">
@@ -322,6 +336,7 @@
       <table class="preview-table">
         <thead>
           <tr>
+            <th>ID</th>
             <th>Nama Barang</th>
             <th>Golongan</th>
             <th>Gudang</th>
@@ -350,22 +365,17 @@
   window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ============================================================
-  //  SESSION BYPASS
+  //  SESSION
   // ============================================================
   (function() {
     let user = null;
     try {
       const stored = sessionStorage.getItem('rko_user');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && ['ADMIN', 'SUPER_ADMIN'].includes(parsed.role)) {
-          user = parsed;
-        }
-      }
+      if (stored) user = JSON.parse(stored);
     } catch (e) {}
     if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
-      sessionStorage.setItem('rko_user', JSON.stringify(user));
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
     }
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
   })();
@@ -400,7 +410,6 @@
   function hideError() {
     document.getElementById('errorContainer').style.display = 'none';
   }
-  // Tentukan gudang default dari golongan
   function gudangDariGolongan(golongan) {
     return String(golongan || '').toUpperCase() === 'OBAT' ? 'OBAT' : 'BMHP';
   }
@@ -426,7 +435,7 @@
     } catch (err) {
       showError('Gagal memuat data: ' + err.message);
       document.getElementById('tableBody').innerHTML =
-        '<tr><td colspan="8" class="empty-state">Error: ' + escapeHtml(err.message) + '</td></tr>';
+        '<tr><td colspan="7" class="empty-state">Error: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -434,12 +443,6 @@
     const pSel = document.getElementById('fPrinsipal');
     pSel.innerHTML = '<option value="">-</option>' +
       prinsipalList.map(p => `<option value="${p.id}">${escapeHtml(p.nama_prinsipal)}</option>`).join('');
-  }
-
-  function getPrinsipalNama(id) {
-    if (!id) return '-';
-    const p = prinsipalList.find(x => String(x.id) === String(id));
-    return p ? p.nama_prinsipal : '-';
   }
 
   // ============================================================
@@ -457,7 +460,9 @@
     const status = document.getElementById('filterStatus').value;
 
     filteredBarang = allBarang.filter(b => {
-      const matchQ = !q || String(b.nama_barang).toLowerCase().includes(q);
+      const matchQ = !q
+        || String(b.nama_barang).toLowerCase().includes(q)
+        || String(b.id).includes(q);
       const matchGud = !gudang || b.gudang_penyimpanan === gudang;
       const matchG = !golongan || b.golongan === golongan;
       const isActive = b.status_aktif === true;
@@ -473,7 +478,7 @@
     const pageItems = filteredBarang.slice(start, start + PAGE_SIZE);
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Tidak ada data yang cocok.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Tidak ada data yang cocok.</td></tr>';
     } else {
       tbody.innerHTML = pageItems.map(b => {
         const isActive = b.status_aktif === true;
@@ -481,11 +486,10 @@
         const gudangBadge = gudang === 'OBAT' ? 'obat' : 'bmhp';
         return `
           <tr class="${isActive ? '' : 'inactive'}">
+            <td><span class="id-display">${b.id}</span></td>
             <td>${escapeHtml(b.nama_barang)}</td>
-            <td>${escapeHtml(b.kelas_terapi || '-')}</td>
             <td><span class="badge gol">${escapeHtml(b.golongan || '-')}</span></td>
             <td><span class="badge ${gudangBadge}">${gudang}</span></td>
-            <td>${escapeHtml(b.satuan_jual || '-')} / ${escapeHtml(b.satuan_beli || '-')}</td>
             <td class="num">Rp ${formatRp(b.hpp_beli)}</td>
             <td>${isActive ? '<span class="badge obat">Aktif</span>' : '<span class="badge off">Nonaktif</span>'}</td>
             <td>
@@ -517,11 +521,18 @@
   // ============================================================
   window.openForm = function(id) {
     document.getElementById('formMsg').textContent = '';
+    const fId = document.getElementById('fId');
+
     if (id) {
-      const b = allBarang.find(x => x.id === id);
+      const b = allBarang.find(x => String(x.id) === String(id));
       if (!b) return;
       document.getElementById('modalTitle').textContent = 'Edit Barang';
-      document.getElementById('fId').value = b.id;
+      document.getElementById('fEditMode').value = 'edit';
+      fId.value = b.id;
+      fId.readOnly = true;
+      fId.style.background = '#F1F1EE';
+      fId.style.cursor = 'not-allowed';
+      document.getElementById('idHelp').textContent = 'ID tidak bisa diubah. Kalau salah, hapus dan input ulang.';
       document.getElementById('fNama').value = b.nama_barang || '';
       document.getElementById('fKelas').value = b.kelas_terapi || '';
       document.getElementById('fGolongan').value = b.golongan || 'OBAT';
@@ -533,7 +544,12 @@
       document.getElementById('fPrinsipal').value = b.prinsipal_id || '';
     } else {
       document.getElementById('modalTitle').textContent = 'Tambah Barang';
-      document.getElementById('fId').value = '';
+      document.getElementById('fEditMode').value = 'tambah';
+      fId.value = '';
+      fId.readOnly = false;
+      fId.style.background = '';
+      fId.style.cursor = '';
+      document.getElementById('idHelp').textContent = 'Angka dari NUHA. Setelah disimpan, ID tidak bisa diubah.';
       document.getElementById('fNama').value = '';
       document.getElementById('fKelas').value = '';
       document.getElementById('fGolongan').value = 'OBAT';
@@ -551,18 +567,30 @@
     document.getElementById('modalOverlay').classList.remove('show');
   };
 
-  // Auto set gudang saat golongan berubah (kalau user belum override manual)
   document.getElementById('fGolongan').addEventListener('change', function() {
-    const gol = this.value;
-    document.getElementById('fGudang').value = gudangDariGolongan(gol);
+    document.getElementById('fGudang').value = gudangDariGolongan(this.value);
   });
 
   window.submitForm = async function() {
-    const id = document.getElementById('fId').value;
+    const mode = document.getElementById('fEditMode').value;
+    const idInput = document.getElementById('fId').value.trim();
     const nama = document.getElementById('fNama').value.trim();
     const msg = document.getElementById('formMsg');
 
+    if (!idInput) { msg.textContent = 'ID Barang wajib diisi.'; return; }
+    if (!/^\d+$/.test(idInput)) { msg.textContent = 'ID Barang harus angka.'; return; }
     if (!nama) { msg.textContent = 'Nama barang wajib diisi.'; return; }
+
+    const id = Number(idInput);
+
+    // Cek bentrok ID (hanya saat tambah)
+    if (mode === 'tambah') {
+      const bentrok = allBarang.find(b => String(b.id) === String(id));
+      if (bentrok) {
+        msg.textContent = 'ID ' + id + ' sudah dipakai: "' + bentrok.nama_barang + '". Gunakan ID lain atau edit barang itu.';
+        return;
+      }
+    }
 
     const golongan = document.getElementById('fGolongan').value;
     const gudang = document.getElementById('fGudang').value;
@@ -584,11 +612,11 @@
 
     msg.textContent = 'Menyimpan...';
     try {
-      if (id) {
+      if (mode === 'edit') {
         const { error } = await window.supabase.from('master_barang').update(payload).eq('id', id);
         if (error) throw error;
       } else {
-        const { error } = await window.supabase.from('master_barang').insert(payload);
+        const { error } = await window.supabase.from('master_barang').insert({ id, ...payload });
         if (error) throw error;
       }
       closeForm();
@@ -639,16 +667,18 @@
   };
 
   function processUploadRows(rawRows) {
-    // Mapping nama prinsipal → id
     const prinsipalMap = {};
     prinsipalList.forEach(p => {
       prinsipalMap[String(p.nama_prinsipal).trim().toUpperCase()] = p.id;
     });
 
-    // Set nama barang yang sudah ada (case-insensitive)
-    const existingNames = new Set(allBarang.map(b => String(b.nama_barang).trim().toUpperCase()));
+    // Set ID yang sudah ada di database
+    const existingIds = new Set(allBarang.map(b => String(b.id)));
+    // Set untuk deteksi duplikat dalam satu file
+    const seenIds = new Set();
 
     uploadRows = rawRows.map(row => {
+      const idRaw = String(row.id_barang || row.id || '').trim();
       const namaBarang = String(row.nama_barang || '').trim();
       const kelas = String(row.kelas_terapi || '').trim();
       const golongan = String(row.golongan || '').trim();
@@ -661,7 +691,6 @@
       const statusRaw = String(row.status_aktif || '').toLowerCase();
       const statusAktif = statusRaw === 'true' || statusRaw === '1';
 
-      // Tentukan gudang: pakai CSV kalau valid, kalau tidak dari golongan
       let gudang = gudangCsv;
       if (!['OBAT', 'BMHP'].includes(gudang)) {
         gudang = gudangDariGolongan(golongan);
@@ -670,21 +699,28 @@
       let statusBaris = 'valid';
       let alasan = '';
 
-      if (!namaBarang) {
-        statusBaris = 'invalid';
-        alasan = 'Nama barang kosong';
-      } else if (existingNames.has(namaBarang.toUpperCase())) {
-        statusBaris = 'duplikat';
-        alasan = 'Sudah ada di master, dilewati';
+      if (!idRaw) {
+        statusBaris = 'invalid'; alasan = 'ID Barang kosong';
+      } else if (!/^\d+$/.test(idRaw)) {
+        statusBaris = 'invalid'; alasan = 'ID harus angka';
+      } else if (seenIds.has(idRaw)) {
+        statusBaris = 'invalid'; alasan = 'ID duplikat dalam file';
+      } else if (!namaBarang) {
+        statusBaris = 'invalid'; alasan = 'Nama barang kosong';
+      } else if (existingIds.has(idRaw)) {
+        statusBaris = 'duplikat'; alasan = 'ID sudah ada di master';
       } else {
         const prinsipalId = prinsipalNama ? prinsipalMap[prinsipalNama.toUpperCase()] : null;
         if (prinsipalNama && !prinsipalId) {
-          statusBaris = 'invalid';
-          alasan = 'Prinsipal "' + prinsipalNama + '" tidak ditemukan';
+          statusBaris = 'invalid'; alasan = 'Prinsipal "' + prinsipalNama + '" tidak ditemukan';
         }
       }
 
+      seenIds.add(idRaw);
+
       return {
+        id: idRaw ? Number(idRaw) : null,
+        id_raw: idRaw,
         nama_barang: namaBarang,
         kelas_terapi: kelas,
         golongan,
@@ -712,18 +748,19 @@
     document.getElementById('uploadSummary').innerHTML =
       `Total <strong>${uploadRows.length}</strong> baris — ` +
       `<span style="color:var(--green-mid); font-weight:600;">${valid.length} valid</span>, ` +
-      `<span style="color:var(--text-muted); font-weight:600;">${dup.length} duplikat (dilewati)</span>, ` +
+      `<span style="color:var(--text-muted); font-weight:600;">${dup.length} duplikat (ID sudah ada)</span>, ` +
       `<span style="color:var(--coral); font-weight:600;">${invalid.length} bermasalah</span>`;
 
     document.getElementById('uploadPreviewWrap').style.display = 'block';
-    document.getElementById('uploadPreviewBody').innerHTML = uploadRows.map(r => {
+    document.getElementById('uploadPreviewBody').innerHTML = uploadRows.slice(0, 200).map(r => {
       const badgeColor = r.statusBaris === 'valid' ? 'var(--green-mid)' :
                          (r.statusBaris === 'duplikat' ? 'var(--text-muted)' : 'var(--coral)');
       const badgeBg = r.statusBaris === 'valid' ? 'var(--green-soft)' :
                       (r.statusBaris === 'duplikat' ? '#F1F1EE' : '#FBEAE7');
       const label = r.statusBaris === 'valid' ? 'Siap import' :
-                    (r.statusBaris === 'duplikat' ? 'Duplikat' : r.alasan);
+                    (r.statusBaris === 'duplikat' ? 'ID sudah ada' : r.alasan);
       return `<tr>
+        <td><span class="id-display">${escapeHtml(r.id_raw || '-')}</span></td>
         <td>${escapeHtml(r.nama_barang)}</td>
         <td>${escapeHtml(r.golongan)}</td>
         <td>${escapeHtml(r.gudang_penyimpanan)}</td>
@@ -731,7 +768,9 @@
         <td>${escapeHtml(r.prinsipal)}</td>
         <td><span class="badge-status" style="color:${badgeColor}; background:${badgeBg};">${escapeHtml(label)}</span></td>
       </tr>`;
-    }).join('');
+    }).join('') + (uploadRows.length > 200
+      ? `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); font-size:11.5px; padding:10px;">... dan ${uploadRows.length - 200} baris lain tidak ditampilkan</td></tr>`
+      : '');
 
     document.getElementById('btnConfirmUpload').disabled = valid.length === 0;
     document.getElementById('uploadMsg').textContent = '';
@@ -746,13 +785,13 @@
     document.getElementById('btnConfirmUpload').disabled = true;
 
     try {
-      // Mapping prinsipal ulang
       const prinsipalMap = {};
       prinsipalList.forEach(p => {
         prinsipalMap[String(p.nama_prinsipal).trim().toUpperCase()] = p.id;
       });
 
       const items = valid.map(r => ({
+        id: r.id,
         nama_barang: r.nama_barang,
         kelas_terapi: r.kelas_terapi || null,
         golongan: r.golongan,
@@ -765,7 +804,6 @@
         status_aktif: r.status_aktif
       }));
 
-      // Insert dalam batch 500 untuk hindari limit
       const BATCH = 500;
       for (let i = 0; i < items.length; i += BATCH) {
         const chunk = items.slice(i, i + BATCH);
@@ -774,12 +812,14 @@
       }
 
       msg.textContent = `Berhasil! ${valid.length} barang diimpor.`;
+      msg.style.color = 'var(--green-mid)';
       setTimeout(() => {
         closeUploadModal();
         initData();
       }, 1200);
     } catch (err) {
       msg.textContent = 'Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
       document.getElementById('btnConfirmUpload').disabled = false;
     }
   };
