@@ -17,13 +17,20 @@
       color: var(--text-dark);
     }
 
-    /* ===== TOPBAR ===== */
+    /* ===== TOPBAR STICKY ===== */
     header.topbar {
-      background: var(--green-deep); color: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--green-deep);
+      color: #fff;
       padding: 16px 24px;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     .brand { display: flex; align-items: center; gap: 12px; }
     .brand .mark {
@@ -169,8 +176,8 @@
     } catch (e) {}
 
     if (!user || !user.role) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
-      sessionStorage.setItem('rko_user', JSON.stringify(user));
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
     }
 
     window.currentUser = user;
@@ -256,7 +263,7 @@
           icon: '💉',
           url: 'pemakaian-ruangan.html',
           ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'USER', 'KEUANGAN']
+          roles: ['SUPER_ADMIN', 'ADMIN', 'USER', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI']
         }
       ]
     },
@@ -324,14 +331,6 @@
           icon: '👥',
           url: 'manajemen-user.html',
           ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN']
-        },
-        {
-          name: 'Alias NUHA',
-          desc: 'Pemetaan nama barang & ruangan NUHA',
-          icon: '🔗',
-          url: 'alias-nuha.html',
-          ready: false,
           roles: ['SUPER_ADMIN', 'ADMIN']
         }
       ]
@@ -477,7 +476,7 @@
   }
 
   window.klikBelumTersedia = function(nama) {
-    alert('Menu "' + nama + '" sedang dalam pengembangan.\n\nAkan tersedia setelah file HTML-nya dibuat.');
+    alert('Menu "' + nama + '" sedang dalam pengembangan.');
   };
 
   // ============================================================
