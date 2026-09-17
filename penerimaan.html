@@ -12,7 +12,12 @@
       --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text-dark);
+    }
     header.topbar {
       position: sticky; top: 0; z-index: 100;
       background: var(--green-deep); color: #fff; padding: 18px 24px;
@@ -45,6 +50,7 @@
     .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
     .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
     .stat-card.warn { border-color: #F3D0C4; background: #FDF6F3; }
+    .stat-card.info { border-color: #D7DEEF; background: #F3F6FC; }
     .stat-card .num { font-size: 20px; font-weight: 700; }
     .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
 
@@ -107,9 +113,9 @@
 
 <main>
   <div class="stat-row">
-    <div class="stat-card"><div class="num" id="statMenunggu">-</div><div class="lbl">PO menunggu diterima</div></div>
-    <div class="stat-card"><div class="num" id="statDiterima">-</div><div class="lbl">Kedatangan diterima bulan ini</div></div>
-    <div class="stat-card warn"><div class="num" id="statSelisih">-</div><div class="lbl">Selisih belum ditindaklanjuti</div></div>
+    <div class="stat-card info"><div class="num" id="statMenunggu">-</div><div class="lbl">PO menunggu diterima</div></div>
+    <div class="stat-card"><div class="num" id="statDiterimaSebagian">-</div><div class="lbl">PO diterima sebagian</div></div>
+    <div class="stat-card warn"><div class="num" id="statRusakRetur">-</div><div class="lbl">Barang rusak menunggu retur</div></div>
   </div>
 
   <div class="layout-split">
@@ -363,30 +369,21 @@
   }
 
   // ============================================================
-  //  SUMMARY
+  //  SUMMARY — REVISI
+  //  1. PO menunggu diterima    → status DIKIRIM
+  //  2. PO diterima sebagian    → status DITERIMA_SEBAGIAN
+  //  3. Barang rusak menunggu retur → kondisi RUSAK & status_rusak = MENUNGGU_RETUR
   // ============================================================
   function updateSummary() {
-    const menunggu = pembelianList.filter(p =>
-      p.status === 'DIKIRIM' || p.status === 'DITERIMA_SEBAGIAN'
-    ).length;
-
-    const now = new Date();
-    const groupIds = new Set();
-    penerimaanList.forEach(p => {
-      const d = new Date(p.tanggal_terima);
-      if (!isNaN(d) && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
-        if (p.group_id) groupIds.add(p.group_id);
-        else groupIds.add('LEGACY-' + p.id);
-      }
-    });
-
-    const selisihCount = penerimaanList.filter(p =>
+    const menunggu = pembelianList.filter(p => p.status === 'DIKIRIM').length;
+    const diterimaSebagian = pembelianList.filter(p => p.status === 'DITERIMA_SEBAGIAN').length;
+    const rusakRetur = penerimaanList.filter(p =>
       p.kondisi === 'RUSAK' && p.status_rusak === 'MENUNGGU_RETUR'
     ).length;
 
     document.getElementById('statMenunggu').textContent = menunggu;
-    document.getElementById('statDiterima').textContent = groupIds.size;
-    document.getElementById('statSelisih').textContent = selisihCount;
+    document.getElementById('statDiterimaSebagian').textContent = diterimaSebagian;
+    document.getElementById('statRusakRetur').textContent = rusakRetur;
   }
 
   // ============================================================
@@ -460,8 +457,7 @@
           qty_rusak: 0,
           rusak_ids: [],
           status_rusak: null,
-          sudah_dimutasi: false,
-          ada_pending_approval: false
+          sudah_dimutasi: false
         };
       }
       if (r.kondisi === 'BAIK') {
