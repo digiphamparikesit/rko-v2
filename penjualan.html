@@ -3,12 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Penjualan — RKO RSAMP</title>
+  <title>Penjualan Farmasi — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    /* gaya penjualan (sama seperti versi sebelumnya) */
-    :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
+    :root {
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+    }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
     header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -20,42 +23,49 @@
     .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
     a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
     a.back:hover { color: #fff; }
-    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; }
+    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
     select option { color: #14201A; }
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
-    .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
-    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; align-self: start; }
-    .side-panel { padding: 18px 20px; }
-    .side-title { font-size: 14px; margin: 0 0 12px; }
-    .field { margin-bottom: 12px; }
-    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
-    .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-    @media (max-width: 860px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
-    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
     .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
     .stat-card .num { font-size: 19px; font-weight: 700; }
     .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 760px; }
-    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
-    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
-    td.num { text-align: right; }
     .pos { color: var(--green-mid); font-weight: 600; }
     .neg { color: var(--coral); font-weight: 600; }
+
+    .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
+    .side-panel { padding: 18px 20px; }
+    .side-title { font-size: 14px; margin: 0 0 12px; }
+    .info-note { background: var(--green-soft); color: var(--green-deep); padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
+
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 760px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num { text-align: right; }
     .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); }
     .pager button { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 12.5px; }
     .pager button:disabled { opacity: 0.4; cursor: default; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+
     .btn { padding: 10px 16px; border: none; border-radius: 9px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
     .btn-primary { background: var(--green-mid); color: #fff; }
     .btn-primary:hover { background: #128a3e; }
     .btn-primary:disabled { background: #A9C9B5; cursor: default; }
     .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
+
     #modalUpload { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
     #modalUpload.show { display: flex; }
-    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 720px; max-height: 90vh; overflow-y: auto; padding: 26px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 780px; max-height: 90vh; overflow-y: auto; padding: 26px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 8px; }
+
+    .progress-wrap { background: #EEF2EE; border-radius: 999px; height: 10px; overflow: hidden; margin: 10px 0; }
+    .progress-bar { background: var(--green-mid); height: 100%; width: 0%; transition: width 0.2s; }
+
+    .badge-status { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
   </style>
 </head>
 <body>
@@ -63,7 +73,10 @@
 <header class="topbar">
   <div class="brand">
     <div class="mark">RS</div>
-    <div><div class="title">RKO RSAMP</div><div class="label">Penjualan — data dari aplikasi pelayanan RS</div></div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Penjualan Farmasi — data dari NUHA</div>
+    </div>
   </div>
   <div class="topbar-right">
     <span class="who" id="whoLabel"></span>
@@ -77,94 +90,226 @@
   <div class="stat-grid">
     <div class="stat-card"><div class="num" id="statQty">-</div><div class="lbl">Total qty terjual</div></div>
     <div class="stat-card"><div class="num" id="statHpp">-</div><div class="lbl">Total HPP (modal)</div></div>
-    <div class="stat-card"><div class="num" id="statJual">-</div><div class="lbl">Total harga jual</div></div>
+    <div class="stat-card"><div class="num" id="statJual">-</div><div class="lbl">Total harga jual (incl. PPN)</div></div>
     <div class="stat-card"><div class="num" id="statMargin">-</div><div class="lbl">Surplus / margin</div></div>
   </div>
 
   <div class="layout-split">
     <aside class="left-col">
       <div class="panel side-panel">
-        <h2 class="side-title">Data Penjualan</h2>
-        <p style="font-size:12px; color:var(--text-muted); margin:-6px 0 14px;">Upload data penjualan obat &amp; BMHP dari aplikasi pelayanan RS untuk periode yang dipilih.</p>
-        <button class="btn btn-primary" style="width:100%;" onclick="openUploadModal()">&#8593; Upload Data (CSV)</button>
+        <h2 class="side-title">Data Penjualan Farmasi</h2>
+        <p style="font-size:12px; color:var(--text-muted); margin:-6px 0 14px; line-height:1.5;">
+          Upload CSV ekspor NUHA. Baris dengan kolom <strong>Gudang</strong> mengandung kata <strong>"FARMASI"</strong> akan diproses di sini. Baris non-farmasi otomatis diabaikan.
+        </p>
+        <button class="btn btn-primary" style="width:100%;" onclick="window.openUploadModal()">&#8593; Upload CSV NUHA</button>
+      </div>
+
+      <div class="panel side-panel">
+        <h2 class="side-title">Info</h2>
+        <div class="info-note">
+          File besar (ratusan ribu baris) diproses dengan streaming. Sistem hanya menyimpan hasil agregasi bulanan per barang.
+        </div>
       </div>
     </aside>
+
     <section class="right-col">
       <div class="panel">
-        <table><thead><tr><th>Nama barang</th><th class="num">Qty terjual</th><th class="num">HPP</th><th class="num">Harga jual</th><th class="num">Margin</th></tr></thead><tbody id="tableBody"><tr><td colspan="5" class="empty-state">Memuat data...</td></tr></tbody></table>
-        <div class="pager"><span id="pagerInfo">-</span><div><button id="btnPrev" onclick="changePage(-1)">&larr; Sebelumnya</button><button id="btnNext" onclick="changePage(1)">Berikutnya &rarr;</button></div></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nama barang</th>
+              <th class="num">Qty terjual</th>
+              <th class="num">HPP</th>
+              <th class="num">Harga jual</th>
+              <th class="num">Margin</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"><tr><td colspan="5" class="empty-state">Memuat data...</td></tr></tbody>
+        </table>
+        <div class="pager">
+          <span id="pagerInfo">-</span>
+          <div>
+            <button id="btnPrev" onclick="window.changePage(-1)">&larr; Sebelumnya</button>
+            <button id="btnNext" onclick="window.changePage(1)">Berikutnya &rarr;</button>
+          </div>
+        </div>
       </div>
     </section>
   </div>
 </main>
 
+<!-- MODAL UPLOAD -->
 <div id="modalUpload">
   <div class="modal">
-    <h2 style="font-size:16px; margin:0 0 4px;">Upload Data Penjualan dari Aplikasi RS</h2>
-    <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px;">Export data penjualan per barang dari aplikasi pelayanan RS ke CSV, lalu upload di sini. Kolom yang dibutuhkan (nama kolom harus persis):<br><code style="background:#F1F1EE; padding:2px 6px; border-radius:5px; font-size:11.5px;">nama_barang, qty_terjual, hpp_terjual, harga_jual, gudang_asal, gudang_tujuan</code><br><span style="display:inline-block; margin-top:8px; color:var(--amber);">&#9888; Baris dengan <b>gudang_tujuan</b> terisi otomatis dianggap mutasi antar depo dan <b>tidak</b> dihitung sebagai penjualan.</span></p>
-    <input type="file" id="uploadFileInput" accept=".csv" onchange="handleUploadFile(event)" style="margin-bottom:14px;">
-    <div id="uploadSummary" style="display:none; margin-bottom:12px; font-size:13px;"></div>
+    <h2 style="font-size:16px; margin:0 0 4px;">Upload Penjualan Farmasi dari NUHA</h2>
+    <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px; line-height:1.5;">
+      Kolom yang dibutuhkan:<br>
+      <code style="background:#F1F1EE; padding:2px 6px; border-radius:5px; font-size:11.5px;">Tanggal Penjualan, Barang, Gudang, Qty, Harga Pokok, Harga Jual, Total Harga Jual</code><br>
+      <span style="color:var(--amber); display:inline-block; margin-top:8px;">&#9888; Hanya baris dengan kolom <b>Gudang</b> mengandung kata "FARMASI" yang akan diproses. Baris lain diabaikan (diproses di halaman Pemakaian Ruangan).</span>
+    </p>
+
+    <input type="file" id="uploadFileInput" accept=".csv" onchange="window.handleUploadFile(event)" style="margin-bottom:14px;">
+
+    <div id="progressWrap" style="display:none;">
+      <div style="font-size:12.5px; color:var(--text-muted); margin-bottom:4px;" id="progressLabel">Membaca file...</div>
+      <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div id="uploadSummary" style="display:none; margin-bottom:12px; font-size:13px; line-height:1.6;"></div>
+
     <div id="uploadPreviewWrap" style="display:none; max-height:340px; overflow-y:auto; border:1px solid var(--border); border-radius:10px;">
       <table style="width:100%; border-collapse:collapse; font-size:12px;">
-        <thead><tr style="background:#FAFBFA;"><th style="text-align:left; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Barang (dari CSV)</th><th style="text-align:right; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Qty</th><th style="text-align:right; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">HPP</th><th style="text-align:right; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Harga Jual</th><th style="text-align:left; padding:8px 10px; font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Status</th></tr></thead>
+        <thead style="position:sticky; top:0; background:#FAFBFA; z-index:1;">
+          <tr>
+            <th style="text-align:left; padding:8px 10px;">Barang</th>
+            <th style="text-align:right; padding:8px 10px;">Qty</th>
+            <th style="text-align:right; padding:8px 10px;">HPP</th>
+            <th style="text-align:right; padding:8px 10px;">Harga Jual</th>
+            <th style="text-align:left; padding:8px 10px;">Status</th>
+          </tr>
+        </thead>
         <tbody id="uploadPreviewBody"></tbody>
       </table>
     </div>
+
     <div class="form-msg" id="uploadMsg"></div>
+
     <div class="modal-actions">
-      <button class="btn" id="btnDownloadBermasalah" style="background:#FBEAE7; color:var(--coral); margin-right:auto;" onclick="downloadBarisBermasalah()" disabled>&#8595; Download Baris Bermasalah (CSV)</button>
-      <button class="btn btn-secondary" onclick="closeUploadModal()">Batal</button>
-      <button class="btn btn-primary" id="btnConfirmUpload" onclick="confirmUpload()" disabled>Import baris yang valid</button>
+      <button class="btn btn-secondary" onclick="window.closeUploadModal()">Batal</button>
+      <button class="btn btn-primary" id="btnConfirmUpload" onclick="window.confirmUpload()" disabled>Import Data</button>
     </div>
   </div>
 </div>
 
 <script>
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
   const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const userStr = sessionStorage.getItem('rko_user');
-  if (!userStr) window.location.href = 'index.html';
-  const currentUser = JSON.parse(userStr);
-  if (!['KEUANGAN', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) { alert('Akses ditolak.'); window.location.href = 'index.html'; }
-  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
-
-  let barangMap = {}, penjualanList = [], filteredList = [], page = 1, PAGE_SIZE = 15;
-
-  function fillPeriodOptions(curBulan, curTahun) {
-    const bulanSel = document.getElementById('bulanSelect');
-    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    namaBulan.forEach((nm, i) => { const opt = document.createElement('option'); opt.value = i+1; opt.textContent = nm; if (i+1 === curBulan) opt.selected = true; bulanSel.appendChild(opt); });
-    const tahunSel = document.getElementById('tahunSelect');
-    for (let y = curTahun-1; y <= curTahun+1; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; if (y === curTahun) opt.selected = true; tahunSel.appendChild(opt); }
-  }
-
-  (function init() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth()+1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    loadAllData();
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (function() {
+    let user = null;
+    try {
+      const stored = sessionStorage.getItem('rko_user');
+      if (stored) user = JSON.parse(stored);
+    } catch (e) {}
+    if (!user) {
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
+    }
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
   })();
 
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  function parseTanggalNuha(str) {
+    // Format: "31/01/2026 22:24:01"
+    if (!str) return null;
+    const datePart = String(str).trim().split(' ')[0];
+    const parts = datePart.split('/');
+    if (parts.length !== 3) return null;
+    const dd = parseInt(parts[0], 10);
+    const mm = parseInt(parts[1], 10);
+    const yyyy = parseInt(parts[2], 10);
+    if (isNaN(dd) || isNaN(mm) || isNaN(yyyy)) return null;
+    return { bulan: mm, tahun: yyyy };
+  }
+
+  function isFarmasi(gudang) {
+    return String(gudang || '').toUpperCase().includes('FARMASI');
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
+  let barangMap = {};           // id -> objek barang
+  let barangByName = {};        // NAMA_BARANG_UPPER -> id
+  let penjualanList = [];
+  let filteredList = [];
+  let page = 1;
+  const PAGE_SIZE = 15;
+  let uploadAgg = new Map();    // key: barang_id||bulan||tahun -> {qty, hpp, jual, namaAsli}
+
+  // ============================================================
+  //  PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1; opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+    for (let y = curTahun - 1; y <= curTahun + 1; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
   async function loadAllData() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
     document.getElementById('tableBody').innerHTML = '<tr><td colspan="5" class="empty-state">Memuat data...</td></tr>';
+
     try {
-      const [barangRes, penjualanRes] = await Promise.all([
-        supabase.from('master_barang').select('*'),
-        supabase.from('penjualan').select('*').eq('bulan', bulan).eq('tahun', tahun)
+      const [barangData, penjualanData] = await Promise.all([
+        fetchAllRows('master_barang'),
+        fetchAllRows('penjualan', q => q.eq('bulan', bulan).eq('tahun', tahun))
       ]);
-      barangMap = {}; (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
-      penjualanList = penjualanRes.data || [];
+
+      barangMap = {};
+      barangByName = {};
+      barangData.forEach(b => {
+        barangMap[b.id] = b;
+        barangByName[String(b.nama_barang).trim().toUpperCase()] = b.id;
+      });
+
+      penjualanList = penjualanData;
       filteredList = penjualanList;
       page = 1;
       updateSummary();
       renderTable();
     } catch (err) {
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="5" class="empty-state">Gagal memuat data.</td></tr>';
+      console.error(err);
+      document.getElementById('tableBody').innerHTML =
+        '<tr><td colspan="5" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -187,8 +332,9 @@
     const tbody = document.getElementById('tableBody');
     const start = (page - 1) * PAGE_SIZE;
     const pageItems = filteredList.slice(start, start + PAGE_SIZE);
+
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Belum ada data penjualan untuk periode ini. Klik "Upload Data (CSV)" untuk mulai.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Belum ada data penjualan untuk periode ini. Klik "Upload CSV NUHA" untuk mulai.</td></tr>';
     } else {
       tbody.innerHTML = pageItems.map(p => {
         const barang = barangMap[p.barang_id];
@@ -202,107 +348,257 @@
         </tr>`;
       }).join('');
     }
+
     const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
-    document.getElementById('pagerInfo').textContent = `${filteredList.length} item · Halaman ${page} dari ${totalPages}`;
+    document.getElementById('pagerInfo').textContent = `${filteredList.length} barang · Halaman ${page} dari ${totalPages}`;
     document.getElementById('btnPrev').disabled = page <= 1;
     document.getElementById('btnNext').disabled = page >= totalPages;
   }
 
-  function changePage(delta) { page += delta; renderTable(); }
+  window.changePage = function(delta) { page += delta; renderTable(); };
 
-  // Upload
-  let uploadRows = [];
-  function openUploadModal() {
+  // ============================================================
+  //  UPLOAD CSV (STREAMING + AGREGASI)
+  // ============================================================
+  window.openUploadModal = function() {
     document.getElementById('uploadFileInput').value = '';
     document.getElementById('uploadSummary').style.display = 'none';
     document.getElementById('uploadPreviewWrap').style.display = 'none';
     document.getElementById('uploadMsg').textContent = '';
+    document.getElementById('progressWrap').style.display = 'none';
     document.getElementById('btnConfirmUpload').disabled = true;
-    document.getElementById('btnDownloadBermasalah').disabled = true;
-    uploadRows = [];
+    uploadAgg = new Map();
     document.getElementById('modalUpload').classList.add('show');
-  }
-  function closeUploadModal() { document.getElementById('modalUpload').classList.remove('show'); }
+  };
 
-  function handleUploadFile(evt) {
+  window.closeUploadModal = function() {
+    document.getElementById('modalUpload').classList.remove('show');
+  };
+
+  window.handleUploadFile = function(evt) {
     const file = evt.target.files[0];
     if (!file) return;
+
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar = document.getElementById('progressBar');
+    const progressLabel = document.getElementById('progressLabel');
+    progressWrap.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressLabel.textContent = 'Membaca file...';
+
+    let totalRows = 0;
+    let farmasiRows = 0;
+    let skipRows = 0;
+    let invalidDateRows = 0;
+    uploadAgg = new Map();
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: function(res) { processUploadRows(res.data); },
-      error: function() { document.getElementById('uploadMsg').textContent = 'Gagal membaca file CSV.'; }
+      chunkSize: 1024 * 1024, // 1 MB per chunk
+      chunk: function(results) {
+        results.data.forEach(row => {
+          totalRows++;
+          const gudang = row['Gudang'] || row['gudang'] || '';
+          if (!isFarmasi(gudang)) { skipRows++; return; }
+          farmasiRows++;
+
+          const tgl = parseTanggalNuha(row['Tanggal Penjualan'] || row['tanggal_penjualan'] || '');
+          if (!tgl) { invalidDateRows++; return; }
+
+          const namaBarang = String(row['Barang'] || row['barang'] || '').trim();
+          if (!namaBarang) return;
+
+          const barangId = barangByName[namaBarang.toUpperCase()];
+          if (!barangId) {
+            // akan ditandai sebagai invalid di preview
+            const key = 'INVALID||' + namaBarang.toUpperCase() + '||' + tgl.bulan + '||' + tgl.tahun;
+            if (!uploadAgg.has(key)) {
+              uploadAgg.set(key, {
+                valid: false, alasan: 'Barang tidak ditemukan di master',
+                namaAsli: namaBarang, bulan: tgl.bulan, tahun: tgl.tahun,
+                barang_id: null, qty: 0, hpp: 0, jual: 0
+              });
+            }
+            return;
+          }
+
+          const qty = Number(row['Qty'] || row['qty'] || 0) || 0;
+          const hppUnit = Number(row['Harga Pokok'] || row['harga_pokok'] || 0) || 0;
+          const jualUnit = Number(row['Harga Jual'] || row['harga_jual'] || 0) || 0;
+          // Total harga jual = qty × harga jual (tidak ada diskon)
+          const hppTotal = qty * hppUnit;
+          const jualTotal = qty * jualUnit;
+
+          const key = barangId + '||' + tgl.bulan + '||' + tgl.tahun;
+          if (!uploadAgg.has(key)) {
+            uploadAgg.set(key, {
+              valid: true, namaAsli: namaBarang, barang_id: barangId,
+              bulan: tgl.bulan, tahun: tgl.tahun,
+              qty: 0, hpp: 0, jual: 0
+            });
+          }
+          const agg = uploadAgg.get(key);
+          agg.qty += qty;
+          agg.hpp += hppTotal;
+          agg.jual += jualTotal;
+        });
+
+        // Progress bar berdasarkan ukuran file yang sudah dibaca (PapaParse tidak memberi info ini secara langsung)
+        // Kita pakai estimasi dari jumlah baris.
+        progressLabel.textContent = 'Memproses... ' + totalRows.toLocaleString('id-ID') + ' baris terbaca';
+        progressBar.style.width = Math.min(99, (totalRows / 5000) * 100) + '%';
+      },
+      complete: function() {
+        progressBar.style.width = '100%';
+        progressLabel.textContent = 'Selesai membaca file.';
+        renderUploadPreview({
+          totalRows: totalRows,
+          farmasiRows: farmasiRows,
+          skipRows: skipRows,
+          invalidDateRows: invalidDateRows
+        });
+      },
+      error: function(err) {
+        document.getElementById('uploadMsg').textContent = 'Gagal membaca file: ' + err.message;
+      }
     });
-  }
+  };
 
-  function processUploadRows(rawRows) {
-    const barangNameMap = {};
-    Object.values(barangMap).forEach(b => { barangNameMap[String(b.nama_barang).trim().toUpperCase()] = b.id; });
-    const bulan = document.getElementById('bulanSelect').value;
-    const tahun = document.getElementById('tahunSelect').value;
-    const existingIds = new Set(penjualanList.map(p => p.barang_id));
+  function renderUploadPreview(stats) {
+    const items = Array.from(uploadAgg.values());
+    const valid = items.filter(r => r.valid);
+    const invalid = items.filter(r => !r.valid);
 
-    const agregat = new Map();
-    let jumlahBarisMutasi = 0;
-    rawRows.forEach(row => {
-      const namaBarangCsv = (row.nama_barang || '').trim();
-      if (!namaBarangCsv) return;
-      const gudangTujuan = (row.gudang_tujuan || '').trim();
-      if (gudangTujuan !== '') { jumlahBarisMutasi++; return; }
-      const key = namaBarangCsv.toUpperCase();
-      const qty = Number(row.qty_terjual) || 0;
-      const hpp = Number(row.hpp_terjual) || 0;
-      const hargaJual = Number(row.harga_jual) || 0;
-      if (!agregat.has(key)) agregat.set(key, { nama: namaBarangCsv, qty: 0, hpp: 0, jual: 0, jumlahBarisAsli: 0 });
-      const acc = agregat.get(key);
-      acc.qty += qty; acc.hpp += hpp; acc.jual += hargaJual; acc.jumlahBarisAsli++;
-    });
-
-    uploadRows = Array.from(agregat.values()).map(acc => {
-      const barangId = barangNameMap[acc.nama.toUpperCase()];
-      let statusBaris = 'valid', alasan = '';
-      if (!barangId) { statusBaris = 'invalid'; alasan = 'Nama barang tidak ditemukan di master'; }
-      else if (acc.qty <= 0 && acc.hpp <= 0 && acc.jual <= 0) { statusBaris = 'invalid'; alasan = 'Qty/HPP/Harga jual semua kosong'; }
-      else if (existingIds.has(barangId)) { statusBaris = 'duplikat'; alasan = 'Barang ini sudah ada datanya di periode ini, dilewati'; }
-      return { nama_barang_csv: acc.nama, barang_id: barangId, qty_terjual: acc.qty, hpp_terjual: acc.hpp, harga_jual: acc.jual, jumlah_baris_asli: acc.jumlahBarisAsli, bulan, tahun, statusBaris, alasan };
-    });
-
-    const valid = uploadRows.filter(r => r.statusBaris === 'valid');
-    const invalid = uploadRows.filter(r => r.statusBaris === 'invalid');
-    const dup = uploadRows.filter(r => r.statusBaris === 'duplikat');
     document.getElementById('uploadSummary').style.display = 'block';
-    document.getElementById('uploadSummary').innerHTML = `<strong>${rawRows.length}</strong> baris transaksi mentah &rarr; <span style="color:var(--amber); font-weight:600;">${jumlahBarisMutasi} baris mutasi antar depo dikeluarkan</span> &rarr; sisanya digabung jadi <strong>${uploadRows.length}</strong> barang unik — <span style="color:var(--green-mid); font-weight:600;">${valid.length} valid</span>, <span style="color:var(--text-muted); font-weight:600;">${dup.length} duplikat (dilewati)</span>, <span style="color:var(--coral); font-weight:600;">${invalid.length} bermasalah</span>`;
-    document.getElementById('uploadPreviewWrap').style.display = 'block';
-    document.getElementById('uploadPreviewBody').innerHTML = uploadRows.map(r => {
-      const badgeColor = r.statusBaris === 'valid' ? 'var(--green-mid)' : (r.statusBaris === 'duplikat' ? 'var(--text-muted)' : 'var(--coral)');
-      const badgeBg = r.statusBaris === 'valid' ? 'var(--green-soft)' : (r.statusBaris === 'duplikat' ? '#F1F1EE' : '#FBEAE7');
-      const label = r.statusBaris === 'valid' ? 'Siap import' : (r.statusBaris === 'duplikat' ? 'Duplikat' : r.alasan);
-      return `<tr><td>${escapeHtml(r.nama_barang_csv)} <span style="color:var(--text-muted); font-size:10.5px;">(${r.jumlah_baris_asli}x transaksi)</span></td><td class="num">${r.qty_terjual}</td><td class="num">${r.hpp_terjual}</td><td class="num">${r.harga_jual}</td><td><span style="font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px; color:${badgeColor}; background:${badgeBg};">${escapeHtml(label)}</span></td></tr>`;
-    }).join('');
+    document.getElementById('uploadSummary').innerHTML = `
+      Total baris mentah: <strong>${stats.totalRows.toLocaleString('id-ID')}</strong><br>
+      Baris farmasi: <strong>${stats.farmasiRows.toLocaleString('id-ID')}</strong> ·
+      Baris non-farmasi (dilewati): <strong>${stats.skipRows.toLocaleString('id-ID')}</strong> ·
+      Tanggal tidak valid: <strong>${stats.invalidDateRows.toLocaleString('id-ID')}</strong><br>
+      Setelah agregasi: <strong>${items.length.toLocaleString('id-ID')}</strong> kombinasi barang-bulan ·
+      <span style="color:var(--green-mid); font-weight:600;">${valid.length.toLocaleString('id-ID')} valid</span>,
+      <span style="color:var(--coral); font-weight:600;">${invalid.length} bermasalah</span>
+    `;
+
+    const previewWrap = document.getElementById('uploadPreviewWrap');
+    previewWrap.style.display = 'block';
+
+    // Tampilkan maksimal 200 baris pertama sebagai sampel
+    const sample = items.slice(0, 200);
+    document.getElementById('uploadPreviewBody').innerHTML = sample.map(r => {
+      const warna = r.valid ? 'var(--green-mid)' : 'var(--coral)';
+      const bg = r.valid ? 'var(--green-soft)' : '#FBEAE7';
+      const label = r.valid ? 'Siap import' : r.alasan;
+      const namaTampil = r.valid ? (barangMap[r.barang_id]?.nama_barang || r.namaAsli) : r.namaAsli;
+      return `<tr>
+        <td style="padding:8px 10px;">${escapeHtml(namaTampil)}</td>
+        <td style="padding:8px 10px; text-align:right;">${r.valid ? r.qty.toLocaleString('id-ID') : '-'}</td>
+        <td style="padding:8px 10px; text-align:right;">${r.valid ? 'Rp ' + Math.round(r.hpp).toLocaleString('id-ID') : '-'}</td>
+        <td style="padding:8px 10px; text-align:right;">${r.valid ? 'Rp ' + Math.round(r.jual).toLocaleString('id-ID') : '-'}</td>
+        <td style="padding:8px 10px;"><span class="badge-status" style="color:${warna}; background:${bg};">${escapeHtml(label)}</span></td>
+      </tr>`;
+    }).join('') + (items.length > 200
+      ? `<tr><td colspan="5" style="padding:8px 10px; text-align:center; color:var(--text-muted); font-size:11.5px;">... dan ${(items.length - 200).toLocaleString('id-ID')} baris lain tidak ditampilkan</td></tr>`
+      : '');
+
     document.getElementById('btnConfirmUpload').disabled = valid.length === 0;
-    document.getElementById('btnDownloadBermasalah').disabled = invalid.length === 0;
+    document.getElementById('uploadMsg').textContent = '';
   }
 
-  function downloadBarisBermasalah() { /* implementasi seperti sebelumnya */ }
-  async function confirmUpload() {
-    const valid = uploadRows.filter(r => r.statusBaris === 'valid');
-    if (valid.length === 0) return;
+  // ============================================================
+  //  KONFIRMASI IMPORT
+  // ============================================================
+  window.confirmUpload = async function() {
+    const items = Array.from(uploadAgg.values()).filter(r => r.valid);
+    if (items.length === 0) return;
+
     const msg = document.getElementById('uploadMsg');
-    msg.textContent = `Mengimpor ${valid.length} baris...`;
-    document.getElementById('btnConfirmUpload').disabled = true;
-    try {
-      const { error } = await supabase.from('penjualan').insert(valid.map(r => ({
-        barang_id: r.barang_id, qty_terjual: r.qty_terjual,
-        hpp_terjual: r.hpp_terjual, harga_jual: r.harga_jual,
-        bulan: r.bulan, tahun: r.tahun
-      })));
-      if (error) throw error;
-      msg.textContent = `Berhasil! ${valid.length} baris data penjualan diimpor.`;
-      setTimeout(() => { closeUploadModal(); loadAllData(); }, 1200);
-    } catch (err) { msg.textContent = err.message; document.getElementById('btnConfirmUpload').disabled = false; }
-  }
+    const btn = document.getElementById('btnConfirmUpload');
+    btn.disabled = true;
 
-  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+    // Cek konflik dengan data existing untuk periode yang diupload
+    const periodeSet = new Set(items.map(i => i.bulan + '|' + i.tahun));
+    const periodeList = Array.from(periodeSet).map(s => {
+      const [b, t] = s.split('|').map(Number);
+      return { bulan: b, tahun: t };
+    });
+
+    let adaKonflik = false;
+    try {
+      for (const p of periodeList) {
+        const { count, error } = await window.supabase
+          .from('penjualan')
+          .select('*', { count: 'exact', head: true })
+          .eq('bulan', p.bulan)
+          .eq('tahun', p.tahun);
+        if (error) throw error;
+        if (count > 0) adaKonflik = true;
+      }
+    } catch (err) {
+      msg.textContent = 'Gagal cek konflik: ' + err.message;
+      btn.disabled = false;
+      return;
+    }
+
+    if (adaKonflik) {
+      const lanjut = confirm(
+        '⚠️ Sudah ada data penjualan untuk periode yang akan diupload.\n\n' +
+        'Data lama dengan kunci (barang, bulan, tahun) yang sama akan DITIMPA.\n' +
+        'Data lama dengan barang lain tetap aman.\n\n' +
+        'Lanjutkan?'
+      );
+      if (!lanjut) { btn.disabled = false; return; }
+    }
+
+    msg.textContent = `Mengimpor ${items.length} baris...`;
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      const payload = items.map(r => ({
+        barang_id: r.barang_id,
+        bulan: r.bulan,
+        tahun: r.tahun,
+        qty_terjual: r.qty,
+        hpp_terjual: Math.round(r.hpp),
+        harga_jual: Math.round(r.jual)
+      }));
+
+      // Upsert dalam batch 500
+      const BATCH = 500;
+      for (let i = 0; i < payload.length; i += BATCH) {
+        const chunk = payload.slice(i, i + BATCH);
+        const { error } = await window.supabase
+          .from('penjualan')
+          .upsert(chunk, { onConflict: 'barang_id,bulan,tahun' });
+        if (error) throw error;
+        msg.textContent = `Mengimpor... ${Math.min(i + BATCH, payload.length)} / ${payload.length}`;
+      }
+
+      msg.textContent = `✅ Berhasil! ${items.length} baris penjualan diimpor.`;
+      msg.style.color = 'var(--green-mid)';
+
+      setTimeout(() => {
+        window.closeUploadModal();
+        loadAllData();
+      }, 1500);
+    } catch (err) {
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  (function init() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    loadAllData();
+  })();
 </script>
 </body>
 </html>
