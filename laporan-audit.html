@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Audit — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+    select option { color: #14201A; }
+    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+
+    .filter-bar {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px 20px; margin-bottom: 20px;
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    .filter-bar .field { margin: 0; }
+    .filter-bar label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .filter-bar input, .filter-bar select { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+    .filter-bar input[type="text"] { min-width: 260px; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 9px 18px; border: 1px solid var(--border); background: var(--card);
+      border-radius: 9px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+      color: var(--text-muted);
+    }
+    .tab-btn.active { background: var(--green-mid); color: #fff; border-color: var(--green-mid); }
+    .tab-btn .count { font-size: 11.5px; opacity: 0.8; }
+
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1000px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num { text-align: right; }
+
+    .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .badge.buat { background: var(--green-soft); color: var(--green-mid); }
+    .badge.koreksi { background: #FDF1E0; color: var(--amber); }
+    .badge.batal { background: #FBEAE7; color: var(--coral); }
+    .badge.update { background: #E9EEFB; color: #3B5BDB; }
+    .badge.pending { background: #FDF1E0; color: var(--amber); }
+    .badge.approved { background: var(--green-soft); color: var(--green-mid); }
+    .badge.rejected { background: #FBEAE7; color: var(--coral); }
+    .badge.netral { background: #F1F1EE; color: var(--text-muted); }
+
+    .id-display { font-family: "Courier New", monospace; font-weight: 700; color: var(--green-deep); }
+    .meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .diff-old { color: var(--coral); text-decoration: line-through; font-size: 12px; }
+    .diff-new { color: var(--green-mid); font-weight: 600; font-size: 12px; }
+    .diff-field { font-weight: 600; font-size: 12px; }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+    .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
+
+    .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 12.5px; color: var(--text-muted); border-top: 1px solid var(--border); }
+    .pager button { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 12.5px; }
+    .pager button:disabled { opacity: 0.4; cursor: default; }
+
+    .info-box {
+      background: var(--green-soft); color: var(--green-deep);
+      border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;
+      font-size: 13px; line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Laporan audit — jejak aktivitas sistem</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="bulanSelect"></select>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div class="info-box">
+    Halaman ini menampilkan jejak audit: <strong>log mutasi</strong> (BUAT/KOREKSI/BATAL), <strong>log penerimaan</strong> (perubahan via approval), dan <strong>riwayat approval</strong> edit penerimaan. Hanya untuk dibaca, tidak ada aksi.
+  </div>
+
+  <div class="filter-bar">
+    <div class="field">
+      <label>Cari</label>
+      <input type="text" id="searchBox" placeholder="Cari nama barang, no. PO, atau user...">
+    </div>
+    <div class="field" style="margin-left:auto;">
+      <label>&nbsp;</label>
+      <button class="tab-btn" style="padding:9px 16px; background:#F1F1EE; color:var(--text-dark); border-color:var(--border);" onclick="window.refreshAll()">&#8635; Muat Ulang</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabMutasi" onclick="window.switchTab('mutasi')">
+      Log Mutasi <span class="count" id="countMutasi"></span>
+    </button>
+    <button class="tab-btn" id="tabPenerimaan" onclick="window.switchTab('penerimaan')">
+      Log Penerimaan <span class="count" id="countPenerimaan"></span>
+    </button>
+    <button class="tab-btn" id="tabApproval" onclick="window.switchTab('approval')">
+      Riwayat Approval <span class="count" id="countApproval"></span>
+    </button>
+  </div>
+
+  <!-- PANEL LOG MUTASI -->
+  <div class="panel" id="panelMutasi">
+    <table>
+      <thead>
+        <tr>
+          <th>Waktu</th>
+          <th>Aksi</th>
+          <th>Barang</th>
+          <th>PO</th>
+          <th>Detail perubahan</th>
+          <th>Alasan</th>
+          <th>Oleh</th>
+        </tr>
+      </thead>
+      <tbody id="tableMutasi"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
+    </table>
+    <div class="pager">
+      <span id="pagerMutasi">-</span>
+      <div>
+        <button id="btnPrevMutasi" onclick="window.changePage('mutasi', -1)">&larr; Sebelumnya</button>
+        <button id="btnNextMutasi" onclick="window.changePage('mutasi', 1)">Berikutnya &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL LOG PENERIMAAN -->
+  <div class="panel" id="panelPenerimaan" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th>Waktu</th>
+          <th>Aksi</th>
+          <th>Barang</th>
+          <th>PO</th>
+          <th>Field</th>
+          <th>Nilai lama</th>
+          <th>Nilai baru</th>
+          <th>Oleh</th>
+        </tr>
+      </thead>
+      <tbody id="tablePenerimaan"><tr><td colspan="8" class="empty-state">Memuat data...</td></tr></tbody>
+    </table>
+    <div class="pager">
+      <span id="pagerPenerimaan">-</span>
+      <div>
+        <button id="btnPrevPenerimaan" onclick="window.changePage('penerimaan', -1)">&larr; Sebelumnya</button>
+        <button id="btnNextPenerimaan" onclick="window.changePage('penerimaan', 1)">Berikutnya &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL RIWAYAT APPROVAL -->
+  <div class="panel" id="panelApproval" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th>Diajukan</th>
+          <th>Status</th>
+          <th>Barang</th>
+          <th>PO</th>
+          <th>Diajukan oleh</th>
+          <th>Diputuskan oleh</th>
+          <th>Perubahan</th>
+          <th>Catatan</th>
+        </tr>
+      </thead>
+      <tbody id="tableApproval"><tr><td colspan="8" class="empty-state">Memuat data...</td></tr></tbody>
+    </table>
+    <div class="pager">
+      <span id="pagerApproval">-</span>
+      <div>
+        <button id="btnPrevApproval" onclick="window.changePage('approval', -1)">&larr; Sebelumnya</button>
+        <button id="btnNextApproval" onclick="window.changePage('approval', 1)">Berikutnya &rarr;</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (function() {
+    let user = null;
+    try {
+      const stored = sessionStorage.getItem('rko_user');
+      if (stored) user = JSON.parse(stored);
+    } catch (e) {}
+    if (!user) {
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
+    }
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+  })();
+
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  function formatDT(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function labelField(field) {
+    const map = {
+      tanggal_terima: 'Tanggal terima',
+      no_batch: 'No. batch',
+      tanggal_kadaluarsa: 'Tanggal kadaluarsa',
+      qty_diterima: 'Qty diterima',
+      kondisi: 'Kondisi'
+    };
+    return map[field] || field;
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
+  let barangMap = {};
+  let ruanganMap = {};
+  let userMap = {};
+  let pembelianMap = {};
+  let penerimaanMap = {};
+  let mutasiMap = {};
+
+  let logMutasi = [];
+  let logPenerimaan = [];
+  let listApproval = [];
+
+  let filteredMutasi = [];
+  let filteredPenerimaan = [];
+  let filteredApproval = [];
+
+  const PAGE_SIZE = 20;
+  let pageMutasi = 1;
+  let pagePenerimaan = 1;
+  let pageApproval = 1;
+  let currentTab = 'mutasi';
+
+  // ============================================================
+  //  PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1; opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+    for (let y = curTahun - 1; y <= curTahun + 1; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
+  async function loadAllData() {
+    const bulan = Number(document.getElementById('bulanSelect').value);
+    const tahun = Number(document.getElementById('tahunSelect').value);
+
+    document.getElementById('tableMutasi').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
+    document.getElementById('tablePenerimaan').innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
+    document.getElementById('tableApproval').innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
+
+    try {
+      const [barangData, ruanganData, userData, pembelianData, penerimaanData, mutasiData] = await Promise.all([
+        fetchAllRows('master_barang'),
+        fetchAllRows('master_ruangan'),
+        fetchAllRows('users'),
+        fetchAllRows('pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('penerimaan'),
+        fetchAllRows('mutasi_ruangan', q => q.eq('bulan', bulan).eq('tahun', tahun))
+      ]);
+
+      barangMap = {}; barangData.forEach(b => { barangMap[b.id] = b; });
+      ruanganMap = {}; ruanganData.forEach(r => { ruanganMap[r.id] = r; });
+      userMap = {}; userData.forEach(u => { userMap[u.id] = u; });
+      pembelianMap = {}; pembelianData.forEach(p => { pembelianMap[p.id] = p; });
+      penerimaanMap = {}; penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
+      mutasiMap = {}; mutasiData.forEach(m => { mutasiMap[m.id] = m; });
+
+      // Filter ID yang relevan dengan periode ini
+      const pembelianIds = new Set(pembelianData.map(p => p.id));
+      const penerimaanIdsPeriode = new Set(
+        penerimaanData.filter(p => pembelianIds.has(p.pembelian_id)).map(p => p.id)
+      );
+      const mutasiIdsPeriode = new Set(mutasiData.map(m => m.id));
+
+      const [allMutasiLog, allPenerimaanLog, allApproval] = await Promise.all([
+        fetchAllRows('mutasi_log', q => q.order('id', { ascending: false })),
+        fetchAllRows('penerimaan_log', q => q.order('id', { ascending: false })),
+        fetchAllRows('approval_request', q => q.order('id', { ascending: false }))
+      ]);
+
+      // Filter log mutasi: hanya yang mutasi_id-nya periode ini
+      logMutasi = allMutasiLog.filter(l => mutasiIdsPeriode.has(l.mutasi_id));
+
+      // Filter log penerimaan: hanya yang penerimaan_id terkait periode ini
+      logPenerimaan = allPenerimaanLog.filter(l => penerimaanIdsPeriode.has(l.penerimaan_id));
+
+      // Filter approval: hanya yang referensi_id penerimaannya periode ini
+      listApproval = allApproval.filter(a => penerimaanIdsPeriode.has(a.referensi_id));
+
+      applyFilterAll();
+      updateCounts();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('tableMutasi').innerHTML =
+        '<tr><td colspan="7" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
+    }
+  }
+
+  function updateCounts() {
+    document.getElementById('countMutasi').textContent = '(' + filteredMutasi.length + ')';
+    document.getElementById('countPenerimaan').textContent = '(' + filteredPenerimaan.length + ')';
+    document.getElementById('countApproval').textContent = '(' + filteredApproval.length + ')';
+  }
+
+  // ============================================================
+  //  FILTER
+  // ============================================================
+  document.getElementById('searchBox').addEventListener('input', applyFilterAll);
+
+  function applyFilterAll() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+
+    filteredMutasi = logMutasi.filter(l => {
+      const mutasi = mutasiMap[l.mutasi_id];
+      const barang = mutasi ? barangMap[mutasi.barang_id] : null;
+      const penerimaan = mutasi ? penerimaanMap[mutasi.penerimaan_id] : null;
+      const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+      const user = userMap[l.dilakukan_oleh];
+      const haystack = [
+        barang ? barang.nama_barang : '',
+        po ? po.no_po : '',
+        user ? user.nama : '',
+        l.alasan || ''
+      ].join(' ').toLowerCase();
+      return !q || haystack.includes(q);
+    });
+
+    filteredPenerimaan = logPenerimaan.filter(l => {
+      const penerimaan = penerimaanMap[l.penerimaan_id];
+      const barang = penerimaan ? barangMap[penerimaan.barang_id] : null;
+      const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+      const user = userMap[l.diubah_oleh];
+      const haystack = [
+        barang ? barang.nama_barang : '',
+        po ? po.no_po : '',
+        user ? user.nama : '',
+        l.field || '',
+        l.nilai_lama || '',
+        l.nilai_baru || ''
+      ].join(' ').toLowerCase();
+      return !q || haystack.includes(q);
+    });
+
+    filteredApproval = listApproval.filter(a => {
+      const penerimaan = penerimaanMap[a.referensi_id];
+      const barang = penerimaan ? barangMap[penerimaan.barang_id] : null;
+      const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+      const pengaju = userMap[a.diajukan_oleh];
+      const penyetuju = userMap[a.disetujui_oleh];
+      const haystack = [
+        barang ? barang.nama_barang : '',
+        po ? po.no_po : '',
+        pengaju ? pengaju.nama : '',
+        penyetuju ? penyetuju.nama : '',
+        a.catatan_penolakan || ''
+      ].join(' ').toLowerCase();
+      return !q || haystack.includes(q);
+    });
+
+    pageMutasi = 1;
+    pagePenerimaan = 1;
+    pageApproval = 1;
+
+    renderMutasi();
+    renderPenerimaan();
+    renderApproval();
+    updateCounts();
+  }
+
+  // ============================================================
+  //  RENDER LOG MUTASI
+  // ============================================================
+  function renderMutasi() {
+    const tbody = document.getElementById('tableMutasi');
+    const start = (pageMutasi - 1) * PAGE_SIZE;
+    const pageItems = filteredMutasi.slice(start, start + PAGE_SIZE);
+
+    if (pageItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada log mutasi untuk periode ini.</td></tr>';
+    } else {
+      tbody.innerHTML = pageItems.map(l => {
+        const mutasi = mutasiMap[l.mutasi_id];
+        const barang = mutasi ? barangMap[mutasi.barang_id] : null;
+        const penerimaan = mutasi ? penerimaanMap[mutasi.penerimaan_id] : null;
+        const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+        const user = userMap[l.dilakukan_oleh];
+
+        const badgeCls = l.aksi === 'BUAT' ? 'buat' : (l.aksi === 'KOREKSI' ? 'koreksi' : 'batal');
+
+        // Detail perubahan
+        let detailHtml = '-';
+        if (l.aksi === 'KOREKSI' && l.data_sebelum && l.data_sesudah) {
+          try {
+            const before = Array.isArray(l.data_sebelum) ? l.data_sebelum : [];
+            const after = Array.isArray(l.data_sesudah) ? l.data_sesudah : [];
+            const rows = [];
+            before.forEach(b => {
+              const a = after.find(x => x.ruangan_id === b.ruangan_id);
+              if (!a) return;
+              if (Number(a.qty_dialokasikan) !== Number(b.qty_dialokasikan)) {
+                const r = ruanganMap[b.ruangan_id];
+                rows.push(`<div><span class="diff-field">${escapeHtml(r ? r.nama_ruangan : 'R#' + b.ruangan_id)}</span>: <span class="diff-old">${Number(b.qty_dialokasikan).toLocaleString('id-ID')}</span> → <span class="diff-new">${Number(a.qty_dialokasikan).toLocaleString('id-ID')}</span></div>`);
+              }
+            });
+            detailHtml = rows.join('') || '-';
+          } catch (e) { detailHtml = '-'; }
+        } else if (l.aksi === 'BATAL' && l.data_sebelum) {
+          try {
+            const before = Array.isArray(l.data_sebelum) ? l.data_sebelum : [];
+            detailHtml = before.map(b => {
+              const r = ruanganMap[b.ruangan_id];
+              return `<div><span class="diff-field">${escapeHtml(r ? r.nama_ruangan : 'R#' + b.ruangan_id)}</span>: <span class="diff-old">${Number(b.qty_dialokasikan).toLocaleString('id-ID')}</span> → 0</div>`;
+            }).join('') || '-';
+          } catch (e) { detailHtml = '-'; }
+        } else if (l.aksi === 'BUAT' && l.data_sesudah) {
+          try {
+            const sesudah = typeof l.data_sesudah === 'object' ? l.data_sesudah : {};
+            detailHtml = `Stok tersedia: <strong>${Number(sesudah.stok_tersedia || 0).toLocaleString('id-ID')}</strong> · Total RKO: <strong>${Number(sesudah.total_rko || 0).toLocaleString('id-ID')}</strong>`;
+          } catch (e) { detailHtml = '-'; }
+        }
+
+        return `<tr>
+          <td>${formatDT(l.dilakukan_pada)}</td>
+          <td><span class="badge ${badgeCls}">${escapeHtml(l.aksi)}</span></td>
+          <td>${escapeHtml(barang ? barang.nama_barang : '-')}</td>
+          <td>${escapeHtml(po ? po.no_po : '-')}</td>
+          <td>${detailHtml}</td>
+          <td>${escapeHtml(l.alasan || '-')}</td>
+          <td>${escapeHtml(user ? user.nama : 'User #' + (l.dilakukan_oleh || '-'))}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    const totalPages = Math.max(1, Math.ceil(filteredMutasi.length / PAGE_SIZE));
+    document.getElementById('pagerMutasi').textContent = `${filteredMutasi.length} baris · Halaman ${pageMutasi} dari ${totalPages}`;
+    document.getElementById('btnPrevMutasi').disabled = pageMutasi <= 1;
+    document.getElementById('btnNextMutasi').disabled = pageMutasi >= totalPages;
+  }
+
+  // ============================================================
+  //  RENDER LOG PENERIMAAN
+  // ============================================================
+  function renderPenerimaan() {
+    const tbody = document.getElementById('tablePenerimaan');
+    const start = (pagePenerimaan - 1) * PAGE_SIZE;
+    const pageItems = filteredPenerimaan.slice(start, start + PAGE_SIZE);
+
+    if (pageItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada log penerimaan untuk periode ini.</td></tr>';
+    } else {
+      tbody.innerHTML = pageItems.map(l => {
+        const penerimaan = penerimaanMap[l.penerimaan_id];
+        const barang = penerimaan ? barangMap[penerimaan.barang_id] : null;
+        const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+        const user = userMap[l.diubah_oleh];
+        const badgeCls = l.aksi === 'UPDATE' ? 'update' : (l.aksi === 'INSERT' ? 'buat' : 'batal');
+
+        return `<tr>
+          <td>${formatDT(l.diubah_pada)}</td>
+          <td><span class="badge ${badgeCls}">${escapeHtml(l.aksi || '-')}</span></td>
+          <td>${escapeHtml(barang ? barang.nama_barang : '-')}</td>
+          <td>${escapeHtml(po ? po.no_po : '-')}</td>
+          <td><span class="diff-field">${escapeHtml(labelField(l.field) || '-')}</span></td>
+          <td><span class="diff-old">${escapeHtml(l.nilai_lama || '(kosong)')}</span></td>
+          <td><span class="diff-new">${escapeHtml(l.nilai_baru || '(kosong)')}</span></td>
+          <td>${escapeHtml(user ? user.nama : 'User #' + (l.diubah_oleh || '-'))}${l.via_approval_id ? '<div class="meta">via approval #' + l.via_approval_id + '</div>' : ''}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    const totalPages = Math.max(1, Math.ceil(filteredPenerimaan.length / PAGE_SIZE));
+    document.getElementById('pagerPenerimaan').textContent = `${filteredPenerimaan.length} baris · Halaman ${pagePenerimaan} dari ${totalPages}`;
+    document.getElementById('btnPrevPenerimaan').disabled = pagePenerimaan <= 1;
+    document.getElementById('btnNextPenerimaan').disabled = pagePenerimaan >= totalPages;
+  }
+
+  // ============================================================
+  //  RENDER RIWAYAT APPROVAL
+  // ============================================================
+  function renderApproval() {
+    const tbody = document.getElementById('tableApproval');
+    const start = (pageApproval - 1) * PAGE_SIZE;
+    const pageItems = filteredApproval.slice(start, start + PAGE_SIZE);
+
+    if (pageItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada riwayat approval untuk periode ini.</td></tr>';
+    } else {
+      tbody.innerHTML = pageItems.map(a => {
+        const penerimaan = penerimaanMap[a.referensi_id];
+        const barang = penerimaan ? barangMap[penerimaan.barang_id] : null;
+        const po = penerimaan ? pembelianMap[penerimaan.pembelian_id] : null;
+        const pengaju = userMap[a.diajukan_oleh];
+        const penyetuju = userMap[a.disetujui_oleh];
+
+        // Diff data
+        let diffHtml = '-';
+        try {
+          const lama = a.data_lama || {};
+          const baru = a.data_baru || {};
+          const fields = ['tanggal_terima', 'no_batch', 'tanggal_kadaluarsa', 'qty_diterima', 'kondisi'];
+          const rows = [];
+          fields.forEach(f => {
+            const l = lama[f] === null || lama[f] === undefined ? '' : String(lama[f]);
+            const b = baru[f] === null || baru[f] === undefined ? '' : String(baru[f]);
+            if (l !== b) {
+              rows.push(`<div><span class="diff-field">${escapeHtml(labelField(f))}</span>: <span class="diff-old">${escapeHtml(l || '(kosong)')}</span> → <span class="diff-new">${escapeHtml(b || '(kosong)')}</span></div>`);
+            }
+          });
+          diffHtml = rows.join('') || '<span style="color:var(--text-muted);">Tidak ada perubahan</span>';
+        } catch (e) { diffHtml = '-'; }
+
+        let badgeCls = 'pending';
+        if (a.status === 'APPROVED') badgeCls = 'approved';
+        else if (a.status === 'REJECTED') badgeCls = 'rejected';
+
+        let catatan = '-';
+        if (a.status === 'APPROVED') {
+          catatan = '<span style="color:var(--green-mid);">Disetujui</span>' + (a.disetujui_pada ? '<div class="meta">' + formatDT(a.disetujui_pada) + '</div>' : '');
+        } else if (a.status === 'REJECTED') {
+          catatan = '<span style="color:var(--coral);">' + escapeHtml(a.catatan_penolakan || 'Ditolak') + '</span>' + (a.disetujui_pada ? '<div class="meta">' + formatDT(a.disetujui_pada) + '</div>' : '');
+        } else {
+          catatan = '<span style="color:var(--amber);">Menunggu keputusan</span>';
+        }
+
+        const penyetujuText = penyetuju
+          ? escapeHtml(penyetuju.nama) + (a.atas_delegasi_dari && a.atas_delegasi_dari !== a.disetujui_oleh ? '<div class="meta">atas delegasi dari ' + escapeHtml(userMap[a.atas_delegasi_dari]?.nama || 'Kepala IF') + '</div>' : '')
+          : '-';
+
+        return `<tr>
+          <td>${formatDT(a.diajukan_pada)}</td>
+          <td><span class="badge ${badgeCls}">${escapeHtml(a.status)}</span></td>
+          <td>${escapeHtml(barang ? barang.nama_barang : '-')}</td>
+          <td>${escapeHtml(po ? po.no_po : '-')}</td>
+          <td>${escapeHtml(pengaju ? pengaju.nama : 'User #' + a.diajukan_oleh)}</td>
+          <td>${penyetujuText}</td>
+          <td>${diffHtml}</td>
+          <td>${catatan}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    const totalPages = Math.max(1, Math.ceil(filteredApproval.length / PAGE_SIZE));
+    document.getElementById('pagerApproval').textContent = `${filteredApproval.length} baris · Halaman ${pageApproval} dari ${totalPages}`;
+    document.getElementById('btnPrevApproval').disabled = pageApproval <= 1;
+    document.getElementById('btnNextApproval').disabled = pageApproval >= totalPages;
+  }
+
+  // ============================================================
+  //  TAB & PAGINATION
+  // ============================================================
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    document.getElementById('tabMutasi').classList.toggle('active', tab === 'mutasi');
+    document.getElementById('tabPenerimaan').classList.toggle('active', tab === 'penerimaan');
+    document.getElementById('tabApproval').classList.toggle('active', tab === 'approval');
+
+    document.getElementById('panelMutasi').style.display = tab === 'mutasi' ? 'block' : 'none';
+    document.getElementById('panelPenerimaan').style.display = tab === 'penerimaan' ? 'block' : 'none';
+    document.getElementById('panelApproval').style.display = tab === 'approval' ? 'block' : 'none';
+  };
+
+  window.changePage = function(jenis, delta) {
+    if (jenis === 'mutasi') { pageMutasi += delta; renderMutasi(); }
+    else if (jenis === 'penerimaan') { pagePenerimaan += delta; renderPenerimaan(); }
+    else if (jenis === 'approval') { pageApproval += delta; renderApproval(); }
+  };
+
+  window.refreshAll = function() {
+    loadAllData();
+  };
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  (function init() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    loadAllData();
+  })();
+</script>
+</body>
+</html>
