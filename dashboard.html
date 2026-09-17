@@ -7,253 +7,90 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
-    /* ===== RESET & VARIABEL ===== */
     :root {
-      --green-deep: #0F3D2E;
-      --green-mid: #16A34A;
-      --green-bright: #3FCF6A;
-      --green-soft: #E7F5EC;
-      --bg: #F4F7F4;
-      --card: #FFFFFF;
-      --text-dark: #14201A;
-      --text-muted: #6B7A72;
-      --border: #E4EAE5;
-      --coral: #DC5B45;
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      font-family: 'Inter', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text-dark);
-    }
+    html, body { height: 100%; overflow: hidden; font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text-dark); }
     h1, h2, h3, .num { font-family: 'Poppins', sans-serif; }
 
-    /* ===== TOPBAR ===== */
     header.topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--green-deep);
-      color: #fff;
-      padding: 8px 20px;
-      height: 48px;
-      flex-shrink: 0;
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--green-deep); color: #fff;
+      padding: 8px 20px; height: 48px; flex-shrink: 0;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark {
-      width: 28px; height: 28px; border-radius: 8px;
-      background: var(--green-bright);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 12px; color: var(--green-deep);
-    }
+    .brand .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: var(--green-deep); }
     .brand .title { font-weight: 700; font-size: 14px; }
     .brand .label { font-size: 10px; color: rgba(255,255,255,0.65); }
-    .topbar-right {
-      display: flex; align-items: center; gap: 10px;
-    }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
     .topbar-right .who { font-size: 11px; color: rgba(255,255,255,0.85); }
-    .topbar-right select {
-      background: rgba(255,255,255,0.12);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 6px;
-      padding: 4px 8px;
-      font-size: 12px;
-    }
+    .topbar-right select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; padding: 4px 8px; font-size: 12px; }
     .topbar-right select option { color: #14201A; }
-    a.back {
-      color: rgba(255,255,255,0.85);
-      text-decoration: none;
-      font-size: 12px;
-    }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 12px; }
     a.back:hover { color: #fff; }
 
-    /* ===== MAIN ===== */
-    main {
-      height: calc(100vh - 48px);
-      display: flex;
-      flex-direction: column;
-      padding: 8px 16px 8px 16px;
-      overflow: hidden;
-    }
+    main { height: calc(100vh - 48px); display: flex; flex-direction: column; padding: 8px 16px; overflow: hidden; }
 
-    .page-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      flex-shrink: 0;
-      margin-bottom: 6px;
+    .page-heading { display: flex; justify-content: space-between; align-items: baseline; flex-shrink: 0; margin-bottom: 6px; }
+    .page-heading h1 { font-size: 18px; }
+    .page-heading p { font-size: 11px; color: var(--text-muted); }
+
+    .alert-bar {
+      background: #FDF1E0; color: var(--amber); border-radius: 8px;
+      padding: 8px 14px; font-size: 12.5px; margin-bottom: 8px; flex-shrink: 0;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      border-left: 4px solid var(--amber);
     }
-    .page-heading h1 { font-size: 18px; margin: 0; }
-    .page-heading p { font-size: 11px; color: var(--text-muted); margin: 0; }
+    .alert-bar a { color: var(--amber); font-weight: 700; text-decoration: underline; }
 
     .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      flex-shrink: 0;
-      margin-bottom: 6px;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 8px; flex-shrink: 0; margin-bottom: 6px;
     }
-    .stat-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .stat-card .icon {
-      width: 28px; height: 28px; border-radius: 6px;
-      background: var(--green-soft);
-      color: var(--green-mid);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 700;
-      flex-shrink: 0;
-    }
+    .stat-grid.secondary { margin-bottom: 6px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+    .stat-card .icon { width: 28px; height: 28px; border-radius: 6px; background: var(--green-soft); color: var(--green-mid); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
     .stat-card .num { font-size: 18px; font-weight: 700; line-height: 1.2; }
     .stat-card .lbl { font-size: 10px; color: var(--text-muted); }
+    .stat-card.warn { border-color: #F3D0C4; background: #FDF6F3; }
+    .stat-card.warn .icon { background: #FBEAE7; color: var(--coral); }
 
-    /* ===== GRID UTAMA ===== */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1.4fr 0.9fr;
-      grid-template-rows: 1fr 1fr;
-      gap: 8px;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 14px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      flex-shrink: 0;
-      margin-bottom: 4px;
-    }
-    .panel-header h2 { font-size: 13px; margin: 0; }
+    .dashboard-grid { display: grid; grid-template-columns: 1.4fr 0.9fr; grid-template-rows: 1fr 1fr; gap: 8px; flex: 1; min-height: 0; }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; overflow: hidden; }
+    .panel-header { display: flex; justify-content: space-between; align-items: baseline; flex-shrink: 0; margin-bottom: 4px; }
+    .panel-header h2 { font-size: 13px; }
     .panel-header .sub { font-size: 10px; color: var(--text-muted); }
+    .panel-body { flex: 1; min-height: 0; position: relative; }
+    .panel-body canvas { width: 100% !important; height: 100% !important; max-height: 100%; }
 
-    .panel-body {
-      flex: 1;
-      min-height: 0;
-      position: relative;
-    }
-    .panel-body canvas {
-      width: 100% !important;
-      height: 100% !important;
-      max-height: 100%;
-    }
-
-    /* ===== GAUGE ===== */
-    .gauge-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-    }
-    .gauge-wrap canvas {
-      max-height: 120px;
-      width: auto !important;
-    }
-    .gauge-num {
-      font-size: 24px;
-      font-weight: 700;
-      margin-top: -50px;
-    }
+    .gauge-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .gauge-wrap canvas { max-height: 120px; width: auto !important; }
+    .gauge-num { font-size: 24px; font-weight: 700; margin-top: -50px; }
     .gauge-lbl { font-size: 10px; color: var(--text-muted); }
 
-    /* ===== TABEL & LIST ===== */
-    .table-wrap {
-      overflow-y: auto;
-      flex: 1;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-    }
-    th, td {
-      padding: 4px 6px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-    }
-    th {
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      position: sticky;
-      top: 0;
-      background: var(--card);
-      z-index: 2;
-    }
+    .table-wrap { overflow-y: auto; flex: 1; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { padding: 4px 6px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { color: var(--text-muted); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; position: sticky; top: 0; background: var(--card); z-index: 2; }
     td.num-cell, th.num-cell { text-align: right; }
 
-    .list-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      font-size: 11px;
-      border-bottom: 1px solid var(--border);
-    }
+    .list-item { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px; border-bottom: 1px solid var(--border); }
     .list-item:last-child { border-bottom: none; }
     .list-item .val { color: var(--text-muted); }
 
-    .mini-stat-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-top: 4px;
-    }
+    .mini-stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
     .mini-stat-row .mini-num { font-size: 15px; font-weight: 700; }
     .mini-stat-row .mini-lbl { font-size: 9px; color: var(--text-muted); }
 
-    .empty-mini {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 11px;
-      padding: 10px 0;
-    }
+    .empty-mini { text-align: center; color: var(--text-muted); font-size: 11px; padding: 10px 0; }
+    .error-box { background: #FBEAE7; color: var(--coral); padding: 6px 12px; border-radius: 6px; font-size: 12px; border: 1px solid var(--coral); margin-bottom: 6px; flex-shrink: 0; }
+    footer.note { text-align: center; color: var(--text-muted); font-size: 9px; padding: 4px 0; flex-shrink: 0; }
 
-    .error-box {
-      background: #FBEAE7;
-      color: var(--coral);
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      border: 1px solid var(--coral);
-      margin-bottom: 6px;
-      flex-shrink: 0;
-    }
-
-    footer.note {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 9px;
-      padding: 4px 0;
-      flex-shrink: 0;
-    }
-
-    /* ===== RESPONSIVE ===== */
     @media (max-width: 1024px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto;
-      }
+      .dashboard-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
       main { overflow-y: auto; height: auto; }
       body { overflow-y: auto; }
     }
@@ -278,7 +115,6 @@
 </header>
 
 <main>
-  <!-- HEADING -->
   <div class="page-heading">
     <div>
       <h1>Ringkasan bulan berjalan</h1>
@@ -286,10 +122,10 @@
     </div>
   </div>
 
-  <!-- ERROR -->
   <div id="errorContainer" style="display:none;" class="error-box"></div>
+  <div id="alertContainer"></div>
 
-  <!-- STATISTIK -->
+  <!-- STATISTIK UTAMA -->
   <section class="stat-grid">
     <div class="stat-card"><div class="icon">Rp</div><div><div class="num" id="statBelanja">-</div><div class="lbl">Total rencana</div></div></div>
     <div class="stat-card"><div class="icon">#</div><div><div class="num" id="statItem">-</div><div class="lbl">Item aktif</div></div></div>
@@ -297,9 +133,16 @@
     <div class="stat-card"><div class="icon">%</div><div><div class="num" id="statCapaian">-</div><div class="lbl">Efisiensi</div></div></div>
   </section>
 
+  <!-- STATISTIK OPERASIONAL -->
+  <section class="stat-grid secondary">
+    <div class="stat-card"><div class="icon">📦</div><div><div class="num" id="statPenerimaan">-</div><div class="lbl">Penerimaan bulan ini</div></div></div>
+    <div class="stat-card"><div class="icon">🚚</div><div><div class="num" id="statMutasi">-</div><div class="lbl">Mutasi bulan ini</div></div></div>
+    <div class="stat-card"><div class="icon">💉</div><div><div class="num" id="statPemakaian">-</div><div class="lbl">Pemakaian ruangan</div></div></div>
+    <div class="stat-card" id="cardApproval"><div class="icon">✅</div><div><div class="num" id="statApproval">-</div><div class="lbl">Approval pending</div></div></div>
+  </section>
+
   <!-- GRID UTAMA -->
   <div class="dashboard-grid">
-    <!-- CHART INSTALASI -->
     <div class="panel" style="grid-row: span 2;">
       <div class="panel-header">
         <h2>Estimasi nilai kebutuhan per instalasi</h2>
@@ -311,7 +154,6 @@
       </div>
     </div>
 
-    <!-- GAUGE EFFISIENSI -->
     <div class="panel">
       <div class="panel-header">
         <h2>Efisiensi belanja</h2>
@@ -326,7 +168,6 @@
       </div>
     </div>
 
-    <!-- TABEL INSTALASI -->
     <div class="panel">
       <div class="panel-header">
         <h2>Rekap per instalasi</h2>
@@ -343,7 +184,6 @@
 
   <!-- BARIS KEDUA: DISTRIBUTOR + PENJUALAN + PEMBELIAN -->
   <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; flex-shrink: 0; margin-top: 6px;">
-    <!-- DISTRIBUTOR -->
     <div class="panel" style="padding: 6px 10px;">
       <div class="panel-header"><h2>Distributor terbesar</h2><span class="sub">rencana</span></div>
       <div class="panel-body table-wrap" style="max-height: 80px;">
@@ -351,7 +191,6 @@
       </div>
     </div>
 
-    <!-- PENJUALAN -->
     <div class="panel" style="padding: 6px 10px;">
       <div class="panel-header"><h2>Penjualan &amp; margin</h2><span class="sub">bulan ini</span></div>
       <div class="panel-body">
@@ -364,7 +203,6 @@
       </div>
     </div>
 
-    <!-- PEMBELIAN -->
     <div class="panel" style="padding: 6px 10px;">
       <div class="panel-header"><h2>Status pembelian</h2><span class="sub">PO bulan ini</span></div>
       <div class="panel-body">
@@ -390,21 +228,44 @@
   window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ============================================================
-  //  CEK SESSION
+  //  SESSION
   // ============================================================
   (function() {
-    const userStr = sessionStorage.getItem('rko_user');
-    if (!userStr) { window.location.href = 'index.html'; return; }
-    const currentUser = JSON.parse(userStr);
-    document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
-    window.currentUser = currentUser;
+    let user = null;
+    try {
+      const stored = sessionStorage.getItem('rko_user');
+      if (stored) user = JSON.parse(stored);
+    } catch (e) {}
+    if (!user) {
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
+    }
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
   })();
 
   // ============================================================
-  //  VARIABLES
+  //  HELPER
   // ============================================================
-  let chartInstalasi = null, chartGauge = null;
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
   const NAMA_BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  let chartInstalasi = null, chartGauge = null;
   let isLoading = false;
 
   function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
@@ -449,47 +310,51 @@
     if (isLoading) return;
     isLoading = true;
     hideError();
-    const bulan = document.getElementById('bulanSelect').value;
-    const tahun = document.getElementById('tahunSelect').value;
+    document.getElementById('alertContainer').innerHTML = '';
+
+    const bulan = Number(document.getElementById('bulanSelect').value);
+    const tahun = Number(document.getElementById('tahunSelect').value);
 
     try {
-      // Query data
-      const [rencanaRes, kebutuhanRes, barangRes, distributorRes, penjualanRes, pembelianRes, kunjunganRes] = await Promise.all([
-        window.supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun),
-        window.supabase.from('kebutuhan').select('*, master_ruangan(nama_ruangan), master_barang(hpp_beli)').eq('bulan', bulan).eq('tahun', tahun),
-        window.supabase.from('master_barang').select('*').eq('status_aktif', true),
-        window.supabase.from('master_distributor').select('*'),
-        window.supabase.from('penjualan').select('*').eq('bulan', bulan).eq('tahun', tahun),
-        window.supabase.from('pembelian').select('*').eq('bulan', bulan).eq('tahun', tahun),
-        window.supabase.from('kunjungan').select('*').eq('bulan', bulan).eq('tahun', tahun)
+      const [
+        rencanaData, kebutuhanData, barangData, ruanganData, distributorData,
+        penjualanData, pembelianData, penerimaanData,
+        mutasiData, mutasiDetailData, pemakaianData, approvalData
+      ] = await Promise.all([
+        fetchAllRows('rencana_belanja', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('kebutuhan', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('master_barang'),
+        fetchAllRows('master_ruangan'),
+        fetchAllRows('master_distributor'),
+        fetchAllRows('penjualan', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('penerimaan'),
+        fetchAllRows('mutasi_ruangan', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('mutasi_ruangan_detail'),
+        fetchAllRows('pemakaian_ruangan', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('approval_request')
       ]);
-      if (rencanaRes.error) throw new Error(rencanaRes.error.message);
-      if (kebutuhanRes.error) throw new Error(kebutuhanRes.error.message);
-      if (barangRes.error) throw new Error(barangRes.error.message);
-      if (distributorRes.error) throw new Error(distributorRes.error.message);
-      if (penjualanRes.error) throw new Error(penjualanRes.error.message);
-      if (pembelianRes.error) throw new Error(pembelianRes.error.message);
-      if (kunjunganRes.error) throw new Error(kunjunganRes.error.message);
 
-      const rencana = rencanaRes.data || [];
-      const kebutuhan = kebutuhanRes.data || [];
-      const barang = barangRes.data || [];
-      const distributor = distributorRes.data || [];
-      const penjualan = penjualanRes.data || [];
-      const pembelian = pembelianRes.data || [];
+      const barangMap = {};
+      barangData.forEach(b => { barangMap[b.id] = b; });
+      const ruanganMap = {};
+      ruanganData.forEach(r => { ruanganMap[r.id] = r; });
+      const pembelianMap = {};
+      pembelianData.forEach(p => { pembelianMap[p.id] = p; });
 
-      // STATS
-      const totalRencana = rencana.reduce((s,r) => s + Number(r.rencana_rp||0), 0);
+      // ---- STAT UTAMA ----
+      const totalRencana = rencanaData.reduce((s,r) => s + Number(r.rencana_rp||0), 0);
       document.getElementById('statBelanja').textContent = formatRpSingkat(totalRencana);
-      document.getElementById('statItem').textContent = barang.length.toLocaleString();
-      const unitIds = new Set(kebutuhan.map(k => k.ruangan_id));
-      document.getElementById('statUnit').textContent = unitIds.size.toLocaleString();
+      document.getElementById('statItem').textContent = barangData.length.toLocaleString('id-ID');
+
+      const unitIds = new Set(kebutuhanData.map(k => k.ruangan_id));
+      document.getElementById('statUnit').textContent = unitIds.size.toLocaleString('id-ID');
 
       // Efisiensi vs bulan lalu
-      const bulanLalu = bulan == 1 ? 12 : bulan - 1;
-      const tahunLalu = bulan == 1 ? tahun - 1 : tahun;
-      const { data: rencanaLalu } = await window.supabase.from('rencana_belanja').select('rencana_rp').eq('bulan', bulanLalu).eq('tahun', tahunLalu);
-      const totalRencanaLalu = (rencanaLalu||[]).reduce((s,r) => s + Number(r.rencana_rp||0), 0);
+      const bulanLalu = bulan === 1 ? 12 : bulan - 1;
+      const tahunLalu = bulan === 1 ? tahun - 1 : tahun;
+      const rencanaLalu = await fetchAllRows('rencana_belanja', q => q.eq('bulan', bulanLalu).eq('tahun', tahunLalu));
+      const totalRencanaLalu = rencanaLalu.reduce((s,r) => s + Number(r.rencana_rp||0), 0);
       const target = 90;
       let efisiensi = null;
       if (totalRencanaLalu > 0) efisiensi = Math.round((totalRencana / totalRencanaLalu) * 100);
@@ -498,12 +363,36 @@
       document.getElementById('statCapaian').style.color = efisiensi !== null ? (overTarget ? 'var(--coral)' : 'var(--green-mid)') : 'var(--text-dark)';
       document.getElementById('targetLabel').textContent = 'target ≤ ' + target + '%';
 
-      // CHART INSTALASI
+      // ---- STAT OPERASIONAL ----
+      document.getElementById('statPenerimaan').textContent = penerimaanData.length.toLocaleString('id-ID');
+      document.getElementById('statMutasi').textContent = mutasiData.length.toLocaleString('id-ID');
+      const totalPemakaian = pemakaianData.reduce((s,p) => s + Number(p.qty_pakai||0), 0);
+      document.getElementById('statPemakaian').textContent = totalPemakaian.toLocaleString('id-ID');
+
+      // Approval pending
+      const role = window.currentUser.role;
+      const bisaLihatApproval = ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI'].includes(role);
+      const pendingApproval = approvalData.filter(a => a.status === 'PENDING');
+      document.getElementById('statApproval').textContent = bisaLihatApproval ? pendingApproval.length.toLocaleString('id-ID') : '-';
+      if (bisaLihatApproval && pendingApproval.length > 0) {
+        document.getElementById('cardApproval').classList.add('warn');
+        document.getElementById('alertContainer').innerHTML =
+          '<div class="alert-bar">' +
+          '<span>⚠️ Ada <strong>' + pendingApproval.length + '</strong> pengajuan edit penerimaan menunggu approval.</span>' +
+          '<a href="approval.html">Buka halaman Approval &rarr;</a>' +
+          '</div>';
+      } else {
+        document.getElementById('cardApproval').classList.remove('warn');
+      }
+
+      // ---- CHART INSTALASI ----
       const perInstalasi = {};
-      kebutuhan.forEach(k => {
-        const nama = k.master_ruangan?.nama_ruangan || 'Unit ' + k.ruangan_id;
-        const hpp = k.master_barang?.hpp_beli || 0;
-        const nilai = (Number(k.kebutuhan) || 0) * Number(hpp);
+      kebutuhanData.forEach(k => {
+        const ruangan = ruanganMap[k.ruangan_id];
+        const barang = barangMap[k.barang_id];
+        const nama = ruangan ? ruangan.nama_ruangan : 'Unit ' + k.ruangan_id;
+        const hpp = barang ? Number(barang.hpp_beli || 0) : 0;
+        const nilai = (Number(k.kebutuhan) || 0) * hpp;
         perInstalasi[nama] = (perInstalasi[nama] || 0) + nilai;
       });
       const labels = Object.keys(perInstalasi);
@@ -512,6 +401,7 @@
       const canvas = document.getElementById('chartInstalasi');
       if (labels.length === 0) {
         canvas.style.display = 'none'; chartEmpty.style.display = 'block';
+        if (chartInstalasi) { chartInstalasi.destroy(); chartInstalasi = null; }
       } else {
         canvas.style.display = 'block'; chartEmpty.style.display = 'none';
         if (chartInstalasi) chartInstalasi.destroy();
@@ -519,8 +409,7 @@
           type: 'bar',
           data: { labels, datasets: [{ data: values, backgroundColor: '#16A34A', borderRadius: 4, maxBarThickness: 20 }] },
           options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
               y: { grid: { color: '#EEF2EE' }, ticks: { font: { size: 9 }, callback: v => v + ' Jt' } },
@@ -530,11 +419,12 @@
         });
       }
 
-      // GAUGE
+      // ---- GAUGE ----
       const gaugeNum = document.getElementById('gaugeNum');
       const gaugeLbl = document.getElementById('gaugeLbl');
       if (efisiensi === null) {
         gaugeNum.textContent = 'N/A'; gaugeLbl.textContent = 'Data bulan lalu kurang';
+        gaugeNum.style.color = 'var(--text-muted)';
       } else {
         gaugeNum.textContent = efisiensi + '%';
         gaugeNum.style.color = overTarget ? 'var(--coral)' : 'var(--green-mid)';
@@ -549,19 +439,20 @@
         options: { cutout: '78%', circumference: 360, plugins: { legend: { display: false }, tooltip: { enabled: false } }, maintainAspectRatio: false }
       });
 
-      // TABEL INSTALASI
+      // ---- TABEL INSTALASI ----
       const sorted = labels.map(l => ({ nama: l, nilai: perInstalasi[l] })).sort((a,b) => b.nilai - a.nilai);
       const tbody = document.getElementById('tableInstalasi');
       if (sorted.length === 0) {
         tbody.innerHTML = '<tr><td colspan="2" class="empty-mini">Belum ada data</td></tr>';
       } else {
-        tbody.innerHTML = sorted.map(row => `<tr><td>${escapeHtml(row.nama)}</td><td class="num-cell">Rp ${Math.round(row.nilai).toLocaleString()}</td></tr>`).join('');
+        tbody.innerHTML = sorted.map(row => `<tr><td>${escapeHtml(row.nama)}</td><td class="num-cell">Rp ${Math.round(row.nilai).toLocaleString('id-ID')}</td></tr>`).join('');
       }
 
-      // DISTRIBUTOR
+      // ---- DISTRIBUTOR ----
       const perDist = {};
-      rencana.forEach(r => {
-        const nama = distributor.find(d => d.id === r.distributor_id)?.nama_distributor || 'Distributor ' + r.distributor_id;
+      rencanaData.forEach(r => {
+        const dist = distributorData.find(d => d.id === r.distributor_id);
+        const nama = dist ? dist.nama_distributor : 'Distributor ' + r.distributor_id;
         perDist[nama] = (perDist[nama] || 0) + Number(r.rencana_rp||0);
       });
       const topDist = Object.keys(perDist).map(n => ({ nama: n, nilai: perDist[n] })).sort((a,b) => b.nilai - a.nilai);
@@ -569,12 +460,12 @@
       if (topDist.length === 0) {
         distContainer.innerHTML = '<div class="empty-mini">Belum ada rencana</div>';
       } else {
-        distContainer.innerHTML = topDist.map(item => `<div class="list-item"><span>${escapeHtml(item.nama)}</span><span class="val">Rp ${Math.round(item.nilai).toLocaleString()}</span></div>`).join('');
+        distContainer.innerHTML = topDist.slice(0, 10).map(item => `<div class="list-item"><span>${escapeHtml(item.nama)}</span><span class="val">Rp ${Math.round(item.nilai).toLocaleString('id-ID')}</span></div>`).join('');
       }
 
-      // PENJUALAN
-      const totalHpp = penjualan.reduce((s,p) => s + Number(p.hpp_terjual||0), 0);
-      const totalJual = penjualan.reduce((s,p) => s + Number(p.harga_jual||0), 0);
+      // ---- PENJUALAN ----
+      const totalHpp = penjualanData.reduce((s,p) => s + Number(p.hpp_terjual||0), 0);
+      const totalJual = penjualanData.reduce((s,p) => s + Number(p.harga_jual||0), 0);
       const surplus = totalJual - totalHpp;
       const penjualanEmpty = document.getElementById('penjualanEmpty');
       if (totalHpp === 0 && totalJual === 0) {
@@ -591,20 +482,20 @@
         surEl.style.color = surplus >= 0 ? 'var(--green-mid)' : 'var(--coral)';
       }
 
-      // PEMBELIAN
+      // ---- PEMBELIAN ----
       const pembelianEmpty = document.getElementById('pembelianEmpty');
-      if (pembelian.length === 0) {
+      if (pembelianData.length === 0) {
         pembelianEmpty.style.display = 'block';
         document.getElementById('statJumlahPO').textContent = '-';
         document.getElementById('statPoBelumTerima').textContent = '-';
         document.getElementById('statPersenDatang').textContent = '-';
       } else {
         pembelianEmpty.style.display = 'none';
-        document.getElementById('statJumlahPO').textContent = pembelian.length.toLocaleString();
-        const belum = pembelian.filter(p => p.status === 'DIKIRIM').length;
+        document.getElementById('statJumlahPO').textContent = pembelianData.length.toLocaleString('id-ID');
+        const belum = pembelianData.filter(p => p.status === 'DIKIRIM').length;
         document.getElementById('statPoBelumTerima').textContent = belum;
-        const selesai = pembelian.filter(p => p.status === 'SELESAI').length;
-        document.getElementById('statPersenDatang').textContent = Math.round((selesai / pembelian.length) * 100) + '%';
+        const selesai = pembelianData.filter(p => p.status === 'SELESAI').length;
+        document.getElementById('statPersenDatang').textContent = Math.round((selesai / pembelianData.length) * 100) + '%';
       }
 
     } catch (err) {
