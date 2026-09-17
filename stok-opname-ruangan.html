@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stok Opname Ruangan — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+    select option { color: #14201A; }
+    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+    .stat-card.warn { border-color: #F3D0C4; background: #FDF6F3; }
+    .stat-card .num { font-size: 20px; font-weight: 700; }
+    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+    .layout-split { display: grid; grid-template-columns: 1fr 3fr; gap: 16px; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
+    .side-panel { padding: 18px 20px; }
+    .side-title { font-size: 14px; margin: 0 0 12px; }
+    .info-note { background: var(--green-soft); color: var(--green-deep); padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .field input, .field select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1000px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num { text-align: right; }
+    input.qty { width: 90px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; text-align: right; }
+    input.ket { width: 160px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; }
+
+    .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); }
+    .pager button { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 12.5px; }
+    .pager button:disabled { opacity: 0.4; cursor: default; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+
+    .btn { padding: 7px 14px; border: none; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-primary { background: var(--green-mid); color: #fff; }
+    .btn-primary:hover { background: #128a3e; }
+    .btn-primary:disabled { background: #A9C9B5; cursor: default; }
+    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
+    .btn-upload { background: #6B7A72; color: #fff; }
+    .btn-upload:hover { background: #5A6A62; }
+
+    #modalUpload { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
+    #modalUpload.show { display: flex; }
+    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 780px; max-height: 90vh; overflow-y: auto; padding: 26px; }
+    .modal h2 { font-size: 16px; margin: 0 0 8px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 8px; }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .preview-table th, .preview-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    .preview-table th { background: #FAFBFA; font-size: 11px; text-transform: uppercase; color: var(--text-muted); }
+    .preview-table td.num { text-align: right; }
+    .badge-status { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .badge.ok { background: var(--green-soft); color: var(--green-mid); }
+    .badge.selisih { background: #FBEAE7; color: var(--coral); }
+    .badge.netral { background: #F1F1EE; color: var(--text-muted); }
+    .badge.saved { background: var(--green-soft); color: var(--green-mid); }
+    .badge.unsaved { background: #F1F1EE; color: var(--text-muted); }
+    .id-display { font-family: "Courier New", monospace; font-weight: 700; color: var(--green-deep); }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Stok opname ruangan — verifikasi stok fisik</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="ruanganSelect"></select>
+    <select id="bulanSelect"></select>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="num" id="statItem">-</div><div class="lbl">Barang di ruangan</div></div>
+    <div class="stat-card"><div class="num" id="statSudah">-</div><div class="lbl">Sudah di-opname</div></div>
+    <div class="stat-card warn"><div class="num" id="statSelisih">-</div><div class="lbl">Barang dengan selisih</div></div>
+  </div>
+
+  <div class="layout-split">
+    <aside class="left-col">
+      <div class="panel side-panel">
+        <h2 class="side-title">Cari &amp; Info</h2>
+        <div class="field">
+          <label>Cari nama barang / ID</label>
+          <input type="text" id="searchBox" placeholder="Cari nama atau ID...">
+        </div>
+        <div class="field">
+          <label>Ruangan</label>
+          <input type="text" id="ruanganInfo" readonly>
+        </div>
+        <button class="btn btn-upload" style="width:100%;" onclick="window.openUploadModal()">&#8593; Upload CSV Opname</button>
+      </div>
+      <div class="panel side-panel">
+        <h2 class="side-title">Keterangan</h2>
+        <div class="info-note">
+          Kolom <strong>Stok sistem</strong> adalah sisa stok ruangan menurut catatan (mutasi masuk − pemakaian). Isi <strong>Stok fisik</strong> sesuai hitungan nyata di ruangan. Selisih akan tercatat otomatis.
+        </div>
+      </div>
+    </aside>
+
+    <section class="right-col">
+      <div class="panel">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nama barang</th>
+              <th class="num">Stok sistem</th>
+              <th class="num">Stok fisik</th>
+              <th class="num">Selisih</th>
+              <th>Keterangan</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"><tr><td colspan="8" class="empty-state">Memuat data...</td></tr></tbody>
+        </table>
+        <div class="pager">
+          <span id="pagerInfo">-</span>
+          <div>
+            <button id="btnPrev" onclick="window.changePage(-1)">&larr; Sebelumnya</button>
+            <button id="btnNext" onclick="window.changePage(1)">Berikutnya &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- MODAL UPLOAD CSV -->
+<div id="modalUpload">
+  <div class="modal">
+    <h2>Upload CSV Stok Opname Ruangan</h2>
+    <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px; line-height:1.5;">
+      Kolom yang dibutuhkan:<br>
+      <code style="background:#F1F1EE; padding:2px 6px; border-radius:5px; font-size:11.5px;">id_barang, stok_fisik, keterangan</code><br>
+      <span style="color:var(--coral);">* Kolom <b>id_barang</b> dan <b>stok_fisik</b> wajib.</span><br>
+      <span style="color:var(--text-muted); font-size:11px;">Barang harus terdaftar di ruangan yang sedang dipilih. Kalau tidak, akan ditandai bermasalah.</span>
+    </p>
+
+    <input type="file" id="uploadFileInput" accept=".csv" onchange="window.handleUploadFile(event)" style="margin-bottom:14px;">
+
+    <div id="uploadSummary" style="display:none; margin-bottom:12px; font-size:13px; line-height:1.6;"></div>
+
+    <div id="uploadPreviewWrap" style="display:none; max-height:340px; overflow-y:auto; border:1px solid var(--border); border-radius:10px;">
+      <table class="preview-table">
+        <thead style="position:sticky; top:0; z-index:1;">
+          <tr>
+            <th>ID</th>
+            <th>Nama Barang</th>
+            <th class="num">Stok Sistem</th>
+            <th class="num">Stok Fisik</th>
+            <th class="num">Selisih</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="uploadPreviewBody"></tbody>
+      </table>
+    </div>
+
+    <div class="form-msg" id="uploadMsg"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeUploadModal()">Batal</button>
+      <button class="btn btn-primary" id="btnConfirmUpload" onclick="window.confirmUpload()" disabled>Import &amp; Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (function() {
+    let user = null;
+    try {
+      const stored = sessionStorage.getItem('rko_user');
+      if (stored) user = JSON.parse(stored);
+    } catch (e) {}
+    if (!user) {
+      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
+      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
+    }
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+  })();
+
+  // ============================================================
+  //  HAK AKSES RUANGAN
+  // ============================================================
+  function bisaPilihSemuaRuangan() {
+    const role = window.currentUser.role;
+    return ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI'].includes(role);
+  }
+
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  function parseAngka(s) {
+    if (s === null || s === undefined) return 0;
+    let str = String(s).trim();
+    if (!str) return 0;
+    str = str.replace(/\s/g, '');
+    if (str.includes('.') && str.includes(',')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes(',')) {
+      str = str.replace(',', '.');
+    }
+    const n = parseFloat(str);
+    return isNaN(n) ? 0 : n;
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
+  let barangMap = {};
+  let ruanganList = [];
+  let activeRuanganId = null;
+  let barangRuanganIds = new Set();   // barang yang terdaftar di ruangan aktif
+  let stokRuanganMap = {};            // barang_id -> objek stok_ruangan
+  let allStok = [];                   // gabungan utk ditampilkan
+  let filtered = [];
+  let page = 1;
+  const PAGE_SIZE = 15;
+  let uploadRows = [];
+
+  // ============================================================
+  //  PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1; opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+    for (let y = curTahun - 1; y <= curTahun + 1; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  LOAD RUANGAN AWAL
+  // ============================================================
+  async function loadRuanganList() {
+    try {
+      const ruangan = await fetchAllRows('master_ruangan', q => q.order('nama_ruangan'));
+      ruanganList = ruangan.filter(r => r.aktif !== false);
+
+      const sel = document.getElementById('ruanganSelect');
+
+      if (bisaPilihSemuaRuangan()) {
+        sel.innerHTML = '<option value="">Pilih ruangan...</option>' +
+          ruanganList.map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
+      } else {
+        // USER: kunci ke ruangan sendiri
+        const myRuanganId = window.currentUser.ruangan_id;
+        if (myRuanganId && ruanganList.find(r => String(r.id) === String(myRuanganId))) {
+          sel.innerHTML = ruanganList
+            .filter(r => String(r.id) === String(myRuanganId))
+            .map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
+          sel.value = myRuanganId;
+          sel.disabled = true;
+        } else {
+          sel.innerHTML = '<option value="">Anda belum terdaftar di ruangan manapun</option>';
+          sel.disabled = true;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      document.getElementById('ruanganSelect').innerHTML = '<option value="">Gagal memuat ruangan</option>';
+    }
+  }
+
+  // ============================================================
+  //  LOAD DATA STOK RUANGAN
+  // ============================================================
+  async function loadAllData() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
+
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
+
+    if (!activeRuanganId) {
+      document.getElementById('ruanganInfo').value = '-';
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="empty-state">Silakan pilih ruangan terlebih dahulu.</td></tr>';
+      allStok = [];
+      applyFilter();
+      updateStats();
+      return;
+    }
+
+    const r = ruanganList.find(x => x.id === activeRuanganId);
+    document.getElementById('ruanganInfo').value = r ? r.nama_ruangan : '-';
+
+    try {
+      const [barangData, barangRuangan, stokData] = await Promise.all([
+        fetchAllRows('master_barang'),
+        fetchAllRows('barang_ruangan', q => q.eq('ruangan_id', activeRuanganId).eq('status_aktif', true)),
+        fetchAllRows('stok_ruangan', q => q.eq('ruangan_id', activeRuanganId).eq('bulan', bulan).eq('tahun', tahun))
+      ]);
+
+      barangMap = {};
+      barangData.forEach(b => { barangMap[b.id] = b; });
+
+      barangRuanganIds = new Set(barangRuangan.map(br => br.barang_id));
+
+      stokRuanganMap = {};
+      stokData.forEach(s => { stokRuanganMap[s.barang_id] = s; });
+
+      // Gabung: barang yang terdaftar di ruangan ATAU ada stok_ruangan periode ini
+      const semuaBarangId = new Set([...barangRuanganIds, ...Object.keys(stokRuanganMap).map(Number)]);
+
+      allStok = Array.from(semuaBarangId).map(id => {
+        const stok = stokRuanganMap[id];
+        const stokSistem = stok ? Number(stok.stok_sisa || 0) : 0;
+        const fisik = stok && stok.stok_fisik !== null && stok.stok_fisik !== undefined
+          ? Number(stok.stok_fisik) : null;
+        const selisih = fisik !== null ? (fisik - stokSistem) : null;
+        return {
+          barang_id: id,
+          nama_barang: barangMap[id]?.nama_barang || 'Barang tidak dikenal',
+          stok_sistem: stokSistem,
+          fisik: fisik,
+          selisih: selisih,
+          keterangan: stok ? (stok.keterangan_opname || '') : '',
+          saved: fisik !== null
+        };
+      });
+
+      allStok.sort((a, b) => String(a.nama_barang).localeCompare(String(b.nama_barang)));
+
+      applyFilter();
+      updateStats();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('tableBody').innerHTML =
+        '<tr><td colspan="8" class="empty-state">Gagal memuat: ' + escapeHtml(err.message) + '</td></tr>';
+    }
+  }
+
+  function updateStats() {
+    const sudah = allStok.filter(s => s.saved).length;
+    const selisih = allStok.filter(s => s.saved && s.selisih !== 0).length;
+    document.getElementById('statItem').textContent = allStok.length;
+    document.getElementById('statSudah').textContent = sudah;
+    document.getElementById('statSelisih').textContent = selisih;
+  }
+
+  // ============================================================
+  //  FILTER & RENDER
+  // ============================================================
+  document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
+
+  function applyFilter() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    filtered = allStok.filter(s => {
+      return !q
+        || String(s.nama_barang).toLowerCase().includes(q)
+        || String(s.barang_id).includes(q);
+    });
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    const start = (page - 1) * PAGE_SIZE;
+    const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
+    if (pageItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada barang di ruangan ini. Tambahkan lewat menu Input RKO Unit.</td></tr>';
+    } else {
+      tbody.innerHTML = pageItems.map(s => {
+        const selisihTampil = s.selisih === null ? '-' : (s.selisih > 0 ? '+' + s.selisih : s.selisih);
+        const selisihBadge = s.selisih === null
+          ? '<span class="badge netral">Belum diisi</span>'
+          : (s.selisih === 0 ? '<span class="badge ok">Sesuai</span>' : '<span class="badge selisih">' + selisihTampil + '</span>');
+
+        return `<tr data-id="${s.barang_id}">
+          <td><span class="id-display">${s.barang_id}</span></td>
+          <td>${escapeHtml(s.nama_barang)}</td>
+          <td class="num"><strong>${s.stok_sistem.toLocaleString('id-ID')}</strong></td>
+          <td><input type="number" class="qty" data-field="fisik" value="${s.fisik !== null ? s.fisik : ''}" min="0" placeholder="-" oninput="window.hitungSelisih(${s.barang_id})"></td>
+          <td class="num" id="selisih-${s.barang_id}">${selisihBadge}</td>
+          <td><input type="text" class="ket" data-field="ket" value="${escapeHtml(s.keterangan)}" placeholder="opsional"></td>
+          <td><span class="badge ${s.saved ? 'saved' : 'unsaved'}" id="status-${s.barang_id}">${s.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
+          <td><button class="btn btn-primary" onclick="window.simpanBaris(${s.barang_id})">Simpan</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    document.getElementById('pagerInfo').textContent = `${filtered.length} item · Halaman ${page} dari ${totalPages}`;
+    document.getElementById('btnPrev').disabled = page <= 1;
+    document.getElementById('btnNext').disabled = page >= totalPages;
+  }
+
+  window.changePage = function(delta) { page += delta; renderTable(); };
+
+  window.hitungSelisih = function(barangId) {
+    const row = document.querySelector(`tr[data-id="${barangId}"]`);
+    if (!row) return;
+    const stokSistem = allStok.find(s => s.barang_id === barangId)?.stok_sistem || 0;
+    const inputFisik = row.querySelector('[data-field="fisik"]').value;
+    const el = document.getElementById('selisih-' + barangId);
+    const status = document.getElementById('status-' + barangId);
+
+    if (inputFisik === '') {
+      el.innerHTML = '<span class="badge netral">Belum diisi</span>';
+    } else {
+      const fisik = Number(inputFisik) || 0;
+      const selisih = fisik - stokSistem;
+      if (selisih === 0) {
+        el.innerHTML = '<span class="badge ok">Sesuai</span>';
+      } else {
+        const tanda = selisih > 0 ? '+' + selisih : selisih;
+        el.innerHTML = '<span class="badge selisih">' + tanda + '</span>';
+      }
+    }
+    status.textContent = 'Belum disimpan';
+    status.className = 'badge unsaved';
+  };
+
+  // ============================================================
+  //  SIMPAN PER BARIS
+  // ============================================================
+  window.simpanBaris = async function(barangId) {
+    const row = document.querySelector(`tr[data-id="${barangId}"]`);
+    const btn = row.querySelector('button');
+    const fisikRaw = row.querySelector('[data-field="fisik"]').value;
+    const keterangan = row.querySelector('[data-field="ket"]').value.trim();
+
+    if (fisikRaw === '') { alert('Isi stok fisik terlebih dahulu.'); return; }
+    const fisik = Number(fisikRaw);
+    if (isNaN(fisik) || fisik < 0) { alert('Stok fisik tidak boleh negatif.'); return; }
+
+    const entry = allStok.find(s => s.barang_id === barangId);
+    const stokSistem = entry ? entry.stok_sistem : 0;
+    const bulan = Number(document.getElementById('bulanSelect').value);
+    const tahun = Number(document.getElementById('tahunSelect').value);
+
+    btn.disabled = true; btn.textContent = '...';
+
+    try {
+      const stokExisting = stokRuanganMap[barangId];
+      if (stokExisting) {
+        // Update stok_ruangan yang sudah ada
+        const { error } = await window.supabase
+          .from('stok_ruangan')
+          .update({
+            stok_fisik: fisik,
+            keterangan_opname: keterangan || null,
+            diopname_pada: new Date().toISOString(),
+            diopname_oleh: window.currentUser.id || null,
+            terakhir_diperbarui: new Date().toISOString()
+          })
+          .eq('id', stokExisting.id);
+        if (error) throw error;
+      } else {
+        // Belum ada stok_ruangan untuk periode ini → insert baru
+        const { error } = await window.supabase.from('stok_ruangan').insert({
+          ruangan_id: activeRuanganId,
+          barang_id: barangId,
+          bulan, tahun,
+          stok_awal: 0,
+          total_terima: 0,
+          total_pakai: 0,
+          stok_sisa: 0,
+          stok_fisik: fisik,
+          keterangan_opname: keterangan || null,
+          diopname_pada: new Date().toISOString(),
+          diopname_oleh: window.currentUser.id || null,
+          terakhir_diperbarui: new Date().toISOString()
+        });
+        if (error) throw error;
+        // Update lokal map supaya tidak perlu reload penuh
+        stokRuanganMap[barangId] = { stok_sisa: 0, stok_fisik: fisik, keterangan_opname: keterangan };
+      }
+
+      if (entry) {
+        entry.fisik = fisik;
+        entry.selisih = fisik - stokSistem;
+        entry.keterangan = keterangan;
+        entry.saved = true;
+      }
+      const statusEl = document.getElementById('status-' + barangId);
+      statusEl.textContent = 'Tersimpan';
+      statusEl.className = 'badge saved';
+      updateStats();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Simpan';
+    }
+  };
+
+  // ============================================================
+  //  UPLOAD CSV
+  // ============================================================
+  window.openUploadModal = function() {
+    if (!activeRuanganId) {
+      alert('Pilih ruangan terlebih dahulu.');
+      return;
+    }
+    document.getElementById('uploadFileInput').value = '';
+    document.getElementById('uploadSummary').style.display = 'none';
+    document.getElementById('uploadPreviewWrap').style.display = 'none';
+    document.getElementById('uploadMsg').textContent = '';
+    document.getElementById('btnConfirmUpload').disabled = true;
+    uploadRows = [];
+    document.getElementById('modalUpload').classList.add('show');
+  };
+
+  window.closeUploadModal = function() {
+    document.getElementById('modalUpload').classList.remove('show');
+  };
+
+  window.handleUploadFile = function(evt) {
+    const file = evt.target.files[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(res) { processUploadRows(res.data); },
+      error: function(err) {
+        document.getElementById('uploadMsg').textContent = 'Gagal baca CSV: ' + err.message;
+      }
+    });
+  };
+
+  function processUploadRows(rawRows) {
+    const seenIds = new Set();
+
+    uploadRows = rawRows.map(row => {
+      const idRaw = String(row.id_barang || row.id || '').trim();
+      const fisikRaw = String(row.stok_fisik || row.stok || row.qty || '').trim();
+      const keterangan = String(row.keterangan || row.ket || '').trim();
+
+      let status = 'valid';
+      let alasan = '';
+      let barangId = null;
+      let stokSistem = 0;
+      let fisik = null;
+
+      if (!idRaw) { status = 'invalid'; alasan = 'ID kosong'; }
+      else if (!/^\d+$/.test(idRaw)) { status = 'invalid'; alasan = 'ID harus angka'; }
+      else if (seenIds.has(idRaw)) { status = 'invalid'; alasan = 'ID duplikat dalam file'; }
+      else if (fisikRaw === '') { status = 'invalid'; alasan = 'Stok fisik kosong'; }
+      else {
+        barangId = Number(idRaw);
+        fisik = parseAngka(fisikRaw);
+
+        if (isNaN(fisik) || fisik < 0) { status = 'invalid'; alasan = 'Stok fisik tidak valid'; }
+        else if (!barangMap[barangId]) { status = 'invalid'; alasan = 'Barang tidak ada di master'; }
+        else if (!barangRuanganIds.has(barangId)) { status = 'invalid'; alasan = 'Barang tidak terdaftar di ruangan ini'; }
+        else {
+          const stok = stokRuanganMap[barangId];
+          stokSistem = stok ? Number(stok.stok_sisa || 0) : 0;
+        }
+      }
+
+      seenIds.add(idRaw);
+
+      return {
+        id_raw: idRaw,
+        barang_id: barangId,
+        nama_barang: barangId && barangMap[barangId] ? barangMap[barangId].nama_barang : '-',
+        stok_sistem: stokSistem,
+        fisik: fisik,
+        selisih: fisik !== null ? (fisik - stokSistem) : null,
+        keterangan: keterangan,
+        status: status,
+        alasan: alasan
+      };
+    });
+
+    renderUploadPreview();
+  }
+
+  function renderUploadPreview() {
+    const valid = uploadRows.filter(r => r.status === 'valid');
+    const invalid = uploadRows.filter(r => r.status === 'invalid');
+
+    document.getElementById('uploadSummary').style.display = 'block';
+    document.getElementById('uploadSummary').innerHTML =
+      `Total <strong>${uploadRows.length}</strong> baris — ` +
+      `<span style="color:var(--green-mid); font-weight:600;">${valid.length} valid</span>, ` +
+      `<span style="color:var(--coral); font-weight:600;">${invalid.length} bermasalah</span>`;
+
+    document.getElementById('uploadPreviewWrap').style.display = 'block';
+    document.getElementById('uploadPreviewBody').innerHTML = uploadRows.slice(0, 200).map(r => {
+      const warna = r.status === 'valid' ? 'var(--green-mid)' : 'var(--coral)';
+      const bg = r.status === 'valid' ? 'var(--green-soft)' : '#FBEAE7';
+      const label = r.status === 'valid' ? 'Siap import' : r.alasan;
+      const selisihTampil = r.selisih === null ? '-' : (r.selisih > 0 ? '+' + r.selisih : r.selisih);
+      return `<tr>
+        <td><span class="id-display">${escapeHtml(r.id_raw)}</span></td>
+        <td>${escapeHtml(r.nama_barang)}</td>
+        <td class="num">${r.status === 'valid' ? r.stok_sistem.toLocaleString('id-ID') : '-'}</td>
+        <td class="num">${r.status === 'valid' ? r.fisik.toLocaleString('id-ID') : '-'}</td>
+        <td class="num">${r.status === 'valid' ? selisihTampil : '-'}</td>
+        <td><span class="badge-status" style="color:${warna}; background:${bg};">${escapeHtml(label)}</span></td>
+      </tr>`;
+    }).join('') + (uploadRows.length > 200
+      ? `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); font-size:11.5px; padding:10px;">... dan ${uploadRows.length - 200} baris lain tidak ditampilkan</td></tr>`
+      : '');
+
+    document.getElementById('btnConfirmUpload').disabled = valid.length === 0;
+    document.getElementById('uploadMsg').textContent = '';
+  }
+
+  window.confirmUpload = async function() {
+    const valid = uploadRows.filter(r => r.status === 'valid');
+    if (valid.length === 0) return;
+
+    const msg = document.getElementById('uploadMsg');
+    const btn = document.getElementById('btnConfirmUpload');
+    btn.disabled = true;
+
+    const bulan = Number(document.getElementById('bulanSelect').value);
+    const tahun = Number(document.getElementById('tahunSelect').value);
+
+    msg.textContent = `Menyimpan ${valid.length} baris...`;
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      // Bagi dua: yang sudah ada di stok_ruangan (update) vs yang belum (insert)
+      const toUpdate = [];
+      const toInsert = [];
+      const now = new Date().toISOString();
+
+      valid.forEach(r => {
+        const stok = stokRuanganMap[r.barang_id];
+        if (stok) {
+          toUpdate.push({
+            id: stok.id,
+            stok_fisik: r.fisik,
+            keterangan_opname: r.keterangan || null,
+            diopname_pada: now,
+            diopname_oleh: window.currentUser.id || null,
+            terakhir_diperbarui: now
+          });
+        } else {
+          toInsert.push({
+            ruangan_id: activeRuanganId,
+            barang_id: r.barang_id,
+            bulan, tahun,
+            stok_awal: 0,
+            total_terima: 0,
+            total_pakai: 0,
+            stok_sisa: 0,
+            stok_fisik: r.fisik,
+            keterangan_opname: r.keterangan || null,
+            diopname_pada: now,
+            diopname_oleh: window.currentUser.id || null,
+            terakhir_diperbarui: now
+          });
+        }
+      });
+
+      // Update satu-satu (kolom update sedikit, volume biasanya kecil)
+      for (const u of toUpdate) {
+        const { id, ...payload } = u;
+        const { error } = await window.supabase.from('stok_ruangan').update(payload).eq('id', id);
+        if (error) throw error;
+      }
+
+      // Insert batch
+      if (toInsert.length > 0) {
+        const BATCH = 500;
+        for (let i = 0; i < toInsert.length; i += BATCH) {
+          const chunk = toInsert.slice(i, i + BATCH);
+          const { error } = await window.supabase.from('stok_ruangan').insert(chunk);
+          if (error) throw error;
+        }
+      }
+
+      msg.textContent = `✅ Berhasil! ${valid.length} baris opname tersimpan (${toUpdate.length} update, ${toInsert.length} baru).`;
+      msg.style.color = 'var(--green-mid)';
+
+      setTimeout(() => {
+        window.closeUploadModal();
+        loadAllData();
+      }, 1500);
+    } catch (err) {
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  (async function init() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+
+    await loadRuanganList();
+
+    // Set ruangan aktif default
+    const sel = document.getElementById('ruanganSelect');
+    if (sel.value) {
+      activeRuanganId = Number(sel.value);
+    }
+
+    sel.addEventListener('change', function() {
+      activeRuanganId = Number(this.value) || null;
+      page = 1;
+      loadAllData();
+    });
+    document.getElementById('bulanSelect').addEventListener('change', () => { page = 1; loadAllData(); });
+    document.getElementById('tahunSelect').addEventListener('change', () => { page = 1; loadAllData(); });
+
+    if (activeRuanganId) {
+      loadAllData();
+    }
+  })();
+</script>
+</body>
+</html>
