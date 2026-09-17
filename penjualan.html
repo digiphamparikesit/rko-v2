@@ -147,7 +147,8 @@
     <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px; line-height:1.5;">
       Kolom yang dibutuhkan:<br>
       <code style="background:#F1F1EE; padding:2px 6px; border-radius:5px; font-size:11.5px;">Tanggal Penjualan, ID Barang, Barang, Gudang, Qty, Harga Pokok, Harga Jual</code><br>
-      <span style="color:var(--amber); display:inline-block; margin-top:8px;">&#9888; Hanya baris dengan kolom <b>Gudang</b> mengandung kata "FARMASI" yang akan diproses.</span>
+      <span style="color:var(--amber); display:inline-block; margin-top:8px;">&#9888; Hanya baris dengan kolom <b>Gudang</b> mengandung kata "FARMASI" yang akan diproses.</span><br>
+      <span style="color:var(--text-muted); font-size:11px;">Tanggal didukung format YYYY-MM-DD dan DD/MM/YYYY HH:MM:SS. Angka desimal didukung format titik dan koma.</span>
     </p>
 
     <input type="file" id="uploadFileInput" accept=".csv" onchange="window.handleUploadFile(event)" style="margin-bottom:14px;">
@@ -234,17 +235,54 @@
     return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
   }
 
+  // Parser tanggal: dukung YYYY-MM-DD dan DD/MM/YYYY (dengan atau tanpa jam)
   function parseTanggalNuha(str) {
-    // Format: "31/01/2026 22:24:01"
     if (!str) return null;
     const datePart = String(str).trim().split(' ')[0];
+
+    // Format 1: YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      const parts = datePart.split('-');
+      const yyyy = parseInt(parts[0], 10);
+      const mm = parseInt(parts[1], 10);
+      if (isNaN(yyyy) || isNaN(mm)) return null;
+      return { bulan: mm, tahun: yyyy };
+    }
+
+    // Format 2: DD/MM/YYYY
     const parts = datePart.split('/');
-    if (parts.length !== 3) return null;
-    const dd = parseInt(parts[0], 10);
-    const mm = parseInt(parts[1], 10);
-    const yyyy = parseInt(parts[2], 10);
-    if (isNaN(dd) || isNaN(mm) || isNaN(yyyy)) return null;
-    return { bulan: mm, tahun: yyyy };
+    if (parts.length === 3) {
+      const dd = parseInt(parts[0], 10);
+      const mm = parseInt(parts[1], 10);
+      const yyyy = parseInt(parts[2], 10);
+      if (isNaN(dd) || isNaN(mm) || isNaN(yyyy)) return null;
+      return { bulan: mm, tahun: yyyy };
+    }
+
+    return null;
+  }
+
+  // Parser angka: dukung format Indonesia (koma desimal, titik ribuan) dan format internasional
+  function parseAngka(s) {
+    if (s === null || s === undefined) return 0;
+    let str = String(s).trim();
+    if (!str) return 0;
+
+    // Hapus spasi
+    str = str.replace(/\s/g, '');
+
+    // Kalau ada titik DAN koma: asumsi titik ribuan, koma desimal (format Indonesia)
+    if (str.includes('.') && str.includes(',')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes(',')) {
+      // Hanya koma. Kalau setelah koma 3 digit dan tidak ada tanda lain, kemungkinan ribuan.
+      // Tapi dalam konteks harga farmasi, koma hampir pasti desimal. Kita asumsi desimal.
+      str = str.replace(',', '.');
+    }
+    // Kalau hanya titik, biarkan. parseFloat akan menangani sebagai desimal.
+
+    const n = parseFloat(str);
+    return isNaN(n) ? 0 : n;
   }
 
   function isFarmasi(gudang) {
@@ -416,9 +454,9 @@
           const namaBarang = String(row['Barang'] || row['barang'] || '').trim();
           if (!namaBarang && !idCsv) return;
 
-          const qty = Number(row['Qty'] || row['qty'] || 0) || 0;
-          const hppUnit = Number(row['Harga Pokok'] || row['harga_pokok'] || 0) || 0;
-          const jualUnit = Number(row['Harga Jual'] || row['harga_jual'] || 0) || 0;
+          const qty = parseAngka(row['Qty'] || row['qty'] || 0);
+          const hppUnit = parseAngka(row['Harga Pokok'] || row['harga_pokok'] || 0);
+          const jualUnit = parseAngka(row['Harga Jual'] || row['harga_jual'] || 0);
           const hppTotal = qty * hppUnit;
           const jualTotal = qty * jualUnit;
 
@@ -438,12 +476,10 @@
           if (!barangId) {
             const byName = barangByName[namaBarang.toUpperCase()];
             if (byName) {
-              // ID di RKO berbeda dari ID CSV — beri tanda
               status = 'id_beda';
               alasan = '⚠️ Nama cocok tapi ID beda (CSV: ' + idCsv + ', RKO: ' + byName + ')';
               idBedaRows++;
             } else {
-              // Benar-benar tidak ada
               status = 'baru';
               alasan = '❌ Barang baru, input dulu di Master Barang';
               idBaruRows++;
@@ -451,7 +487,6 @@
           }
 
           if (status !== 'valid') {
-            // Masukkan ke aggregat sebagai invalid (per kombinasi ID/nama+bulan+tahun)
             const key = status + '||' + (idCsv || namaBarang.toUpperCase()) + '||' + tgl.bulan + '||' + tgl.tahun;
             if (!uploadAgg.has(key)) {
               uploadAgg.set(key, {
@@ -464,7 +499,6 @@
             return;
           }
 
-          // Valid, agregasi
           const key = barangId + '||' + tgl.bulan + '||' + tgl.tahun;
           if (!uploadAgg.has(key)) {
             uploadAgg.set(key, {
@@ -522,7 +556,6 @@
 
     document.getElementById('uploadPreviewWrap').style.display = 'block';
 
-    // Urutkan: valid dulu, lalu id_beda, lalu baru
     const order = { valid: 0, id_beda: 1, baru: 2 };
     items.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
 
