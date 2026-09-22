@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Penerimaan Barang — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -136,14 +142,6 @@
             <option value="B3">B3</option>
             <option value="NUTRISI ENTERAL">Nutrisi Enteral</option>
             <option value="PROGRAM">Program</option>
-            <option value="PROGRAM TB">Program TB</option>
-            <option value="PROGRAM HIV">Program HIV</option>
-            <option value="PROGRAM MALARIA">Program Malaria</option>
-            <option value="PROGRAM RABIES">Program Rabies</option>
-            <option value="PROGRAM BKKBN">Program BKKBN</option>
-            <option value="PROGRAM COVID">Program Covid</option>
-            <option value="PROGRAM STUNTING">Program Stunting</option>
-            <option value="PROGRAM IMUNISASI">Program Imunisasi</option>
           </select>
         </div>
       </div>
@@ -268,31 +266,18 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({ allowRoles: ['TIM_PENERIMAAN', 'ADMIN', 'SUPER_ADMIN'] });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    loadAllData();
   })();
 
   // ============================================================
-  //  HELPER: FETCH SEMUA BARIS
+  //  HELPER
   // ============================================================
   async function fetchAllRows(tableName, buildQuery) {
     const PAGE = 1000;
@@ -356,9 +341,6 @@
     }
   }
 
-  // ============================================================
-  //  HITUNG SISA PER PO
-  // ============================================================
   function hitungSisaPO(pembelianId) {
     const po = pembelianList.find(p => p.id === pembelianId);
     if (!po) return 0;
@@ -369,10 +351,7 @@
   }
 
   // ============================================================
-  //  SUMMARY — REVISI
-  //  1. PO menunggu diterima    → status DIKIRIM
-  //  2. PO diterima sebagian    → status DITERIMA_SEBAGIAN
-  //  3. Barang rusak menunggu retur → kondisi RUSAK & status_rusak = MENUNGGU_RETUR
+  //  SUMMARY
   // ============================================================
   function updateSummary() {
     const menunggu = pembelianList.filter(p => p.status === 'DIKIRIM').length;
@@ -435,7 +414,7 @@
   }
 
   // ============================================================
-  //  RENDER RIWAYAT (group by group_id)
+  //  RENDER RIWAYAT
   // ============================================================
   function renderRiwayat() {
     const { q, golongan } = getFilterState();
@@ -681,7 +660,6 @@
 
   // ============================================================
   //  EDIT PENERIMAAN — AJUKAN APPROVAL
-  //  Hanya boleh ubah: tanggal_terima, no_batch, tanggal_kadaluarsa
   // ============================================================
   window.openEdit = function(groupId, pembelianId, barangId) {
     if (!groupId || groupId === 'null') {
@@ -818,11 +796,6 @@
       msg.style.color = 'var(--coral)';
     }
   };
-
-  // ============================================================
-  //  START
-  // ============================================================
-  loadAllData();
 </script>
 </body>
 </html>
