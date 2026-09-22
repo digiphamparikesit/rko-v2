@@ -350,7 +350,10 @@
       });
 
       const opnameMap = {};
-      opnameData.forEach(o => { opnameMap[o.barang_id] = o; });
+      opnameData.forEach(o => {
+        if (!barangIdsFiltered.has(o.barang_id)) return;   // ← tambah baris ini
+      opnameMap[o.barang_id] = o;
+      });
 
       const barangIds = new Set([...Object.keys(stokSistemMap), ...Object.keys(opnameMap)]);
 
