@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mutasi ke Ruangan — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -38,31 +44,25 @@
     .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
     .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
     @media (max-width: 860px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
-
     .info-note { background: var(--green-soft); color: var(--green-deep); padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
-
     .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
     .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
     .stat-card .num { font-size: 20px; font-weight: 700; }
     .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-
     .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
     table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 900px; }
     th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
     th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
     td.num { text-align: right; }
-
     .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
     .badge.ok { background: var(--green-soft); color: var(--green-mid); }
     .badge.warn { background: #FDF1E0; color: var(--amber); }
     .badge.err { background: #FBEAE7; color: var(--coral); }
-
     .btn { padding: 8px 14px; border: none; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-primary { background: var(--green-mid); color: #fff; }
     .btn-primary:hover { background: #128a3e; }
     .btn-primary:disabled { background: #A9C9B5; cursor: default; }
     .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
-
     #modalOverlay { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
     #modalOverlay.show { display: flex; }
     .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 26px; }
@@ -72,7 +72,6 @@
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
     .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
-
     .summary-box { background: #FAFBFA; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; font-size: 13px; }
     .summary-box .row { display: flex; justify-content: space-between; padding: 3px 0; }
     .summary-box .row.total { font-weight: 700; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; }
@@ -175,27 +174,16 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'KOORDINATOR_LOGISTIK_FARMASI', 'ADMIN', 'SUPER_ADMIN']
+    });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
@@ -205,7 +193,7 @@
     const role = window.currentUser.role;
     if (role === 'PETUGAS_MUTASI_OBAT') return 'OBAT';
     if (role === 'PETUGAS_MUTASI_BMHP') return 'BMHP';
-    return 'ALL'; // SUPER_ADMIN, ADMIN, KOORDINATOR_LOGISTIK_FARMASI
+    return 'ALL';
   }
 
   // ============================================================
@@ -237,8 +225,8 @@
   // ============================================================
   let barangMap = {};
   let pembelianMap = {};
-  let penerimaanList = [];   // yang sudah difilter: BAIK & belum dimutasi
-  let kebutuhanMap = {};     // barang_id -> array {ruangan_id, kebutuhan}
+  let penerimaanList = [];
+  let kebutuhanMap = {};
   let ruanganMap = {};
   let filteredList = [];
   let mutasiHariIniCount = 0;
@@ -263,6 +251,18 @@
       if (y === curTahun) opt.selected = true;
       tahunSel.appendChild(opt);
     }
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    document.getElementById('searchBox').addEventListener('input', applyFilter);
+    loadAllData();
   }
 
   // ============================================================
@@ -291,19 +291,16 @@
       ruanganMap = {};
       ruanganData.forEach(r => { ruanganMap[r.id] = r; });
 
-      // map pembelian yang periode ini saja
       pembelianMap = {};
       const pembelianIds = new Set();
       pembelianData.forEach(p => { pembelianMap[p.id] = p; pembelianIds.add(p.id); });
 
-      // kebutuhanMap: barang_id -> [{ruangan_id, kebutuhan}]
       kebutuhanMap = {};
       kebutuhanData.forEach(k => {
         if (!kebutuhanMap[k.barang_id]) kebutuhanMap[k.barang_id] = [];
         kebutuhanMap[k.barang_id].push({ ruangan_id: k.ruangan_id, kebutuhan: Number(k.kebutuhan) || 0 });
       });
 
-      // Filter penerimaan: hanya yang pembeliannya periode ini & sesuai gudang
       penerimaanList = penerimaanData.filter(r => {
         if (!pembelianIds.has(r.pembelian_id)) return false;
         const barang = barangMap[r.barang_id];
@@ -312,7 +309,6 @@
         return true;
       });
 
-      // Statistik
       const today = new Date().toDateString();
       mutasiHariIniCount = mutasiData.filter(m => {
         const d = new Date(m.tanggal_mutasi);
@@ -329,8 +325,6 @@
   // ============================================================
   //  FILTER
   // ============================================================
-  document.getElementById('searchBox').addEventListener('input', applyFilter);
-
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
 
@@ -412,7 +406,6 @@
 
     window_penerimaanAktif = r;
 
-    // Hitung alokasi client-side (untuk preview)
     const alloc = keb.map(k => {
       const exact = (k.kebutuhan / totalRKO) * stokTersedia;
       return {
@@ -429,19 +422,16 @@
     const totalFloor = alloc.reduce((s, a) => s + a.floor, 0);
     const sisa = stokTersedia - totalFloor;
 
-    // Urutkan berdasarkan remainder terbesar
     const sorted = [...alloc].sort((a, b) => b.remainder - a.remainder || b.qty_rko - a.qty_rko);
     sorted.forEach((a, i) => {
       a.qty_dialokasikan = a.floor + (i < sisa ? 1 : 0);
     });
 
-    // Kembalikan urutan sesuai aslinya
     const result = alloc.map(a => {
       const s = sorted.find(x => x.ruangan_id === a.ruangan_id);
       return { ...a, qty_dialokasikan: s.qty_dialokasikan };
     });
 
-    // Render
     document.getElementById('modalTitle').textContent = 'Konfirmasi Mutasi';
     document.getElementById('modalSub').innerHTML =
       `📦 <strong>${escapeHtml(barang.nama_barang || '-')}</strong> · PO ${escapeHtml(po ? po.no_po : '-')}`;
@@ -473,7 +463,7 @@
   };
 
   // ============================================================
-  //  SUBMIT MUTASI (panggil RPC)
+  //  SUBMIT MUTASI
   // ============================================================
   window.submitMutasi = async function() {
     if (!window_penerimaanAktif) return;
@@ -504,17 +494,6 @@
       btn.disabled = false;
     }
   };
-
-  // ============================================================
-  //  INIT
-  // ============================================================
-  document.addEventListener('DOMContentLoaded', function() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    loadAllData();
-  });
 </script>
 </body>
 </html>
