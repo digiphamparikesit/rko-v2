@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manajemen User — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -64,6 +70,8 @@
     .badge.role { background: #E9EEFB; color: #3B5BDB; }
     .badge.ruangan { background: var(--green-soft); color: var(--green-mid); }
     .badge.off { background: #F1F1EE; color: var(--text-muted); }
+    .badge.auth-ok { background: var(--green-soft); color: var(--green-mid); }
+    .badge.auth-no { background: #FBEAE7; color: var(--coral); }
 
     .row-actions { display: flex; gap: 8px; }
     .icon-btn {
@@ -108,6 +116,8 @@
       margin-bottom: 12px; line-height: 1.5;
     }
     .help-text { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+    .role-desc { font-size: 11px; color: var(--text-muted); line-height: 1.6; margin-top: 4px; }
+    .role-desc strong { color: var(--green-deep); }
   </style>
 </head>
 <body>
@@ -165,16 +175,19 @@
 
       <div class="panel side-panel">
         <h2 class="side-title">Keterangan Role</h2>
-        <div class="info-note" style="font-size:11.5px;">
+        <div class="info-note role-desc">
           <strong>Super Admin</strong> — akses teknis penuh.<br>
           <strong>Admin</strong> — kelola master data.<br>
           <strong>Kepala Instalasi Farmasi</strong> — approval edit penerimaan.<br>
-          <strong>Koordinator Logistik Farmasi</strong> — pengawasan dua gudang, penerima delegasi.<br>
-          <strong>Petugas Mutasi Obat/BMHP</strong> — jalankan mutasi ke ruangan.<br>
+          <strong>Koordinator Logistik Farmasi</strong> — pengawasan dua gudang.<br>
+          <strong>Petugas Mutasi Obat/BMHP</strong> — jalankan mutasi.<br>
           <strong>Tim Penerimaan</strong> — input penerimaan barang.<br>
           <strong>Tim Pembelian</strong> — buat &amp; kelola PO.<br>
           <strong>Keuangan</strong> — anggaran &amp; realisasi.<br>
           <strong>User Ruangan</strong> — input RKO &amp; pemakaian.
+        </div>
+        <div class="info-note" style="background:#FDF1E0; color:var(--amber); margin-top:10px;">
+          <strong>Reset password</strong> dilakukan lewat Supabase Dashboard (Authentication → Users → Reset password). Tidak bisa dari halaman ini.
         </div>
       </div>
     </aside>
@@ -190,11 +203,12 @@
               <th>Role</th>
               <th>Ruangan</th>
               <th>Status</th>
+              <th>Auth</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="6" class="empty-state">Memuat data...</td></tr>
+            <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
           </tbody>
         </table>
         <div class="pager">
@@ -216,24 +230,18 @@
     <input type="hidden" id="fId">
 
     <div class="field">
-      <label>Nama lengkap</label>
+      <label>Nama lengkap <span style="color:var(--coral);">*</span></label>
       <input type="text" id="fNama" placeholder="mis. Budi Santoso">
     </div>
 
     <div class="field">
-      <label>Email</label>
+      <label>Email <span style="color:var(--coral);">*</span></label>
       <input type="email" id="fEmail" placeholder="mis. budi@rsamp.go.id">
-    </div>
-
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="fPassword" placeholder="Minimal 6 karakter">
-      <div class="help-text" id="passwordHelp">Wajib diisi untuk user baru.</div>
     </div>
 
     <div class="field-row">
       <div class="field">
-        <label>Role</label>
+        <label>Role <span style="color:var(--coral);">*</span></label>
         <select id="fRole">
           <option value="">Pilih role...</option>
           <option value="SUPER_ADMIN">Super Admin</option>
@@ -249,7 +257,6 @@
           <option value="DISTRIBUTOR_VIEW">Distributor View</option>
         </select>
       </div>
-
       <div class="field">
         <label>Status</label>
         <select id="fActive">
@@ -277,33 +284,14 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
+  //  SESSION
   // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
-  //  SESSION & AKSES (hanya ADMIN/SUPER_ADMIN yang boleh masuk)
-  // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && ['ADMIN', 'SUPER_ADMIN'].includes(parsed.role)) {
-          user = parsed;
-        }
-      }
-    } catch (e) {}
-
-    if (!user) {
-      user = { id: 999, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
-      sessionStorage.setItem('rko_user', JSON.stringify(user));
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({ allowRoles: ['ADMIN', 'SUPER_ADMIN'] });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
@@ -329,22 +317,12 @@
     c.style.display = 'block';
     c.textContent = '⚠️ ' + msg;
   }
-  function hideError() {
-    document.getElementById('errorContainer').style.display = 'none';
-  }
-
-  // Hash SHA-256 pakai Web Crypto API
-  async function hashPassword(plain) {
-    const enc = new TextEncoder();
-    const buf = await crypto.subtle.digest('SHA-256', enc.encode(plain));
-    const arr = Array.from(new Uint8Array(buf));
-    return arr.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
+  function hideError() { document.getElementById('errorContainer').style.display = 'none'; }
 
   // ============================================================
   //  LOAD DATA (users + ruangan)
   // ============================================================
-  async function loadData() {
+  async function initData() {
     hideError();
     try {
       const [usersRes, ruanganRes] = await Promise.all([
@@ -362,7 +340,7 @@
     } catch (err) {
       showError('Gagal memuat data: ' + err.message);
       document.getElementById('tableBody').innerHTML =
-        '<tr><td colspan="6" class="empty-state">Error: ' + escapeHtml(err.message) + '</td></tr>';
+        '<tr><td colspan="7" class="empty-state">Error: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -408,12 +386,15 @@
     const pageItems = filtered.slice(start, start + PAGE_SIZE);
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Tidak ada data yang cocok.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Tidak ada data yang cocok.</td></tr>';
     } else {
       tbody.innerHTML = pageItems.map(u => {
         const isActive = u.active !== false;
         const ruanganNama = u.ruangan_id ? getNamaRuangan(u.ruangan_id) : '-';
         const roleLabel = String(u.role || '').replace(/_/g, ' ');
+        const authBadge = u.auth_id
+          ? '<span class="badge auth-ok">Terhubung</span>'
+          : '<span class="badge auth-no">Belum</span>';
         return `
           <tr class="${isActive ? '' : 'inactive'}">
             <td>${escapeHtml(u.nama)}</td>
@@ -421,6 +402,7 @@
             <td><span class="badge role">${escapeHtml(roleLabel)}</span></td>
             <td>${u.ruangan_id ? '<span class="badge ruangan">' + escapeHtml(ruanganNama) + '</span>' : '-'}</td>
             <td>${isActive ? '<span class="badge ruangan">Aktif</span>' : '<span class="badge off">Nonaktif</span>'}</td>
+            <td>${authBadge}</td>
             <td>
               <div class="row-actions">
                 <button class="icon-btn" onclick="window.openForm(${u.id})">Edit</button>
@@ -459,8 +441,6 @@
       document.getElementById('fId').value = u.id;
       document.getElementById('fNama').value = u.nama || '';
       document.getElementById('fEmail').value = u.email || '';
-      document.getElementById('fPassword').value = '';
-      document.getElementById('passwordHelp').textContent = 'Kosongkan jika tidak ingin mengganti password.';
       document.getElementById('fRole').value = u.role || '';
       document.getElementById('fActive').value = (u.active !== false).toString();
       document.getElementById('fRuangan').value = u.ruangan_id || '';
@@ -469,8 +449,6 @@
       document.getElementById('fId').value = '';
       document.getElementById('fNama').value = '';
       document.getElementById('fEmail').value = '';
-      document.getElementById('fPassword').value = '';
-      document.getElementById('passwordHelp').textContent = 'Wajib diisi untuk user baru.';
       document.getElementById('fRole').value = '';
       document.getElementById('fActive').value = 'true';
       document.getElementById('fRuangan').value = '';
@@ -495,7 +473,6 @@
     const id = document.getElementById('fId').value;
     const nama = document.getElementById('fNama').value.trim();
     const email = document.getElementById('fEmail').value.trim().toLowerCase();
-    const password = document.getElementById('fPassword').value;
     const role = document.getElementById('fRole').value;
     const active = document.getElementById('fActive').value === 'true';
     const ruanganId = document.getElementById('fRuangan').value;
@@ -506,13 +483,10 @@
     if (!email) { msg.textContent = 'Email wajib diisi.'; return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.textContent = 'Format email tidak valid.'; return; }
     if (!role) { msg.textContent = 'Role wajib dipilih.'; return; }
-    if (!id && !password) { msg.textContent = 'Password wajib diisi untuk user baru.'; return; }
-    if (password && password.length < 6) { msg.textContent = 'Password minimal 6 karakter.'; return; }
     if (ROLE_PERLU_RUANGAN.includes(role) && !ruanganId) {
       msg.textContent = 'Ruangan wajib dipilih untuk role User Ruangan.'; return;
     }
 
-    // Cek duplikat email
     const dupEmail = allUsers.find(u =>
       String(u.email || '').toLowerCase() === email && String(u.id) !== String(id)
     );
@@ -526,10 +500,6 @@
       ruangan_id: ROLE_PERLU_RUANGAN.includes(role) ? (ruanganId || null) : null
     };
 
-    if (password) {
-      payload.password_hash = await hashPassword(password);
-    }
-
     msg.textContent = 'Menyimpan...';
     try {
       if (id) {
@@ -538,9 +508,13 @@
       } else {
         const { error } = await window.supabase.from('users').insert(payload);
         if (error) throw error;
+        msg.textContent = '✅ User ditambahkan. Untuk bisa login, buat akun di Supabase Dashboard → Authentication → Users dengan email yang sama.';
+        msg.style.color = 'var(--green-mid)';
+        setTimeout(() => { closeForm(); initData(); }, 2500);
+        return;
       }
       closeForm();
-      await loadData();
+      await initData();
     } catch (err) {
       msg.textContent = 'Gagal: ' + err.message;
     }
@@ -550,16 +524,11 @@
     try {
       const { error } = await window.supabase.from('users').update({ active: newStatus }).eq('id', id);
       if (error) throw error;
-      await loadData();
+      await initData();
     } catch (err) {
       alert('Gagal: ' + err.message);
     }
   };
-
-  // ============================================================
-  //  START
-  // ============================================================
-  loadData();
 </script>
 </body>
 </html>
