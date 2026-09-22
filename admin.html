@@ -6,6 +6,12 @@
   <title>Admin — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -121,9 +127,7 @@
       margin-bottom: 12px; line-height: 1.5;
     }
     .help-text { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
-    .id-display {
-      font-family: "Courier New", monospace; font-weight: 700; color: var(--green-deep);
-    }
+    .id-display { font-family: "Courier New", monospace; font-weight: 700; color: var(--green-deep); }
   </style>
 </head>
 <body>
@@ -358,30 +362,17 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({ allowRoles: ['ADMIN', 'SUPER_ADMIN'] });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    initData();
   })();
 
   // ============================================================
-  //  HELPER: FETCH SEMUA BARIS (menembus batas 1000)
+  //  HELPER: FETCH SEMUA BARIS
   // ============================================================
   async function fetchAllRows(tableName, buildQuery) {
     const PAGE = 1000;
@@ -419,17 +410,13 @@
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[s]));
   }
-  function formatRp(v) {
-    return (Number(v) || 0).toLocaleString('id-ID');
-  }
+  function formatRp(v) { return (Number(v) || 0).toLocaleString('id-ID'); }
   function showError(msg) {
     const c = document.getElementById('errorContainer');
     c.style.display = 'block';
     c.textContent = '⚠️ ' + msg;
   }
-  function hideError() {
-    document.getElementById('errorContainer').style.display = 'none';
-  }
+  function hideError() { document.getElementById('errorContainer').style.display = 'none'; }
   function gudangDariGolongan(golongan) {
     return String(golongan || '').toUpperCase() === 'OBAT' ? 'OBAT' : 'BMHP';
   }
@@ -529,10 +516,7 @@
     document.getElementById('btnNext').disabled = page >= totalPages;
   }
 
-  window.changePage = function(delta) {
-    page += delta;
-    renderTable();
-  };
+  window.changePage = function(delta) { page += delta; renderTable(); };
 
   // ============================================================
   //  FORM TAMBAH / EDIT
@@ -714,17 +698,12 @@
       let statusBaris = 'valid';
       let alasan = '';
 
-      if (!idRaw) {
-        statusBaris = 'invalid'; alasan = 'ID Barang kosong';
-      } else if (!/^\d+$/.test(idRaw)) {
-        statusBaris = 'invalid'; alasan = 'ID harus angka';
-      } else if (seenIds.has(idRaw)) {
-        statusBaris = 'invalid'; alasan = 'ID duplikat dalam file';
-      } else if (!namaBarang) {
-        statusBaris = 'invalid'; alasan = 'Nama barang kosong';
-      } else if (existingIds.has(idRaw)) {
-        statusBaris = 'duplikat'; alasan = 'ID sudah ada di master';
-      } else {
+      if (!idRaw) { statusBaris = 'invalid'; alasan = 'ID Barang kosong'; }
+      else if (!/^\d+$/.test(idRaw)) { statusBaris = 'invalid'; alasan = 'ID harus angka'; }
+      else if (seenIds.has(idRaw)) { statusBaris = 'invalid'; alasan = 'ID duplikat dalam file'; }
+      else if (!namaBarang) { statusBaris = 'invalid'; alasan = 'Nama barang kosong'; }
+      else if (existingIds.has(idRaw)) { statusBaris = 'duplikat'; alasan = 'ID sudah ada di master'; }
+      else {
         const prinsipalId = prinsipalNama ? prinsipalMap[prinsipalNama.toUpperCase()] : null;
         if (prinsipalNama && !prinsipalId) {
           statusBaris = 'invalid'; alasan = 'Prinsipal "' + prinsipalNama + '" tidak ditemukan';
@@ -838,11 +817,6 @@
       document.getElementById('btnConfirmUpload').disabled = false;
     }
   };
-
-  // ============================================================
-  //  START
-  // ============================================================
-  initData();
 </script>
 </body>
 </html>
