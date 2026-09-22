@@ -6,6 +6,12 @@
   <title>Pemakaian Ruangan — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -120,7 +126,7 @@
       <div class="panel side-panel">
         <h2 class="side-title">Info</h2>
         <div class="info-note">
-          Baris dengan kolom <strong>Gudang</strong> mengandung kata <strong>"FARMASI"</strong> akan diabaikan (diproses di halaman Penjualan). Nama ruangan harus persis sama dengan Master Ruangan.
+          Baris dengan kolom <strong>Gudang</strong> mengandung kata <strong>"FARMASI"</strong> akan diabaikan. Nama ruangan harus persis sama dengan Master Ruangan.
         </div>
       </div>
     </aside>
@@ -227,27 +233,16 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['USER', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI', 'ADMIN', 'SUPER_ADMIN']
+    });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
@@ -319,42 +314,27 @@
 
   // ============================================================
   //  SINKRONISASI STOK RUANGAN
-  //  Menghitung ulang total_terima, total_pakai, stok_sisa
-  //  berdasarkan mutasi_ruangan_detail (AKTIF) dan pemakaian_ruangan
   // ============================================================
   window.sinkronStokRuangan = async function(ruanganId, barangId, bulan, tahun) {
     try {
-      // 1. Cek stok_ruangan yang ada
       const { data: stokRows, error: e1 } = await window.supabase
-        .from('stok_ruangan')
-        .select('*')
-        .eq('ruangan_id', ruanganId)
-        .eq('barang_id', barangId)
-        .eq('bulan', bulan)
-        .eq('tahun', tahun)
-        .limit(1);
+        .from('stok_ruangan').select('*')
+        .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
+        .eq('bulan', bulan).eq('tahun', tahun).limit(1);
       if (e1) throw e1;
 
       const stok = (stokRows && stokRows.length > 0) ? stokRows[0] : null;
 
-      // 2. Total pemakaian
       const { data: pemakaianRows, error: e2 } = await window.supabase
-        .from('pemakaian_ruangan')
-        .select('qty_pakai')
-        .eq('ruangan_id', ruanganId)
-        .eq('barang_id', barangId)
-        .eq('bulan', bulan)
-        .eq('tahun', tahun);
+        .from('pemakaian_ruangan').select('qty_pakai')
+        .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
+        .eq('bulan', bulan).eq('tahun', tahun);
       if (e2) throw e2;
       const totalPakai = (pemakaianRows || []).reduce((s, p) => s + Number(p.qty_pakai || 0), 0);
 
-      // 3. Total terima dari mutasi
       const { data: mutasiRows, error: e3 } = await window.supabase
-        .from('mutasi_ruangan')
-        .select('id')
-        .eq('barang_id', barangId)
-        .eq('bulan', bulan)
-        .eq('tahun', tahun)
+        .from('mutasi_ruangan').select('id')
+        .eq('barang_id', barangId).eq('bulan', bulan).eq('tahun', tahun)
         .eq('status', 'AKTIF');
       if (e3) throw e3;
 
@@ -362,38 +342,28 @@
       let totalTerima = 0;
       if (mutasiIds.length > 0) {
         const { data: detailRows, error: e4 } = await window.supabase
-          .from('mutasi_ruangan_detail')
-          .select('qty_dialokasikan')
-          .eq('ruangan_id', ruanganId)
-          .in('mutasi_id', mutasiIds);
+          .from('mutasi_ruangan_detail').select('qty_dialokasikan')
+          .eq('ruangan_id', ruanganId).in('mutasi_id', mutasiIds);
         if (e4) throw e4;
         totalTerima = (detailRows || []).reduce((s, d) => s + Number(d.qty_dialokasikan || 0), 0);
       }
 
       const stokSisa = totalTerima - totalPakai;
 
-      // 4. Update atau insert
       if (stok) {
-        const { error } = await window.supabase
-          .from('stok_ruangan')
+        const { error } = await window.supabase.from('stok_ruangan')
           .update({
             total_terima: totalTerima,
             total_pakai: totalPakai,
             stok_sisa: stokSisa,
             terakhir_diperbarui: new Date().toISOString()
-          })
-          .eq('id', stok.id);
+          }).eq('id', stok.id);
         if (error) throw error;
       } else {
         const { error } = await window.supabase.from('stok_ruangan').insert({
-          ruangan_id: ruanganId,
-          barang_id: barangId,
-          bulan, tahun,
-          stok_awal: 0,
-          total_terima: totalTerima,
-          total_pakai: totalPakai,
-          stok_sisa: stokSisa,
-          terakhir_diperbarui: new Date().toISOString()
+          ruangan_id: ruanganId, barang_id: barangId, bulan, tahun,
+          stok_awal: 0, total_terima: totalTerima, total_pakai: totalPakai,
+          stok_sisa: stokSisa, terakhir_diperbarui: new Date().toISOString()
         });
         if (error) throw error;
       }
@@ -435,6 +405,17 @@
       if (y === curTahun) opt.selected = true;
       tahunSel.appendChild(opt);
     }
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    loadAllData();
   }
 
   // ============================================================
@@ -716,8 +697,7 @@
         const { count, error } = await window.supabase
           .from('pemakaian_ruangan')
           .select('*', { count: 'exact', head: true })
-          .eq('bulan', p.bulan)
-          .eq('tahun', p.tahun);
+          .eq('bulan', p.bulan).eq('tahun', p.tahun);
         if (error) throw error;
         if (count > 0) adaKonflik = true;
       }
@@ -743,8 +723,7 @@
       const payload = items.map(r => ({
         ruangan_id: r.ruangan_id,
         barang_id: r.barang_id,
-        bulan: r.bulan,
-        tahun: r.tahun,
+        bulan: r.bulan, tahun: r.tahun,
         tanggal_pakai: r.tanggal || null,
         qty_pakai: r.qty,
         sumber_data: 'UPLOAD_NUHA',
@@ -761,7 +740,6 @@
         msg.textContent = `Mengimpor... ${Math.min(i + BATCH, payload.length)} / ${payload.length}`;
       }
 
-      // Sinkron stok ruangan untuk semua kombinasi yang baru diupload
       msg.textContent = 'Sinkronisasi stok ruangan...';
       const kombinasi = new Set();
       items.forEach(r => kombinasi.add(r.ruangan_id + '|' + r.barang_id + '|' + r.bulan + '|' + r.tahun));
@@ -857,15 +835,10 @@
     msg.style.color = 'var(--text-muted)';
 
     try {
-      // Cek existing: kalau sudah ada, tambahkan qty-nya
       const { data: existing } = await window.supabase
-        .from('pemakaian_ruangan')
-        .select('*')
-        .eq('ruangan_id', ruanganId)
-        .eq('barang_id', barangId)
-        .eq('bulan', bulan)
-        .eq('tahun', tahun)
-        .limit(1);
+        .from('pemakaian_ruangan').select('*')
+        .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
+        .eq('bulan', bulan).eq('tahun', tahun).limit(1);
 
       if (existing && existing.length > 0) {
         const lama = existing[0];
@@ -882,16 +855,12 @@
             dicatat_oleh: window.currentUser.id || null,
             catatan: catatan || lama.catatan,
             updated_at: new Date().toISOString()
-          })
-          .eq('id', lama.id);
+          }).eq('id', lama.id);
         if (error) throw error;
       } else {
         const { error } = await window.supabase.from('pemakaian_ruangan').insert({
-          ruangan_id: ruanganId,
-          barang_id: barangId,
-          bulan, tahun,
-          tanggal_pakai: tanggal,
-          qty_pakai: qty,
+          ruangan_id: ruanganId, barang_id: barangId, bulan, tahun,
+          tanggal_pakai: tanggal, qty_pakai: qty,
           sumber_data: 'MANUAL',
           dicatat_oleh: window.currentUser.id || null,
           catatan: catatan || null
@@ -899,7 +868,6 @@
         if (error) throw error;
       }
 
-      // Sinkronkan stok ruangan
       msg.textContent = 'Sinkronisasi stok ruangan...';
       await window.sinkronStokRuangan(ruanganId, barangId, bulan, tahun);
 
@@ -914,17 +882,6 @@
       msg.style.color = 'var(--coral)';
     }
   };
-
-  // ============================================================
-  //  INIT
-  // ============================================================
-  (function init() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    loadAllData();
-  })();
 </script>
 </body>
 </html>
