@@ -6,6 +6,12 @@
   <title>Stok Opname Gudang — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -202,27 +208,16 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP']
+    });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
@@ -303,6 +298,18 @@
       if (y === curTahun) opt.selected = true;
       tahunSel.appendChild(opt);
     }
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
+    loadAllData();
   }
 
   // ============================================================
@@ -392,8 +399,6 @@
   // ============================================================
   //  FILTER & RENDER
   // ============================================================
-  document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
-
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
     filtered = allStok.filter(s => {
@@ -575,7 +580,6 @@
         else {
           const entry = existingMap[barangId];
           stokSistem = entry ? entry.stok_sistem : 0;
-          // Cek filter gudang: kalau role punya filter, pastikan barang cocok
           const gf = getGudangFilter();
           if (gf !== 'ALL') {
             const barang = barangMap[barangId];
@@ -648,7 +652,6 @@
     const bulan = Number(document.getElementById('bulanSelect').value);
     const tahun = Number(document.getElementById('tahunSelect').value);
 
-    // Cek konflik: kalau ada opname tersimpan untuk periode ini
     const konflik = allStok.filter(s => s.saved).length;
     if (konflik > 0) {
       const lanjut = confirm(
@@ -696,17 +699,6 @@
       btn.disabled = false;
     }
   };
-
-  // ============================================================
-  //  INIT
-  // ============================================================
-  (function init() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    loadAllData();
-  })();
 </script>
 </body>
 </html>
