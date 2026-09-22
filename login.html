@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green-deep: #0F3D2E;
+      --green-mid: #16A34A;
+      --green-bright: #3FCF6A;
+      --green-soft: #E7F5EC;
+      --bg: #F4F7F4;
+      --card: #FFFFFF;
+      --text-dark: #14201A;
+      --text-muted: #6B7A72;
+      --border: #E4EAE5;
+      --coral: #DC5B45;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--green-deep) 0%, #1a5c44 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text-dark);
+      padding: 20px;
+    }
+
+    .login-wrap {
+      width: 100%;
+      max-width: 420px;
+    }
+    .login-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+    .login-brand .mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--green-bright);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--green-deep);
+    }
+    .login-brand .title {
+      font-weight: 700;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+    .login-brand .label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .login-card {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 32px 28px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    }
+    .login-card h1 {
+      font-size: 20px;
+      margin: 0 0 6px;
+    }
+    .login-card .sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0 0 24px;
+    }
+
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--green-mid);
+      box-shadow: 0 0 0 3px rgba(22,163,74,0.12);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: var(--green-mid);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14.5px;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 4px;
+    }
+    .btn-login:hover { background: #128a3e; }
+    .btn-login:disabled { background: #A9C9B5; cursor: default; }
+
+    .msg {
+      font-size: 12.5px;
+      min-height: 18px;
+      margin-top: 12px;
+      text-align: center;
+    }
+    .msg.error { color: var(--coral); }
+    .msg.info { color: var(--text-muted); }
+    .msg.ok { color: var(--green-mid); }
+
+    .footnote {
+      text-align: center;
+      color: rgba(255,255,255,0.6);
+      font-size: 11.5px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Efisiensi TujuanKU</div>
+    </div>
+  </div>
+
+  <div class="login-card">
+    <h1>Masuk ke aplikasi</h1>
+    <p class="sub">Gunakan email dan password yang diberikan admin.</p>
+
+    <form id="loginForm" onsubmit="window.doLogin(event)">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="nama@rsamp.go.id" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-login" id="btnLogin">Masuk</button>
+      <div class="msg" id="msg"></div>
+    </form>
+  </div>
+
+  <div class="footnote">
+    RKO Obat &amp; BMHP · RS AM Parikesit
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  //  KONFIGURASI SUPABASE
+  // ============================================================
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ============================================================
+  //  CEK: kalau sudah login, langsung redirect ke index
+  // ============================================================
+  (async function() {
+    try {
+      const { data: { session } } = await window.supabase.auth.getSession();
+      if (session) {
+        window.location.href = 'index.html';
+      }
+    } catch (e) {
+      console.warn('Cek session gagal:', e);
+    }
+  })();
+
+  // ============================================================
+  //  LOGIN
+  // ============================================================
+  window.doLogin = async function(evt) {
+    evt.preventDefault();
+    const msg = document.getElementById('msg');
+    const btn = document.getElementById('btnLogin');
+    const email = document.getElementById('email').value.trim().toLowerCase();
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+      msg.className = 'msg error';
+      msg.textContent = 'Email dan password wajib diisi.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Memproses...';
+    msg.className = 'msg info';
+    msg.textContent = 'Memverifikasi akun...';
+
+    try {
+      // 1. Login ke Supabase Auth
+      const { data: authData, error: authError } = await window.supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+      if (authError) throw new Error(authError.message);
+
+      const authUser = authData.user;
+      if (!authUser) throw new Error('Login gagal, user tidak ditemukan.');
+
+      // 2. Ambil profil dari public.users
+      const { data: profilArr, error: profilError } = await window.supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .limit(1);
+      if (profilError) throw new Error('Profil: ' + profilError.message);
+
+      const profil = profilArr && profilArr[0];
+      if (!profil) throw new Error('Profil tidak ditemukan di tabel users.');
+      if (profil.active === false) throw new Error('Akun Anda dinonaktifkan. Hubungi admin.');
+
+      // 3. Simpan profil ke sessionStorage (untuk kenyamanan UI)
+      const sessionUser = {
+        id: profil.id,
+        auth_id: authUser.id,
+        email: profil.email,
+        nama: profil.nama,
+        role: profil.role,
+        ruangan_id: profil.ruangan_id || null,
+        active: profil.active !== false
+      };
+      sessionStorage.setItem('rko_user', JSON.stringify(sessionUser));
+
+      msg.className = 'msg ok';
+      msg.textContent = 'Login berhasil. Mengalihkan...';
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 600);
+
+    } catch (err) {
+      console.error(err);
+      msg.className = 'msg error';
+      // Terjemahkan pesan error umum
+      let pesan = err.message;
+      if (pesan.includes('Invalid login credentials')) pesan = 'Email atau password salah.';
+      else if (pesan.includes('Email not confirmed')) pesan = 'Email belum diverifikasi. Hubungi admin.';
+      msg.textContent = pesan;
+      btn.disabled = false;
+      btn.textContent = 'Masuk';
+    }
+  };
+</script>
+</body>
+</html>
