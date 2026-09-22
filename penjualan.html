@@ -6,6 +6,12 @@
   <title>Penjualan Farmasi — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -187,27 +193,14 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({ allowRoles: ['KEUANGAN', 'ADMIN', 'SUPER_ADMIN'] });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
@@ -235,12 +228,10 @@
     return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
   }
 
-  // Parser tanggal: dukung YYYY-MM-DD dan DD/MM/YYYY (dengan atau tanpa jam)
   function parseTanggalNuha(str) {
     if (!str) return null;
     const datePart = String(str).trim().split(' ')[0];
 
-    // Format 1: YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
       const parts = datePart.split('-');
       const yyyy = parseInt(parts[0], 10);
@@ -249,7 +240,6 @@
       return { bulan: mm, tahun: yyyy };
     }
 
-    // Format 2: DD/MM/YYYY
     const parts = datePart.split('/');
     if (parts.length === 3) {
       const dd = parseInt(parts[0], 10);
@@ -258,29 +248,19 @@
       if (isNaN(dd) || isNaN(mm) || isNaN(yyyy)) return null;
       return { bulan: mm, tahun: yyyy };
     }
-
     return null;
   }
 
-  // Parser angka: dukung format Indonesia (koma desimal, titik ribuan) dan format internasional
   function parseAngka(s) {
     if (s === null || s === undefined) return 0;
     let str = String(s).trim();
     if (!str) return 0;
-
-    // Hapus spasi
     str = str.replace(/\s/g, '');
-
-    // Kalau ada titik DAN koma: asumsi titik ribuan, koma desimal (format Indonesia)
     if (str.includes('.') && str.includes(',')) {
       str = str.replace(/\./g, '').replace(',', '.');
     } else if (str.includes(',')) {
-      // Hanya koma. Kalau setelah koma 3 digit dan tidak ada tanda lain, kemungkinan ribuan.
-      // Tapi dalam konteks harga farmasi, koma hampir pasti desimal. Kita asumsi desimal.
       str = str.replace(',', '.');
     }
-    // Kalau hanya titik, biarkan. parseFloat akan menangani sebagai desimal.
-
     const n = parseFloat(str);
     return isNaN(n) ? 0 : n;
   }
@@ -292,8 +272,8 @@
   // ============================================================
   //  VARIABEL
   // ============================================================
-  let barangMap = {};           // id -> objek
-  let barangByName = {};        // NAMA_UPPER -> id
+  let barangMap = {};
+  let barangByName = {};
   let penjualanList = [];
   let filteredList = [];
   let page = 1;
@@ -319,6 +299,17 @@
       if (y === curTahun) opt.selected = true;
       tahunSel.appendChild(opt);
     }
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    loadAllData();
   }
 
   // ============================================================
@@ -400,7 +391,7 @@
   window.changePage = function(delta) { page += delta; renderTable(); };
 
   // ============================================================
-  //  UPLOAD CSV (STREAMING + AGREGASI)
+  //  UPLOAD CSV
   // ============================================================
   window.openUploadModal = function() {
     document.getElementById('uploadFileInput').value = '';
@@ -460,19 +451,15 @@
           const hppTotal = qty * hppUnit;
           const jualTotal = qty * jualUnit;
 
-          // Langkah 1: cocokkan lewat ID
           let barangId = null;
           let status = 'valid';
           let alasan = '';
 
           if (idCsv && /^\d+$/.test(idCsv)) {
             const idNum = Number(idCsv);
-            if (barangMap[idNum]) {
-              barangId = idNum;
-            }
+            if (barangMap[idNum]) barangId = idNum;
           }
 
-          // Langkah 2: kalau ID tidak ketemu, coba cari lewat nama
           if (!barangId) {
             const byName = barangByName[namaBarang.toUpperCase()];
             if (byName) {
@@ -586,9 +573,6 @@
     document.getElementById('uploadMsg').textContent = '';
   }
 
-  // ============================================================
-  //  KONFIRMASI IMPORT
-  // ============================================================
   window.confirmUpload = async function() {
     const items = Array.from(uploadAgg.values()).filter(r => r.status === 'valid');
     if (items.length === 0) return;
@@ -609,8 +593,7 @@
         const { count, error } = await window.supabase
           .from('penjualan')
           .select('*', { count: 'exact', head: true })
-          .eq('bulan', p.bulan)
-          .eq('tahun', p.tahun);
+          .eq('bulan', p.bulan).eq('tahun', p.tahun);
         if (error) throw error;
         if (count > 0) adaKonflik = true;
       }
@@ -623,8 +606,7 @@
     if (adaKonflik) {
       const lanjut = confirm(
         '⚠️ Sudah ada data penjualan untuk periode yang akan diupload.\n\n' +
-        'Data lama dengan kunci (barang, bulan, tahun) yang sama akan DITIMPA.\n' +
-        'Data lama dengan barang lain tetap aman.\n\n' +
+        'Data lama dengan kunci (barang, bulan, tahun) yang sama akan DITIMPA.\n\n' +
         'Lanjutkan?'
       );
       if (!lanjut) { btn.disabled = false; return; }
@@ -666,17 +648,6 @@
       btn.disabled = false;
     }
   };
-
-  // ============================================================
-  //  INIT
-  // ============================================================
-  (function init() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    loadAllData();
-  })();
 </script>
 </body>
 </html>
