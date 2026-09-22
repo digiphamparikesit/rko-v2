@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Master Distributor — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -188,31 +194,13 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
+  //  SESSION
   // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
-  //  SESSION BYPASS (sementara untuk pengembangan)
-  // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && ['ADMIN', 'SUPER_ADMIN'].includes(parsed.role)) {
-          user = parsed;
-        }
-      }
-    } catch (e) {}
-    if (!user) {
-      user = { id: 999, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
-      sessionStorage.setItem('rko_user', JSON.stringify(user));
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({ allowRoles: ['ADMIN', 'SUPER_ADMIN'] });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    initData();
   })();
 
   // ============================================================
@@ -244,7 +232,7 @@
   // ============================================================
   //  LOAD DATA
   // ============================================================
-  async function loadData() {
+  async function initData() {
     hideError();
     try {
       const { data, error } = await window.supabase
@@ -343,7 +331,6 @@
 
     if (!nama) { msg.textContent = 'Nama distributor wajib diisi.'; return; }
 
-    // Cek duplikat nama (case-insensitive)
     const duplikat = allDistributor.find(d =>
       String(d.nama_distributor || '').toLowerCase() === nama.toLowerCase()
       && String(d.id) !== String(id)
@@ -365,7 +352,7 @@
         if (error) throw error;
       }
       closeForm();
-      await loadData();
+      await initData();
     } catch (err) {
       msg.textContent = 'Gagal: ' + err.message;
     }
@@ -378,7 +365,6 @@
     if (!confirm(`Hapus distributor "${nama}"?\n\nTindakan ini tidak bisa dibatalkan.`)) return;
 
     try {
-      // Cek pemakaian di pembelian
       const { count: countPembelian, error: errPembelian } = await window.supabase
         .from('pembelian')
         .select('*', { count: 'exact', head: true })
@@ -390,7 +376,6 @@
         return;
       }
 
-      // Cek pemakaian di rencana_belanja
       const { count: countRencana, error: errRencana } = await window.supabase
         .from('rencana_belanja')
         .select('*', { count: 'exact', head: true })
@@ -402,23 +387,17 @@
         return;
       }
 
-      // Aman, hapus
       const { error: errDelete } = await window.supabase
         .from('master_distributor')
         .delete()
         .eq('id', id);
       if (errDelete) throw errDelete;
 
-      await loadData();
+      await initData();
     } catch (err) {
       alert('Gagal hapus: ' + err.message);
     }
   };
-
-  // ============================================================
-  //  START
-  // ============================================================
-  loadData();
 </script>
 </body>
 </html>
