@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Riwayat Mutasi — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -24,7 +30,6 @@
     a.back:hover { color: #fff; }
     .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
     select option { color: #14201A; }
-
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
     .layout-split { display: grid; grid-template-columns: 1fr 2.5fr; gap: 16px; align-items: start; }
     .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
@@ -35,12 +40,10 @@
     .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
     .info-note { background: var(--green-soft); color: var(--green-deep); padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
     @media (max-width: 900px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
-
     .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
     .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
     .stat-card .num { font-size: 20px; font-weight: 700; }
     .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-
     .mut-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
     .mut-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; cursor: pointer; gap: 12px; flex-wrap: wrap; }
     .mut-head:hover { background: #FAFBFA; }
@@ -53,22 +56,18 @@
     .mut-total .cnt { font-size: 11px; color: var(--text-muted); }
     .mut-body { display: none; border-top: 1px solid var(--border); padding: 12px 18px 16px; }
     .mut-card.open .mut-body { display: block; }
-
     .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
     .badge.aktif { background: var(--green-soft); color: var(--green-mid); }
     .badge.batal { background: #F1F1EE; color: var(--text-muted); }
     .badge.aksi { background: #E9EEFB; color: #3B5BDB; }
-
     table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
     th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
     th { color: var(--text-muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
     td.num { text-align: right; }
-
     .log-list { margin-top: 12px; padding: 10px 12px; background: #FAFBFA; border-radius: 8px; font-size: 12px; }
     .log-list .log-item { padding: 4px 0; border-bottom: 1px dashed var(--border); }
     .log-list .log-item:last-child { border-bottom: none; }
     .log-list .log-item .meta { color: var(--text-muted); font-size: 11px; }
-
     .actions-row { display: flex; gap: 8px; margin-top: 10px; }
     .btn { padding: 7px 14px; border: none; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-primary { background: var(--green-mid); color: #fff; }
@@ -78,10 +77,8 @@
     .btn-danger { background: var(--coral); color: #fff; }
     .btn-danger:hover { background: #B84733; }
     .btn-mini { padding: 5px 10px; font-size: 11.5px; }
-
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
     .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
-
     #modalOverlay, #modalBatal { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
     #modalOverlay.show, #modalBatal.show { display: flex; }
     .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 26px; }
@@ -200,27 +197,16 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI', 'ADMIN', 'SUPER_ADMIN']
+    });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
@@ -232,7 +218,6 @@
     if (role === 'KOORDINATOR_LOGISTIK_FARMASI') return { koreksi: true, batal: false };
     if (role === 'PETUGAS_MUTASI_OBAT') return { koreksi: true, batal: false, gudang: 'OBAT' };
     if (role === 'PETUGAS_MUTASI_BMHP') return { koreksi: true, batal: false, gudang: 'BMHP' };
-    // SUPER_ADMIN / ADMIN: read only
     return { koreksi: false, batal: false };
   }
 
@@ -274,8 +259,8 @@
   let pembelianMap = {};
   let penerimaanMap = {};
   let mutasiList = [];
-  let detailMap = {};   // mutasi_id -> [detail]
-  let logMap = {};      // mutasi_id -> [log]
+  let detailMap = {};
+  let logMap = {};
   let filteredList = [];
   let window_mutasiAktif = null;
 
@@ -301,6 +286,19 @@
   }
 
   // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    document.getElementById('searchBox').addEventListener('input', applyFilter);
+    document.getElementById('filterStatus').addEventListener('change', applyFilter);
+    loadAllData();
+  }
+
+  // ============================================================
   //  LOAD DATA
   // ============================================================
   async function loadAllData() {
@@ -323,15 +321,12 @@
       penerimaanMap = {}; penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
       mutasiList = mutasiData;
 
-      // Ambil detail & log untuk mutasi yang ada
       if (mutasiList.length > 0) {
         const ids = mutasiList.map(m => m.id);
-
         const [detailData, logData] = await Promise.all([
           fetchAllRows('mutasi_ruangan_detail', q => q.in('mutasi_id', ids)),
           fetchAllRows('mutasi_log', q => q.in('mutasi_id', ids).order('id', { ascending: false }))
         ]);
-
         detailMap = {};
         detailData.forEach(d => {
           if (!detailMap[d.mutasi_id]) detailMap[d.mutasi_id] = [];
@@ -344,7 +339,6 @@
         });
       }
 
-      // Filter hak akses untuk PETUGAS_MUTASI_*
       const hak = getHakAksi();
       if (hak.gudang) {
         mutasiList = mutasiList.filter(m => {
@@ -381,11 +375,8 @@
   }
 
   // ============================================================
-  //  FILTER
+  //  FILTER & RENDER
   // ============================================================
-  document.getElementById('searchBox').addEventListener('input', applyFilter);
-  document.getElementById('filterStatus').addEventListener('change', applyFilter);
-
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
     const status = document.getElementById('filterStatus').value;
@@ -404,9 +395,6 @@
     renderList();
   }
 
-  // ============================================================
-  //  RENDER LIST
-  // ============================================================
   function renderList() {
     const container = document.getElementById('mutasiList');
     if (filteredList.length === 0) {
@@ -446,7 +434,6 @@
         </div>
       `).join('');
 
-      // Tombol aksi
       let actionButtons = '';
       if (!isBatal) {
         if (hak.koreksi) actionButtons += `<button class="btn btn-secondary btn-mini" onclick="event.stopPropagation(); window.openKoreksi(${m.id})">Koreksi</button>`;
@@ -649,17 +636,6 @@
       btn.disabled = false;
     }
   };
-
-  // ============================================================
-  //  INIT
-  // ============================================================
-  document.addEventListener('DOMContentLoaded', function() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    loadAllData();
-  });
 </script>
 </body>
 </html>
