@@ -6,6 +6,12 @@
   <title>Laporan — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -13,11 +19,7 @@
       --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0; background: var(--bg);
-      font-family: 'Inter', -apple-system, sans-serif;
-      color: var(--text-dark);
-    }
+    body { margin: 0; background: var(--bg); font-family: 'Inter', -apple-system, sans-serif; color: var(--text-dark); }
     h1, h2, .num { font-family: 'Poppins', sans-serif; }
 
     header.topbar {
@@ -111,7 +113,6 @@
 
   <div id="errorContainer" style="display:none;" class="error-box"></div>
 
-  <!-- STATISTIK UTAMA -->
   <section class="stat-grid">
     <div class="stat-card"><div class="num" id="statRencana">-</div><div class="lbl">Total rencana belanja</div></div>
     <div class="stat-card"><div class="num" id="statRealisasi">-</div><div class="lbl">Total realisasi belanja</div></div>
@@ -119,7 +120,6 @@
     <div class="stat-card"><div class="num" id="statCapaian">-</div><div class="lbl">Capaian realisasi</div></div>
   </section>
 
-  <!-- GRAFIK TREN -->
   <div class="panel">
     <h2>Tren bulanan: rencana vs realisasi</h2>
     <p class="sub">Dalam juta rupiah</p>
@@ -131,7 +131,6 @@
     </div>
   </div>
 
-  <!-- MUTASI VS RKO PER RUANGAN -->
   <div class="panel">
     <h2>Mutasi vs RKO per ruangan</h2>
     <p class="sub">Untuk menilai akurasi RKO user — jatah yang diberikan dibanding kebutuhan yang diminta</p>
@@ -140,7 +139,6 @@
     </div>
   </div>
 
-  <!-- PEMAKAIAN RUANGAN NON-FARMASI -->
   <div class="panel">
     <h2>Pemakaian ruangan non-farmasi</h2>
     <p class="sub">Data pemakaian dari Lab, CSSD, dan ruangan lain yang diinput via NUHA atau manual</p>
@@ -158,7 +156,6 @@
     </div>
   </div>
 
-  <!-- GRID 2: TOP BARANG + REKAP BULANAN -->
   <div class="grid-2">
     <div class="panel">
       <h2>10 barang dengan realisasi belanja terbesar</h2>
@@ -176,7 +173,6 @@
     </div>
   </div>
 
-  <!-- PENJUALAN TAHUNAN -->
   <div class="panel">
     <h2>Penjualan farmasi tahunan</h2>
     <p class="sub">Dari upload menu Penjualan Farmasi · dalam juta rupiah</p>
@@ -189,7 +185,6 @@
     </div>
   </div>
 
-  <!-- LAPORAN SELISIH PENERIMAAN -->
   <div class="panel">
     <h2>📋 Laporan selisih penerimaan</h2>
     <p class="sub">Daftar PO yang diterima sebagian (selisih &gt; 0) sepanjang tahun ini</p>
@@ -202,27 +197,16 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KEPALA_INSTALASI_FARMASI']
+    });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
@@ -266,6 +250,23 @@
   function hideError() { document.getElementById('errorContainer').style.display = 'none'; }
 
   // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const curTahun = new Date().getFullYear();
+    const sel = document.getElementById('tahunSelect');
+    for (let y = curTahun-2; y <= curTahun; y++) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      sel.appendChild(opt);
+    }
+    sel.addEventListener('change', loadLaporan);
+    loadLaporan();
+  }
+
+  // ============================================================
   //  LOAD LAPORAN
   // ============================================================
   async function loadLaporan() {
@@ -300,7 +301,6 @@
       const pembelianMap = {};
       pembelianData.forEach(p => { pembelianMap[p.id] = p; });
 
-      // ---- Statistik utama ----
       const rencanaPerBulan = new Array(12).fill(0);
       const realisasiPerBulan = new Array(12).fill(0);
       rencanaData.forEach(r => { const b = Number(r.bulan)-1; if (b>=0 && b<12) rencanaPerBulan[b] += Number(r.rencana_rp||0); });
@@ -317,15 +317,12 @@
       document.getElementById('statSelisih').className = 'num ' + (selisih >= 0 ? 'pos' : 'neg');
       document.getElementById('statCapaian').textContent = capaian + '%';
 
-      // ---- Chart tren ----
       try { renderChartTren(rencanaPerBulan, realisasiPerBulan); }
       catch (err) { console.warn('Chart tren error:', err); document.getElementById('chartTrenError').style.display = 'block'; }
 
-      // ---- Top 10 Barang ----
       try { renderTopBarang(realisasiData, barangMap); }
       catch (err) { console.warn('Top barang error:', err); }
 
-      // ---- Tabel bulanan ----
       const tbody = document.getElementById('tableBulanan');
       tbody.innerHTML = NAMA_BULAN.map((nm, i) => {
         const r = rencanaPerBulan[i], a = realisasiPerBulan[i];
@@ -333,17 +330,11 @@
         return `<tr><td>${nm}</td><td class="num-cell">Rp ${Math.round(r).toLocaleString('id-ID')}</td><td class="num-cell">Rp ${Math.round(a).toLocaleString('id-ID')}</td><td class="num-cell">${c}%</td></tr>`;
       }).join('');
 
-      // ---- Penjualan tahunan ----
       try { renderPenjualanTahunan(penjualanData); }
       catch (err) { console.warn('Chart penjualan error:', err); }
 
-      // ---- Mutasi vs RKO per ruangan ----
       renderMutasiVsRKO(mutasiData, mutasiDetailData, kebutuhanData, ruanganMap, barangMap);
-
-      // ---- Pemakaian ruangan non-farmasi ----
       renderPemakaianRuangan(pemakaianData, ruanganMap, barangMap);
-
-      // ---- Laporan selisih penerimaan ----
       renderLaporanSelisih(penerimaanData, pembelianData, barangMap);
 
     } catch (err) {
@@ -352,9 +343,6 @@
     }
   }
 
-  // ============================================================
-  //  CHART TREN
-  // ============================================================
   function renderChartTren(rencanaPerBulan, realisasiPerBulan) {
     if (typeof Chart === 'undefined') throw new Error('Chart.js tidak dimuat.');
     if (chartTren) chartTren.destroy();
@@ -379,9 +367,6 @@
     document.getElementById('chartTrenError').style.display = 'none';
   }
 
-  // ============================================================
-  //  TOP BARANG
-  // ============================================================
   function renderTopBarang(realisasi, barangMap) {
     if (typeof Chart === 'undefined') throw new Error('Chart.js tidak dimuat.');
     const perBarang = {};
@@ -418,9 +403,6 @@
     });
   }
 
-  // ============================================================
-  //  PENJUALAN TAHUNAN
-  // ============================================================
   function renderPenjualanTahunan(penjualan) {
     if (typeof Chart === 'undefined') throw new Error('Chart.js tidak dimuat.');
     const hppPerBulan = new Array(12).fill(0);
@@ -474,9 +456,6 @@
     });
   }
 
-  // ============================================================
-  //  MUTASI VS RKO PER RUANGAN
-  // ============================================================
   function renderMutasiVsRKO(mutasi, mutasiDetail, kebutuhan, ruanganMap, barangMap) {
     const container = document.getElementById('tabelMutasiRKO');
 
@@ -485,45 +464,31 @@
       return;
     }
 
-    // Map mutasi_id -> mutasi
     const mutasiMap = {};
     mutasi.forEach(m => { mutasiMap[m.id] = m; });
 
-    // Kumpulkan detail per (ruangan_id, barang_id, bulan) → jumlah dialokasikan
-    // Dan RKO per (ruangan_id, barang_id, bulan) → kebutuhan
-    const perRuangan = {}; // ruangan_id -> { total_rko, total_dialokasi, total_selisih, items: Set(barang), perBarang: {} }
+    const perRuangan = {};
 
-    // RKO
     kebutuhan.forEach(k => {
       if (!k.ruangan_id) return;
       if (!perRuangan[k.ruangan_id]) {
-        perRuangan[k.ruangan_id] = {
-          total_rko: 0, total_dialokasi: 0,
-          barangSet: new Set(),
-          detail: {}
-        };
+        perRuangan[k.ruangan_id] = { total_rko: 0, total_dialokasi: 0, barangSet: new Set() };
       }
       perRuangan[k.ruangan_id].total_rko += Number(k.kebutuhan || 0);
       perRuangan[k.ruangan_id].barangSet.add(k.barang_id);
     });
 
-    // Alokasi
     mutasiDetail.forEach(d => {
       const m = mutasiMap[d.mutasi_id];
       if (!m) return;
       if (!d.ruangan_id) return;
       if (!perRuangan[d.ruangan_id]) {
-        perRuangan[d.ruangan_id] = {
-          total_rko: 0, total_dialokasi: 0,
-          barangSet: new Set(),
-          detail: {}
-        };
+        perRuangan[d.ruangan_id] = { total_rko: 0, total_dialokasi: 0, barangSet: new Set() };
       }
       perRuangan[d.ruangan_id].total_dialokasi += Number(d.qty_dialokasikan || 0);
       perRuangan[d.ruangan_id].barangSet.add(m.barang_id);
     });
 
-    // Render tabel
     const rows = Object.keys(perRuangan).map(rid => {
       const r = perRuangan[rid];
       const ruangan = ruanganMap[rid];
@@ -537,7 +502,6 @@
         jumlah_barang: r.barangSet.size
       };
     }).sort((a, b) => {
-      // Yang persentase paling rendah muncul di atas (paling perlu perhatian)
       if (a.persen === null && b.persen === null) return 0;
       if (a.persen === null) return 1;
       if (b.persen === null) return -1;
@@ -568,10 +532,8 @@
             statusBadge = '<span class="badge netral">Tidak ada RKO</span>';
           } else if (r.persen >= 100) {
             statusBadge = '<span class="badge ok">Lengkap</span>';
-            fillClass = '';
           } else if (r.persen >= 80) {
             statusBadge = '<span class="badge ok">Hampir lengkap</span>';
-            fillClass = '';
           } else if (r.persen >= 50) {
             statusBadge = '<span class="badge warning">Sebagian</span>';
             fillClass = 'warn';
@@ -598,13 +560,10 @@
       </tbody>
     </table>
     <p style="font-size:11.5px; color:var(--text-muted); margin:10px 0 0; line-height:1.5;">
-      <strong>Capaian</strong> = (total qty diterima ruangan ÷ total RKO ruangan) × 100%. Nilai rendah menunjukkan RKO ruangan tersebut belum terpenuhi. Ini bisa jadi bahan evaluasi akurasi RKO user atau ketersediaan barang dari gudang.
+      <strong>Capaian</strong> = (total qty diterima ruangan ÷ total RKO ruangan) × 100%. Nilai rendah menunjukkan RKO ruangan tersebut belum terpenuhi.
     </p>`;
   }
 
-  // ============================================================
-  //  PEMAKAIAN RUANGAN NON-FARMASI
-  // ============================================================
   function renderPemakaianRuangan(pemakaian, ruanganMap, barangMap) {
     const emptyEl = document.getElementById('pemakaianEmpty');
     const canvas = document.getElementById('chartPemakaian');
@@ -618,7 +577,6 @@
     emptyEl.style.display = 'none';
     canvas.style.display = 'block';
 
-    // Agregasi per ruangan
     const perRuangan = {};
     pemakaian.forEach(p => {
       const rid = p.ruangan_id;
@@ -638,7 +596,6 @@
       };
     }).sort((a, b) => b.qty - a.qty);
 
-    // Chart
     if (chartPemakaian) chartPemakaian.destroy();
     chartPemakaian = new Chart(canvas, {
       type: 'bar',
@@ -661,7 +618,6 @@
       }
     });
 
-    // Tabel
     document.getElementById('tabelPemakaian').innerHTML = sorted.map(s => `
       <tr>
         <td>${escapeHtml(s.nama)}</td>
@@ -671,9 +627,6 @@
     `).join('');
   }
 
-  // ============================================================
-  //  LAPORAN SELISIH PENERIMAAN
-  // ============================================================
   function renderLaporanSelisih(penerimaan, pembelian, barangMap) {
     const container = document.getElementById('selisihContainer');
     const dataSelisih = penerimaan.filter(p => Number(p.selisih) > 0);
@@ -725,23 +678,6 @@
     html += '</tbody></table>';
     container.innerHTML = html;
   }
-
-  // ============================================================
-  //  INIT
-  // ============================================================
-  (function init() {
-    const curTahun = new Date().getFullYear();
-    const sel = document.getElementById('tahunSelect');
-    for (let y = curTahun-2; y <= curTahun; y++) {
-      const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y;
-      if (y === curTahun) opt.selected = true;
-      sel.appendChild(opt);
-    }
-    sel.addEventListener('change', loadLaporan);
-    loadLaporan();
-  })();
 </script>
 </body>
 </html>
