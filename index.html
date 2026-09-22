@@ -23,7 +23,6 @@
       color: var(--text-dark);
     }
 
-    /* ===== TOPBAR STICKY ===== */
     header.topbar {
       position: sticky;
       top: 0;
@@ -56,7 +55,6 @@
     }
     .btn-logout:hover { background: rgba(255,255,255,0.2); }
 
-    /* ===== MAIN ===== */
     main { max-width: 1280px; margin: 0 auto; padding: 32px 24px 60px; }
 
     .welcome {
@@ -389,6 +387,19 @@
           roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI', 'DISTRIBUTOR_VIEW']
         }
       ]
+    },
+    {
+      title: 'Akun',
+      items: [
+        {
+          name: 'Ubah Password',
+          desc: 'Ganti password akun Anda',
+          icon: '🔒',
+          url: 'ubah-password.html',
+          ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'TIM_PENERIMAAN', 'TIM_PEMBELIAN', 'KEUANGAN', 'USER', 'DISTRIBUTOR_VIEW']
+        }
+      ]
     }
   ];
 
@@ -490,7 +501,6 @@
     }
 
     if (!session) {
-      // Belum login → ke halaman login
       window.location.href = 'login.html';
       return;
     }
@@ -502,7 +512,7 @@
       if (stored) user = JSON.parse(stored);
     } catch (e) {}
 
-    // Kalau profil hilang (misal sessionStorage dibersihkan), ambil ulang dari DB
+    // Kalau profil hilang, ambil ulang dari DB
     if (!user || !user.role) {
       try {
         const email = session.user.email;
