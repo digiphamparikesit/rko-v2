@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Keuangan — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
-    /* gaya dari versi sebelumnya, disederhanakan */
     :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
@@ -79,8 +84,8 @@
 
 <main>
   <div class="tabs">
-    <button class="tab-btn active" id="tabBtnAnggaran" onclick="switchTab('anggaran')">Anggaran &amp; Target</button>
-    <button class="tab-btn" id="tabBtnRealisasi" onclick="switchTab('realisasi')">Realisasi &amp; Status Bayar</button>
+    <button class="tab-btn active" id="tabBtnAnggaran" onclick="window.switchTab('anggaran')">Anggaran &amp; Target</button>
+    <button class="tab-btn" id="tabBtnRealisasi" onclick="window.switchTab('realisasi')">Realisasi &amp; Status Bayar</button>
   </div>
 
   <div class="tab-content active" id="tabAnggaran">
@@ -95,7 +100,7 @@
         <div class="field"><label>Target efisiensi (%)</label><input type="number" id="fTarget" placeholder="90"></div>
         <div class="field"><label>Keterangan (opsional)</label><input type="text" id="fKeterangan" placeholder="mis. revisi anggaran bulan berjalan"></div>
       </div>
-      <button class="btn btn-primary" onclick="saveAnggaran()">Simpan Anggaran</button>
+      <button class="btn btn-primary" onclick="window.saveAnggaran()">Simpan Anggaran</button>
       <div class="form-msg" id="anggaranMsg"></div>
     </div>
   </div>
@@ -119,18 +124,49 @@
 </main>
 
 <script>
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_fXjaAI4FYxC5etIhEGF5LA_CLV7u0NN';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (async function() {
+    const user = await window.auth.requireAuth({ allowRoles: ['KEUANGAN', 'ADMIN', 'SUPER_ADMIN'] });
+    if (!user) return;
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+    initData();
+  })();
 
-  const userStr = sessionStorage.getItem('rko_user');
-  if (!userStr) window.location.href = 'index.html';
-  const currentUser = JSON.parse(userStr);
-  if (!['KEUANGAN', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) { alert('Akses ditolak.'); window.location.href = 'index.html'; }
-  document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
 
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
   let barangMap = {}, distributorMap = {}, rencanaList = [], realisasiMap = {}, filteredRencana = [];
 
+  // ============================================================
+  //  PERIODE
+  // ============================================================
   function fillPeriodOptions(curBulan, curTahun) {
     const bulanSel = document.getElementById('bulanSelect');
     const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -139,21 +175,24 @@
     for (let y = curTahun-1; y <= curTahun+1; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y; if (y === curTahun) opt.selected = true; tahunSel.appendChild(opt); }
   }
 
-  (function init() {
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
     const now = new Date();
     fillPeriodOptions(now.getMonth()+1, now.getFullYear());
     document.getElementById('bulanSelect').addEventListener('change', loadAll);
     document.getElementById('tahunSelect').addEventListener('change', loadAll);
     document.getElementById('searchBox').addEventListener('input', applyFilter);
     loadAll();
-  })();
+  }
 
-  function switchTab(tab) {
+  window.switchTab = function(tab) {
     document.getElementById('tabAnggaran').classList.toggle('active', tab === 'anggaran');
     document.getElementById('tabRealisasi').classList.toggle('active', tab === 'realisasi');
     document.getElementById('tabBtnAnggaran').classList.toggle('active', tab === 'anggaran');
     document.getElementById('tabBtnRealisasi').classList.toggle('active', tab === 'realisasi');
-  }
+  };
 
   async function loadAll() {
     await loadAnggaran();
@@ -163,22 +202,28 @@
   async function loadAnggaran() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
-    const { data } = await supabase.from('anggaran').select('*').eq('bulan', bulan).eq('tahun', tahun).maybeSingle();
+    const { data } = await window.supabase.from('anggaran').select('*').eq('bulan', bulan).eq('tahun', tahun).maybeSingle();
     if (data) {
       document.getElementById('fPagu').value = data.pagu || '';
       document.getElementById('fDpa').value = data.dpa_total || '';
       document.getElementById('fTarget').value = data.target_efisiensi || 90;
       document.getElementById('fKeterangan').value = data.keterangan || '';
+    } else {
+      document.getElementById('fPagu').value = '';
+      document.getElementById('fDpa').value = '';
+      document.getElementById('fTarget').value = 90;
+      document.getElementById('fKeterangan').value = '';
     }
   }
 
-  async function saveAnggaran() {
+  window.saveAnggaran = async function() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
     const msg = document.getElementById('anggaranMsg');
     msg.textContent = 'Menyimpan...';
+    msg.className = 'form-msg';
     try {
-      const { error } = await supabase.from('anggaran').upsert({
+      const { error } = await window.supabase.from('anggaran').upsert({
         bulan, tahun,
         pagu: Number(document.getElementById('fPagu').value) || 0,
         dpa_total: Number(document.getElementById('fDpa').value) || 0,
@@ -188,8 +233,11 @@
       if (error) throw error;
       msg.textContent = 'Tersimpan.';
       msg.className = 'form-msg ok';
-    } catch (err) { msg.textContent = err.message; msg.className = 'form-msg error'; }
-  }
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'form-msg error';
+    }
+  };
 
   async function loadRealisasi() {
     const bulan = document.getElementById('bulanSelect').value;
@@ -197,17 +245,18 @@
     document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" class="empty-state">Memuat data...</td></tr>';
 
     try {
-      const [barangRes, distRes, rencanaRes, realisasiRes] = await Promise.all([
-        supabase.from('master_barang').select('*'),
-        supabase.from('master_distributor').select('*'),
-        supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun),
-        supabase.from('realisasi').select('*').eq('bulan', bulan).eq('tahun', tahun)
+      const [barangData, distData, rencanaData, realisasiData] = await Promise.all([
+        fetchAllRows('master_barang'),
+        fetchAllRows('master_distributor'),
+        fetchAllRows('rencana_belanja', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('realisasi', q => q.eq('bulan', bulan).eq('tahun', tahun))
       ]);
-      barangMap = {}; (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
-      distributorMap = {}; (distRes.data || []).forEach(d => { distributorMap[d.id] = d; });
-      rencanaList = rencanaRes.data || [];
+
+      barangMap = {}; barangData.forEach(b => { barangMap[b.id] = b; });
+      distributorMap = {}; distData.forEach(d => { distributorMap[d.id] = d; });
+      rencanaList = rencanaData;
       realisasiMap = {};
-      (realisasiRes.data || []).forEach(r => {
+      realisasiData.forEach(r => {
         realisasiMap[r.barang_id] = {
           id: r.id, qty: r.realisasi_qty, rp: r.realisasi_rp,
           status: r.status_bayar || 'BELUM_BAYAR', tgl: r.tanggal_bayar,
@@ -217,7 +266,8 @@
       updateStat();
       applyFilter();
     } catch (err) {
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" class="empty-state">Gagal memuat data.</td></tr>';
+      console.error(err);
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -257,24 +307,24 @@
         <td>${escapeHtml(b ? b.nama_barang : 'Barang tidak dikenal')}</td>
         <td>${escapeHtml(dist ? dist.nama_distributor : '-')}</td>
         <td class="num">Rp ${Number(r.rencana_rp || 0).toLocaleString('id-ID')}</td>
-        <td><input type="number" class="qty" data-field="qty" value="${existing.qty}" onchange="markUnsaved(${r.barang_id})"></td>
-        <td><input type="number" class="qty" data-field="rp" value="${existing.rp}" style="width:110px;" onchange="markUnsaved(${r.barang_id})"></td>
-        <td><input type="number" class="qty" data-field="ppn" value="${existing.ppn}" onchange="markUnsaved(${r.barang_id})"></td>
-        <td><input type="number" class="qty" data-field="pph" value="${existing.pph}" onchange="markUnsaved(${r.barang_id})"></td>
-        <td><select class="status" data-field="status" onchange="markUnsaved(${r.barang_id})"><option value="BELUM_BAYAR" ${existing.status === 'BELUM_BAYAR' ? 'selected' : ''}>Belum Bayar</option><option value="LUNAS" ${existing.status === 'LUNAS' ? 'selected' : ''}>Lunas</option></select></td>
-        <td><input type="date" class="qty qty-date" data-field="tgl" value="${existing.tgl || ''}" onchange="markUnsaved(${r.barang_id})"></td>
+        <td><input type="number" class="qty" data-field="qty" value="${existing.qty}" onchange="window.markUnsaved(${r.barang_id})"></td>
+        <td><input type="number" class="qty" data-field="rp" value="${existing.rp}" style="width:110px;" onchange="window.markUnsaved(${r.barang_id})"></td>
+        <td><input type="number" class="qty" data-field="ppn" value="${existing.ppn}" onchange="window.markUnsaved(${r.barang_id})"></td>
+        <td><input type="number" class="qty" data-field="pph" value="${existing.pph}" onchange="window.markUnsaved(${r.barang_id})"></td>
+        <td><select class="status" data-field="status" onchange="window.markUnsaved(${r.barang_id})"><option value="BELUM_BAYAR" ${existing.status === 'BELUM_BAYAR' ? 'selected' : ''}>Belum Bayar</option><option value="LUNAS" ${existing.status === 'LUNAS' ? 'selected' : ''}>Lunas</option></select></td>
+        <td><input type="date" class="qty qty-date" data-field="tgl" value="${existing.tgl || ''}" onchange="window.markUnsaved(${r.barang_id})"></td>
         <td><span class="status-tag ${existing.saved ? 'saved' : 'unsaved'}" id="status-${r.barang_id}">${existing.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
-        <td><button class="btn btn-primary" onclick="saveRealisasi(${r.barang_id})">Simpan</button></td>
+        <td><button class="btn btn-primary" onclick="window.saveRealisasi(${r.barang_id})">Simpan</button></td>
       </tr>`;
     }).join('');
   }
 
-  function markUnsaved(barangId) {
+  window.markUnsaved = function(barangId) {
     const tag = document.getElementById('status-' + barangId);
     if (tag) { tag.textContent = 'Belum disimpan'; tag.className = 'status-tag unsaved'; }
-  }
+  };
 
-  async function saveRealisasi(barangId) {
+  window.saveRealisasi = async function(barangId) {
     const row = document.querySelector(`tr[data-barang-id="${barangId}"]`);
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
@@ -287,23 +337,21 @@
       realisasi_qty: Number(row.querySelector('[data-field="qty"]').value) || 0,
       realisasi_rp: Number(row.querySelector('[data-field="rp"]').value) || 0,
       status_bayar: row.querySelector('[data-field="status"]').value,
-      tanggal_bayar: row.querySelector('[data-field="tgl"]').value,
+      tanggal_bayar: row.querySelector('[data-field="tgl"]').value || null,
       nilai_ppn: Number(row.querySelector('[data-field="ppn"]').value) || 0,
       nilai_pph: Number(row.querySelector('[data-field="pph"]').value) || 0
     };
 
     btn.disabled = true; btn.textContent = '...';
     try {
-      const { error } = await supabase.from('realisasi').upsert(payload, { onConflict: 'barang_id, bulan, tahun' });
+      const { error } = await window.supabase.from('realisasi').upsert(payload, { onConflict: 'barang_id, bulan, tahun' });
       if (error) throw error;
       tag.textContent = 'Tersimpan'; tag.className = 'status-tag saved';
       realisasiMap[barangId] = { ...payload, saved: true };
       updateStat();
     } catch (err) { alert('Gagal: ' + err.message); }
     finally { btn.disabled = false; btn.textContent = 'Simpan'; }
-  }
-
-  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+  };
 </script>
 </body>
 </html>
