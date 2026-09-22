@@ -6,6 +6,12 @@
   <title>Pembelian — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
     * { box-sizing: border-box; }
@@ -86,7 +92,7 @@
       <div class="panel side-panel">
         <h2 class="side-title">Cari &amp; Filter</h2>
         <div class="field"><label>Cari nama barang / no. PO</label><input type="text" id="searchBox" placeholder="Cari nama barang atau no. PO..."></div>
-        <div class="field"><label>Golongan</label><select id="filterGolongan"><option value="">Semua golongan</option><option value="OBAT">Obat</option><option value="BMHP">BMHP</option><option value="BHP">BHP</option><option value="B3">B3</option><option value="NUTRISI ENTERAL">Nutrisi Enteral</option><option value="PROGRAM">Program</option><option value="PROGRAM TB">Program TB</option><option value="PROGRAM HIV">Program HIV</option><option value="PROGRAM MALARIA">Program Malaria</option><option value="PROGRAM RABIES">Program Rabies</option><option value="PROGRAM BKKBN">Program BKKBN</option><option value="PROGRAM COVID">Program Covid</option><option value="PROGRAM STUNTING">Program Stunting</option><option value="PROGRAM IMUNISASI">Program Imunisasi</option></select></div>
+        <div class="field"><label>Golongan</label><select id="filterGolongan"><option value="">Semua golongan</option><option value="OBAT">Obat</option><option value="BMHP">BMHP</option><option value="BHP">BHP</option><option value="B3">B3</option><option value="NUTRISI ENTERAL">Nutrisi Enteral</option><option value="PROGRAM">Program</option></select></div>
         <div class="field"><label>Status PO</label><select id="filterStatus"><option value="">Semua status</option><option value="DRAFT">Draft</option><option value="DIKIRIM">Dikirim</option><option value="DITERIMA_SEBAGIAN">Diterima sebagian</option><option value="SELESAI">Selesai</option></select></div>
         <button class="btn btn-primary" style="width:100%;" onclick="window.openForm()">+ Buat PO Baru</button>
         <button class="btn" style="width:100%; margin-top:8px; background:#F1F1EE; color:var(--text-dark);" onclick="window.openUploadModal()">&#8593; Upload Data dari SIM RS (CSV)</button>
@@ -157,7 +163,7 @@
 <div id="modalSelisih">
   <div class="modal modal-wide">
     <h2>Buat PO Ulang dari Selisih Penerimaan</h2>
-    <p style="font-size:12.5px; color:var(--text-muted); margin:-8px 0 16px;">Daftar PO dengan selisih penerimaan yang belum diproses.<br>Klik "Buat PO Ulang" untuk membuat PO baru dengan qty = selisih.</p>
+    <p style="font-size:12.5px; color:var(--text-muted); margin:-8px 0 16px;">Daftar PO dengan selisih penerimaan yang belum diproses.</p>
     <div id="selisihList" style="max-height:400px; overflow-y:auto;"><div class="loading-note">Memuat data selisih...</div></div>
     <div class="form-msg" id="selisihMsg"></div>
     <div class="modal-actions">
@@ -168,31 +174,18 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({ allowRoles: ['TIM_PEMBELIAN', 'ADMIN', 'SUPER_ADMIN'] });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
-  //  HELPER: FETCH SEMUA BARIS
+  //  HELPER
   // ============================================================
   async function fetchAllRows(tableName, buildQuery) {
     const PAGE = 1000;
@@ -209,6 +202,11 @@
       from += PAGE;
     }
     return all;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
   }
 
   // ============================================================
@@ -232,18 +230,27 @@
     const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     namaBulan.forEach((nm, i) => {
       const opt = document.createElement('option');
-      opt.value = i + 1;
-      opt.textContent = nm;
+      opt.value = i + 1; opt.textContent = nm;
       if (i + 1 === curBulan) opt.selected = true;
       bulanSel.appendChild(opt);
     });
     for (let y = curTahun - 2; y <= curTahun + 2; y++) {
       const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y;
+      opt.value = y; opt.textContent = y;
       if (y === curTahun) opt.selected = true;
       tahunSel.appendChild(opt);
     }
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  async function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    loadAllData();
   }
 
   // ============================================================
@@ -278,56 +285,58 @@
   }
 
   async function fillFormOptions() {
-  const bulan = document.getElementById('bulanSelect').value;
-  const tahun = document.getElementById('tahunSelect').value;
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
 
-  // Ambil kebutuhan (RKO) periode ini
-  const kebutuhanData = await fetchAllRows('kebutuhan', q =>
-    q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)
-  );
-
-  // Kumpulkan barang unik yang punya RKO
-  const barangIds = [...new Set(kebutuhanData.map(k => k.barang_id))];
-
-  const bSel = document.getElementById('fBarang');
-  bSel.innerHTML = '<option value="">Pilih barang...</option>';
-
-  // Map rencana (kalau ada) untuk tampilkan qty rencana
-  const rencanaByBarang = {};
-  rencanaList.forEach(r => { rencanaByBarang[r.barang_id] = r; });
-
-  barangIds.forEach(id => {
-    const barang = barangMap[id];
-    if (!barang) return;
-    const rencana = rencanaByBarang[id];
-    const opt = document.createElement('option');
-    opt.value = id;
-    if (rencana && rencana.distributor_id) {
-      opt.dataset.distributor = rencana.distributor_id;
+    let kebutuhanData = [];
+    try {
+      kebutuhanData = await fetchAllRows('kebutuhan', q =>
+        q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)
+      );
+    } catch (e) {
+      console.warn('Gagal memuat kebutuhan:', e);
     }
-    const label = rencana
-      ? `${barang.nama_barang} (rencana: ${rencana.rencana_qty_satuan_beli})`
-      : `${barang.nama_barang} (belum ada rencana)`;
-    opt.textContent = label;
-    bSel.appendChild(opt);
-  });
 
-  const dSel = document.getElementById('fDistributor');
-  dSel.innerHTML = '<option value="">Pilih distributor...</option>';
-  distributorList.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d.id;
-    opt.textContent = d.nama_distributor;
-    dSel.appendChild(opt);
-  });
+    const barangIds = [...new Set(kebutuhanData.map(k => k.barang_id))];
 
-  bSel.addEventListener('change', () => {
-    const selected = bSel.options[bSel.selectedIndex];
-    if (selected && selected.dataset.distributor) {
-      document.getElementById('fDistributor').value = selected.dataset.distributor;
-    }
-  });
-}
+    const bSel = document.getElementById('fBarang');
+    bSel.innerHTML = '<option value="">Pilih barang...</option>';
+
+    const rencanaByBarang = {};
+    rencanaList.forEach(r => { rencanaByBarang[r.barang_id] = r; });
+
+    barangIds.forEach(id => {
+      const barang = barangMap[id];
+      if (!barang) return;
+      const rencana = rencanaByBarang[id];
+      const opt = document.createElement('option');
+      opt.value = id;
+      if (rencana && rencana.distributor_id) {
+        opt.dataset.distributor = rencana.distributor_id;
+      }
+      const label = rencana
+        ? `${barang.nama_barang} (rencana: ${rencana.rencana_qty_satuan_beli})`
+        : `${barang.nama_barang} (belum ada rencana)`;
+      opt.textContent = label;
+      bSel.appendChild(opt);
+    });
+
+    const dSel = document.getElementById('fDistributor');
+    dSel.innerHTML = '<option value="">Pilih distributor...</option>';
+    distributorList.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.nama_distributor;
+      dSel.appendChild(opt);
+    });
+
+    bSel.addEventListener('change', () => {
+      const selected = bSel.options[bSel.selectedIndex];
+      if (selected && selected.dataset.distributor) {
+        document.getElementById('fDistributor').value = selected.dataset.distributor;
+      }
+    });
+  }
 
   // ============================================================
   //  FILTER & TABEL
@@ -548,7 +557,7 @@
   };
 
   // ============================================================
-  //  FITUR BUAT PO ULANG DARI SELISIH
+  //  BUAT PO ULANG DARI SELISIH
   // ============================================================
   window.openSelisihModal = async function() {
     document.getElementById('selisihList').innerHTML = '<div class="loading-note">Memuat data selisih...</div>';
@@ -591,7 +600,7 @@
       const list = Object.values(grouped);
       const container = document.getElementById('selisihList');
       container.innerHTML = list.map(item => `
-        <div class="selisih-card" data-pembelian="${item.pembelian_id}" data-barang="${item.barang_id}" data-selisih="${item.total_selisih}" data-distributor="${item.distributor_id || ''}">
+        <div class="selisih-card">
           <div class="info">
             <strong>PO: ${escapeHtml(item.no_po)}</strong><br>
             Barang: ${escapeHtml(item.nama_barang)}<br>
@@ -684,7 +693,6 @@
 
       if (insertError) throw insertError;
 
-      // Tandai penerimaan lama sudah diproses
       const { error: updateError } = await window.supabase
         .from('penerimaan')
         .update({ sudah_diproses: true })
@@ -710,7 +718,6 @@
     }
   };
 
-  // Override closeForm untuk reset
   const _origCloseForm = window.closeForm;
   window.closeForm = function() {
     document.getElementById('fNoPo').readOnly = false;
@@ -723,27 +730,6 @@
     document.querySelector('#modalOverlay .modal h2').textContent = 'Buat PO Baru';
     _origCloseForm();
   };
-
-  // ============================================================
-  //  UTILITY
-  // ============================================================
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, s => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[s]));
-  }
-
-  // ============================================================
-  //  INIT
-  // ============================================================
-  document.addEventListener('DOMContentLoaded', function() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    loadAllData();
-  });
 </script>
 </body>
 </html>
