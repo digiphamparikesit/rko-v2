@@ -6,6 +6,12 @@
   <title>User — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -84,6 +90,7 @@
     .badge-status { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
     .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
+    .error-box { background: #FBEAE7; color: var(--coral); padding: 12px 16px; border-radius: 10px; margin-bottom: 14px; border: 1px solid var(--coral); font-size: 13px; }
   </style>
 </head>
 <body>
@@ -103,6 +110,8 @@
 </header>
 
 <main>
+  <div id="errorContainer" style="display:none;" class="error-box"></div>
+
   <div class="layout-split">
     <aside class="left-col">
       <div class="panel side-panel">
@@ -130,9 +139,9 @@
       <div class="panel side-panel">
         <h2 class="side-title">Pemakaian ruangan</h2>
         <p class="side-sub">Catat barang yang sudah dipakai di ruangan ini.</p>
-        <a href="pemakaian-ruangan.html" class="btn btn-upload" style="display:block; text-align:center; text-decoration:none; padding:10px;">
-          Buka Pemakaian Ruangan
-        </a>
+        <button class="btn btn-upload" style="width:100%; padding:10px; opacity:0.5; cursor:not-allowed;" disabled>
+          Segera — Belum Tersedia
+        </button>
       </div>
     </aside>
 
@@ -147,14 +156,6 @@
           <option value="B3">B3</option>
           <option value="NUTRISI ENTERAL">Nutrisi Enteral</option>
           <option value="PROGRAM">Program</option>
-          <option value="PROGRAM TB">Program TB</option>
-          <option value="PROGRAM HIV">Program HIV</option>
-          <option value="PROGRAM MALARIA">Program Malaria</option>
-          <option value="PROGRAM RABIES">Program Rabies</option>
-          <option value="PROGRAM BKKBN">Program BKKBN</option>
-          <option value="PROGRAM COVID">Program Covid</option>
-          <option value="PROGRAM STUNTING">Program Stunting</option>
-          <option value="PROGRAM IMUNISASI">Program Imunisasi</option>
         </select>
         <button class="btn btn-primary" onclick="window.openTambahBarangModal()">+ Tambah Barang</button>
         <button class="btn btn-upload" onclick="window.openUploadBarangModal()">&#8593; Upload CSV Barang</button>
@@ -196,7 +197,7 @@
     <p class="side-sub" style="margin:-6px 0 12px; font-size:12px; color:var(--text-muted);">Cari dari seluruh master barang &amp; BMHP.</p>
     <input type="text" id="tambahBarangSearch" placeholder="Ketik nama barang..." oninput="window.searchTambahBarang()" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; margin-bottom:14px;" />
     <div id="tambahBarangResults" style="max-height:360px; overflow-y:auto;">
-      <div class="loading-note">Memuat master barang...</div>
+      <div class="loading-note">Ketik nama barang...</div>
     </div>
     <div style="text-align:right; margin-top:16px;">
       <button class="btn btn-secondary" onclick="window.closeTambahBarangModal()">Tutup</button>
@@ -236,31 +237,18 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Admin Bypass', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({ allowRoles: ['USER', 'ADMIN', 'SUPER_ADMIN'] });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
-  //  HELPER: FETCH SEMUA BARIS (menembus batas 1000)
+  //  HELPER
   // ============================================================
   async function fetchAllRows(tableName, buildQuery) {
     const PAGE = 1000;
@@ -279,13 +267,24 @@
     return all;
   }
 
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+  function showError(msg) {
+    const c = document.getElementById('errorContainer');
+    c.style.display = 'block';
+    c.textContent = '⚠️ ' + msg;
+  }
+  function hideError() { document.getElementById('errorContainer').style.display = 'none'; }
+
   // ============================================================
   //  GLOBAL VARIABLES
   // ============================================================
   let ruanganList = [];
   let activeRuanganId = null;
-  let allBarang = [];            // barang yang terdaftar di ruangan aktif
-  let fullMasterBarang = [];     // seluruh master barang aktif
+  let allBarang = [];
+  let fullMasterBarang = [];
   let existingKebutuhan = {};
   let filteredBarang = [];
   let page = 1;
@@ -294,28 +293,21 @@
   let masterBarangLoaded = false;
 
   // ============================================================
-  //  UTILITY
+  //  PERIODE
   // ============================================================
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
-  }
-
   function fillPeriodOptions(curBulan, curTahun) {
     const bulanSel = document.getElementById('bulanSelect');
     const tahunSel = document.getElementById('tahunSelect');
     const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     namaBulan.forEach((nm, i) => {
       const opt = document.createElement('option');
-      opt.value = i + 1;
-      opt.textContent = nm;
+      opt.value = i + 1; opt.textContent = nm;
       if (i + 1 === curBulan) opt.selected = true;
       bulanSel.appendChild(opt);
     });
     for (let y = curTahun - 2; y <= curTahun + 2; y++) {
       const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y;
+      opt.value = y; opt.textContent = y;
       if (y === curTahun) opt.selected = true;
       tahunSel.appendChild(opt);
     }
@@ -331,7 +323,7 @@
   }
 
   // ============================================================
-  //  LOAD MASTER BARANG (sekali saja, disimpan di memori)
+  //  LOAD MASTER BARANG
   // ============================================================
   async function loadFullMasterBarang() {
     if (masterBarangLoaded) return;
@@ -354,12 +346,9 @@
     }
 
     try {
-      // 1. Barang ruangan aktif (sudah dipetakan)
       const barangRuangan = await fetchAllRows('barang_ruangan', q =>
         q.eq('ruangan_id', activeRuanganId).eq('status_aktif', true)
       );
-
-      // 2. Master barang lengkap (untuk lookup)
       await loadFullMasterBarang();
 
       const fullMap = {};
@@ -367,7 +356,6 @@
       const aktifIds = barangRuangan.map(br => br.barang_id);
       allBarang = aktifIds.map(id => fullMap[id]).filter(Boolean);
 
-      // 3. Kebutuhan periode ini
       const kebutuhan = await fetchAllRows('kebutuhan', q =>
         q.eq('ruangan_id', activeRuanganId).eq('bulan', bulan).eq('tahun', tahun)
       );
@@ -377,7 +365,6 @@
         existingKebutuhan[k.barang_id] = { sisa: k.sisa_stok_ruangan, kebutuhan: k.kebutuhan, saved: true };
       });
 
-      // 4. Kunjungan
       const { data: kunjunganList } = await window.supabase
         .from('kunjungan')
         .select('*')
@@ -414,7 +401,6 @@
 
     try {
       const ruangan = await fetchAllRows('master_ruangan', q => q.order('nama_ruangan'));
-      // Filter hanya ruangan aktif
       ruanganList = ruangan.filter(r => r.aktif !== false);
     } catch (err) {
       console.error('Gagal memuat ruangan:', err);
@@ -431,7 +417,6 @@
     });
 
     if (ruanganList.length > 0) {
-      // Kalau currentUser punya ruangan_id dan rolenya USER, pakai itu
       const userRuanganId = window.currentUser.ruangan_id;
       if (userRuanganId && ruanganList.find(r => String(r.id) === String(userRuanganId))) {
         activeRuanganId = Number(userRuanganId);
@@ -443,24 +428,22 @@
       updateUnitLabel();
     }
 
+    // Kunci dropdown untuk role USER
+    if (window.currentUser.role === 'USER') {
+      sel.disabled = true;
+    }
+
     sel.addEventListener('change', () => {
       activeRuanganId = Number(sel.value);
       updateUnitLabel();
       loadBarangDanKebutuhan();
     });
 
-    document.getElementById('bulanSelect').addEventListener('change', () => {
-      updatePeriodeLabel();
-      loadBarangDanKebutuhan();
-    });
-    document.getElementById('tahunSelect').addEventListener('change', () => {
-      updatePeriodeLabel();
-      loadBarangDanKebutuhan();
-    });
+    document.getElementById('bulanSelect').addEventListener('change', () => { updatePeriodeLabel(); loadBarangDanKebutuhan(); });
+    document.getElementById('tahunSelect').addEventListener('change', () => { updatePeriodeLabel(); loadBarangDanKebutuhan(); });
     document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
     document.getElementById('filterGolongan').addEventListener('change', () => { page = 1; applyFilter(); });
 
-    // Preload master barang di background (biar modal tambah cepat)
     loadFullMasterBarang().catch(err => console.warn('Preload master gagal:', err));
 
     await loadBarangDanKebutuhan();
@@ -521,96 +504,57 @@
   }
 
   window.changePage = function(d) { page += d; renderTable(); };
-
-  window.markUnsaved = function(id) {
-    const t = document.getElementById('status-' + id);
-    if (t) { t.textContent = 'Belum disimpan'; t.className = 'status-tag unsaved'; }
-  };
-
+  window.markUnsaved = function(id) { const t = document.getElementById('status-'+id); if (t) { t.textContent = 'Belum disimpan'; t.className = 'status-tag unsaved'; } };
   window.hitungEstimasi = function(id) {
-    const row = document.querySelector(`tr[data-id="${id}"]`);
-    if (!row) return;
+    const row = document.querySelector(`tr[data-id="${id}"]`); if (!row) return;
     const keb = Number(row.querySelector('[data-field="kebutuhan"]').value) || 0;
     const hpp = Number(row.dataset.hpp) || 0;
-    const el = document.getElementById('estimasi-' + id);
-    if (el) el.textContent = 'Rp ' + (keb * hpp).toLocaleString('id-ID');
+    const el = document.getElementById('estimasi-'+id);
+    if (el) el.textContent = 'Rp ' + (keb*hpp).toLocaleString('id-ID');
   };
 
-  // ============================================================
-  //  SAVE PER BARIS
-  // ============================================================
   window.saveRow = async function(id) {
     const row = document.querySelector(`tr[data-id="${id}"]`);
     const sisa = row.querySelector('[data-field="sisa"]').value;
     const keb = row.querySelector('[data-field="kebutuhan"]').value;
-    const btn = row.querySelector('button');
-    btn.disabled = true; btn.textContent = '...';
+    const btn = row.querySelector('button'); btn.disabled = true; btn.textContent = '...';
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
-
     try {
       const { error } = await window.supabase.from('kebutuhan').upsert({
-        ruangan_id: activeRuanganId,
-        barang_id: id,
-        bulan, tahun,
-        sisa_stok_ruangan: Number(sisa) || 0,
-        kebutuhan: Number(keb) || 0
+        ruangan_id: activeRuanganId, barang_id: id, bulan, tahun,
+        sisa_stok_ruangan: Number(sisa) || 0, kebutuhan: Number(keb) || 0
       }, { onConflict: 'ruangan_id,barang_id,bulan,tahun' });
       if (error) throw error;
-      const t = document.getElementById('status-' + id);
-      t.textContent = 'Tersimpan';
-      t.className = 'status-tag saved';
+      const t = document.getElementById('status-'+id); t.textContent = 'Tersimpan'; t.className = 'status-tag saved';
       existingKebutuhan[id] = { sisa, kebutuhan: keb, saved: true };
-    } catch (e) {
-      alert('Gagal: ' + e.message);
-    } finally {
-      btn.disabled = false; btn.textContent = 'Simpan';
-    }
+    } catch (e) { alert('Gagal: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = 'Simpan'; }
   };
 
-  // ============================================================
-  //  SAVE KUNJUNGAN
-  // ============================================================
   window.saveKunjungan = async function() {
     const jml = Number(document.getElementById('kunjunganInput').value) || 0;
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
     const t = document.getElementById('kunjunganStatus');
-    t.textContent = 'Menyimpan...';
-    t.className = 'status-tag unsaved';
-
+    t.textContent = 'Menyimpan...'; t.className = 'status-tag unsaved';
     try {
       const { error } = await window.supabase.from('kunjungan').upsert({
-        ruangan_id: activeRuanganId,
-        bulan, tahun,
-        jumlah_kunjungan: jml
+        ruangan_id: activeRuanganId, bulan, tahun, jumlah_kunjungan: jml
       }, { onConflict: 'ruangan_id,bulan,tahun' });
       if (error) throw error;
-      t.textContent = 'Tersimpan';
-      t.className = 'status-tag saved';
-    } catch (e) {
-      alert(e.message);
-      t.textContent = 'Gagal';
-    }
+      t.textContent = 'Tersimpan'; t.className = 'status-tag saved';
+    } catch (e) { alert(e.message); t.textContent = 'Gagal'; }
   };
 
-  // ============================================================
-  //  HAPUS BARANG DARI RUANGAN
-  // ============================================================
   window.removeFromRuangan = async function(id) {
     const b = allBarang.find(x => x.id === id);
     if (!confirm(`Hapus "${b ? b.nama_barang : 'barang'}" dari daftar ruangan?`)) return;
     try {
-      const { error } = await window.supabase
-        .from('barang_ruangan')
-        .update({ status_aktif: false })
-        .eq('ruangan_id', activeRuanganId)
-        .eq('barang_id', id);
+      const { error } = await window.supabase.from('barang_ruangan').update({ status_aktif: false }).eq('ruangan_id', activeRuanganId).eq('barang_id', id);
       if (error) throw error;
       await loadBarangDanKebutuhan();
-    } catch (e) {
-      alert(e.message);
-    }
+    } catch (e) { alert(e.message); }
   };
 
   // ============================================================
@@ -659,11 +603,8 @@
   window.tambahBarangKeRuangan = async function(barangId) {
     try {
       const { data: existing } = await window.supabase
-        .from('barang_ruangan')
-        .select('id, status_aktif')
-        .eq('ruangan_id', activeRuanganId)
-        .eq('barang_id', barangId)
-        .limit(1);
+        .from('barang_ruangan').select('id, status_aktif')
+        .eq('ruangan_id', activeRuanganId).eq('barang_id', barangId).limit(1);
 
       if (existing && existing.length > 0) {
         if (existing[0].status_aktif) {
@@ -671,18 +612,13 @@
           window.closeTambahBarangModal();
           return;
         }
-        await window.supabase.from('barang_ruangan')
-          .update({ status_aktif: true })
-          .eq('id', existing[0].id);
+        await window.supabase.from('barang_ruangan').update({ status_aktif: true }).eq('id', existing[0].id);
       } else {
-        await window.supabase.from('barang_ruangan')
-          .insert({ ruangan_id: activeRuanganId, barang_id: barangId, status_aktif: true });
+        await window.supabase.from('barang_ruangan').insert({ ruangan_id: activeRuanganId, barang_id: barangId, status_aktif: true });
       }
       window.closeTambahBarangModal();
       await loadBarangDanKebutuhan();
-    } catch (e) {
-      alert(e.message);
-    }
+    } catch (e) { alert(e.message); }
   };
 
   // ============================================================
@@ -706,10 +642,8 @@
     const file = evt.target.files[0];
     if (!file) return;
     Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
+      header: true, skipEmptyLines: true,
       complete: async function(res) {
-        // Pastikan master barang sudah dimuat
         try { await loadFullMasterBarang(); } catch (e) {
           document.getElementById('uploadBarangMsg').textContent = 'Gagal memuat master: ' + e.message;
           return;
@@ -724,9 +658,7 @@
 
   function processUploadBarangRows(rawRows) {
     const barangMap = {};
-    fullMasterBarang.forEach(b => {
-      barangMap[String(b.nama_barang).trim().toUpperCase()] = b;
-    });
+    fullMasterBarang.forEach(b => { barangMap[String(b.nama_barang).trim().toUpperCase()] = b; });
     const sudahAdaIds = new Set(allBarang.map(b => b.id));
 
     uploadBarangRows = rawRows.map(row => {
@@ -734,9 +666,7 @@
       const key = namaCsv.toUpperCase();
       const barang = barangMap[key];
 
-      let status = 'valid';
-      let alasan = '';
-
+      let status = 'valid'; let alasan = '';
       if (!namaCsv) { status = 'invalid'; alasan = 'Nama barang kosong'; }
       else if (!barang) { status = 'invalid'; alasan = 'Tidak ditemukan di master'; }
       else if (sudahAdaIds.has(barang.id)) { status = 'duplikat'; alasan = 'Sudah ada di ruangan'; }
@@ -791,9 +721,7 @@
 
     try {
       const items = valid.map(r => ({
-        ruangan_id: activeRuanganId,
-        barang_id: r.barang_id,
-        status_aktif: true
+        ruangan_id: activeRuanganId, barang_id: r.barang_id, status_aktif: true
       }));
       const BATCH = 500;
       for (let i = 0; i < items.length; i += BATCH) {
@@ -812,11 +740,6 @@
       document.getElementById('btnConfirmUploadBarang').disabled = false;
     }
   };
-
-  // ============================================================
-  //  START
-  // ============================================================
-  initData();
 </script>
 </body>
 </html>
