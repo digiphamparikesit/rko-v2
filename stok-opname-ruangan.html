@@ -6,6 +6,12 @@
   <title>Stok Opname Ruangan — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -14,7 +20,12 @@
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
-    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    header.topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--green-deep); color: #fff; padding: 18px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
     .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
@@ -44,10 +55,6 @@
 
     .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1000px; }
-    table th:first-child,
-    table td:first-child { width: 90px; min-width: 90px; white-space: nowrap; }
-    table th:nth-child(2),
-    table td:nth-child(2) { min-width: 220px; }
     th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
     td.num { text-align: right; }
@@ -74,12 +81,10 @@
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 8px; }
     .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
-    .preview-table th:first-child,
-    .preview-table td:first-child { width: 90px; min-width: 90px; white-space: nowrap; }
-    .preview-table th:nth-child(2),
-    .preview-table td:nth-child(2) { min-width: 240px; }
     .preview-table th, .preview-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
     .preview-table th { background: #FAFBFA; font-size: 11px; text-transform: uppercase; color: var(--text-muted); }
+    .preview-table th:first-child, .preview-table td:first-child { width: 90px; min-width: 90px; white-space: nowrap; }
+    .preview-table th:nth-child(2), .preview-table td:nth-child(2) { min-width: 240px; }
     .preview-table td.num { text-align: right; }
     .badge-status { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
 
@@ -211,27 +216,16 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['USER', 'KOORDINATOR_LOGISTIK_FARMASI', 'ADMIN', 'SUPER_ADMIN']
+    });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
@@ -287,9 +281,9 @@
   let barangMap = {};
   let ruanganList = [];
   let activeRuanganId = null;
-  let barangRuanganIds = new Set();   // barang yang terdaftar di ruangan aktif
-  let stokRuanganMap = {};            // barang_id -> objek stok_ruangan
-  let allStok = [];                   // gabungan utk ditampilkan
+  let barangRuanganIds = new Set();
+  let stokRuanganMap = {};
+  let allStok = [];
   let filtered = [];
   let page = 1;
   const PAGE_SIZE = 15;
@@ -330,7 +324,6 @@
         sel.innerHTML = '<option value="">Pilih ruangan...</option>' +
           ruanganList.map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
       } else {
-        // USER: kunci ke ruangan sendiri
         const myRuanganId = window.currentUser.ruangan_id;
         if (myRuanganId && ruanganList.find(r => String(r.id) === String(myRuanganId))) {
           sel.innerHTML = ruanganList
@@ -385,8 +378,11 @@
       stokRuanganMap = {};
       stokData.forEach(s => { stokRuanganMap[s.barang_id] = s; });
 
-      // Gabung: barang yang terdaftar di ruangan ATAU ada stok_ruangan periode ini
-      const semuaBarangId = new Set([...barangRuanganIds, ...Object.keys(stokRuanganMap).map(Number)]);
+      // Gabung: hanya barang yang terdaftar di ruangan DAN punya stok_ruangan periode ini
+      const semuaBarangId = new Set();
+      stokData.forEach(s => {
+        if (barangRuanganIds.has(s.barang_id)) semuaBarangId.add(s.barang_id);
+      });
 
       allStok = Array.from(semuaBarangId).map(id => {
         const stok = stokRuanganMap[id];
@@ -427,8 +423,6 @@
   // ============================================================
   //  FILTER & RENDER
   // ============================================================
-  document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
-
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
     filtered = allStok.filter(s => {
@@ -445,7 +439,7 @@
     const pageItems = filtered.slice(start, start + PAGE_SIZE);
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada barang di ruangan ini. Tambahkan lewat menu Input RKO Unit.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada barang dengan stok di ruangan ini. Stok terisi otomatis setelah mutasi dari gudang.</td></tr>';
     } else {
       tbody.innerHTML = pageItems.map(s => {
         const selisihTampil = s.selisih === null ? '-' : (s.selisih > 0 ? '+' + s.selisih : s.selisih);
@@ -521,7 +515,6 @@
     try {
       const stokExisting = stokRuanganMap[barangId];
       if (stokExisting) {
-        // Update stok_ruangan yang sudah ada
         const { error } = await window.supabase
           .from('stok_ruangan')
           .update({
@@ -534,7 +527,6 @@
           .eq('id', stokExisting.id);
         if (error) throw error;
       } else {
-        // Belum ada stok_ruangan untuk periode ini → insert baru
         const { error } = await window.supabase.from('stok_ruangan').insert({
           ruangan_id: activeRuanganId,
           barang_id: barangId,
@@ -550,7 +542,6 @@
           terakhir_diperbarui: new Date().toISOString()
         });
         if (error) throw error;
-        // Update lokal map supaya tidak perlu reload penuh
         stokRuanganMap[barangId] = { stok_sisa: 0, stok_fisik: fisik, keterangan_opname: keterangan };
       }
 
@@ -701,7 +692,6 @@
     msg.style.color = 'var(--text-muted)';
 
     try {
-      // Bagi dua: yang sudah ada di stok_ruangan (update) vs yang belum (insert)
       const toUpdate = [];
       const toInsert = [];
       const now = new Date().toISOString();
@@ -735,14 +725,12 @@
         }
       });
 
-      // Update satu-satu (kolom update sedikit, volume biasanya kecil)
       for (const u of toUpdate) {
         const { id, ...payload } = u;
         const { error } = await window.supabase.from('stok_ruangan').update(payload).eq('id', id);
         if (error) throw error;
       }
 
-      // Insert batch
       if (toInsert.length > 0) {
         const BATCH = 500;
         for (let i = 0; i < toInsert.length; i += BATCH) {
@@ -775,7 +763,6 @@
 
     await loadRuanganList();
 
-    // Set ruangan aktif default
     const sel = document.getElementById('ruanganSelect');
     if (sel.value) {
       activeRuanganId = Number(sel.value);
@@ -788,6 +775,7 @@
     });
     document.getElementById('bulanSelect').addEventListener('change', () => { page = 1; loadAllData(); });
     document.getElementById('tahunSelect').addEventListener('change', () => { page = 1; loadAllData(); });
+    document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
 
     if (activeRuanganId) {
       loadAllData();
