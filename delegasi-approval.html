@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Delegasi Approval — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -153,27 +159,16 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['SUPER_ADMIN', 'KEPALA_INSTALASI_FARMASI']
+    });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    loadAllData();
   })();
 
   // ============================================================
@@ -209,7 +204,6 @@
     if (d.status === 'DIBATALKAN') return 'DIBATALKAN';
     const today = todayStr();
     if (d.berakhir < today) return 'BERAKHIR';
-    if (d.mulai > today) return 'AKTIF'; // sudah dijadwalkan, tetap AKTIF sampai berakhir
     return 'AKTIF';
   }
 
@@ -223,16 +217,6 @@
   //  LOAD
   // ============================================================
   async function loadAllData() {
-    // Cek akses
-    if (window.currentUser.role !== 'KEPALA_INSTALASI_FARMASI' && window.currentUser.role !== 'SUPER_ADMIN') {
-      document.getElementById('warningBox').innerHTML =
-        '<div class="warn-box">⚠️ Anda tidak memiliki akses ke halaman ini. Hanya Kepala Instalasi Farmasi yang bisa mengelola delegasi approval.</div>';
-      document.getElementById('formPanel').style.display = 'none';
-      document.getElementById('listDelegasi').innerHTML =
-        '<div class="empty-state">Akses ditolak.</div>';
-      return;
-    }
-
     if (window.currentUser.role === 'SUPER_ADMIN') {
       document.getElementById('warningBox').innerHTML =
         '<div class="warn-box">👁️ Anda login sebagai Super Admin. Halaman ini bisa dilihat, tapi pembuatan delegasi sebaiknya dilakukan oleh Kepala Instalasi Farmasi.</div>';
@@ -316,7 +300,6 @@
     const msg = document.getElementById('formMsg');
     const btn = document.getElementById('btnBuat');
 
-    // Validasi
     if (!penerima) { msg.textContent = 'Pilih penerima delegasi.'; msg.style.color = 'var(--coral)'; return; }
     if (!mulai) { msg.textContent = 'Tanggal mulai wajib diisi.'; msg.style.color = 'var(--coral)'; return; }
     if (!berakhir) { msg.textContent = 'Tanggal berakhir wajib diisi.'; msg.style.color = 'var(--coral)'; return; }
@@ -326,11 +309,9 @@
     const today = todayStr();
     if (mulai < today) { msg.textContent = 'Tanggal mulai tidak boleh mundur (sebelum hari ini).'; msg.style.color = 'var(--coral)'; return; }
 
-    // Cek tumpang tindih
     const overlap = delegasiList.find(d => {
       if (d.status === 'DIBATALKAN') return false;
       if (d.penerima !== penerima) return false;
-      // ada tumpang tindih kalau rentang [mulai, berakhir] beririsan dengan [d.mulai, d.berakhir]
       return !(berakhir < d.mulai || mulai > d.berakhir);
     });
     if (overlap) {
@@ -357,7 +338,6 @@
       msg.textContent = '✅ Delegasi berhasil dibuat.';
       msg.style.color = 'var(--green-mid)';
 
-      // Reset form
       document.getElementById('fPenerima').value = '';
       document.getElementById('fMulai').value = '';
       document.getElementById('fBerakhir').value = '';
@@ -393,16 +373,13 @@
   };
 
   // ============================================================
-  //  START
+  //  SET DEFAULT DATES
   // ============================================================
-  (function init() {
-    // Set tanggal default: mulai hari ini, berakhir 7 hari kemudian
+  (function setDefaultDates() {
     const today = new Date();
     const week = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
     document.getElementById('fMulai').value = today.toISOString().slice(0, 10);
     document.getElementById('fBerakhir').value = week.toISOString().slice(0, 10);
-
-    loadAllData();
   })();
 </script>
 </body>
