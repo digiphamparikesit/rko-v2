@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RKO RSAMP — Menu Utama</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -124,6 +130,13 @@
       text-transform: uppercase; letter-spacing: 0.4px;
     }
 
+    .loading-screen {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
     @media (max-width: 640px) {
       main { padding: 20px 16px 60px; }
       .welcome { padding: 20px; }
@@ -143,7 +156,7 @@
     </div>
   </div>
   <div class="topbar-right">
-    <span class="who" id="whoLabel"></span>
+    <span class="who" id="whoLabel">Memuat...</span>
     <button class="btn-logout" onclick="window.logout()">Keluar</button>
   </div>
 </header>
@@ -151,53 +164,20 @@
 <main>
   <div class="welcome">
     <div>
-      <h1 id="greeting">Selamat datang</h1>
-      <p id="welcomeSub">Pilih menu di bawah untuk memulai.</p>
+      <h1 id="greeting">Memuat...</h1>
+      <p id="welcomeSub">Mohon tunggu, sedang memverifikasi sesi.</p>
     </div>
     <div class="role-tag" id="roleTag"></div>
   </div>
 
   <div id="menuContainer">
-    <!-- Menu akan di-render oleh JS -->
+    <div class="loading-screen">Memuat menu...</div>
   </div>
 </main>
 
 <script>
   // ============================================================
-  //  SESSION
-  // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) {
-        user = JSON.parse(stored);
-      }
-    } catch (e) {}
-
-    if (!user || !user.role) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
-
-    window.currentUser = user;
-    const roleLabel = String(user.role).replace(/_/g, ' ');
-    document.getElementById('whoLabel').textContent = user.nama + ' · ' + roleLabel;
-    document.getElementById('greeting').textContent = 'Selamat datang, ' + user.nama;
-    document.getElementById('roleTag').textContent = roleLabel;
-  })();
-
-  window.logout = function() {
-    if (confirm('Keluar dari aplikasi?')) {
-      sessionStorage.removeItem('rko_user');
-      window.location.reload();
-    }
-  };
-
-  // ============================================================
   //  DEFINISI MENU
-  //  ready: true = file sudah ada, false = belum dibuat
-  //  roles: array role yang boleh akses
   // ============================================================
   const MENU_GROUPS = [
     {
@@ -413,6 +393,16 @@
   ];
 
   // ============================================================
+  //  UTILITY
+  // ============================================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[s]));
+  }
+
+  // ============================================================
   //  RENDER MENU
   // ============================================================
   function renderMenu() {
@@ -468,21 +458,94 @@
     }
   }
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, s => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[s]));
-  }
-
   window.klikBelumTersedia = function(nama) {
     alert('Menu "' + nama + '" sedang dalam pengembangan.');
   };
 
   // ============================================================
-  //  START
+  //  LOGOUT
   // ============================================================
-  renderMenu();
+  window.logout = async function() {
+    if (!confirm('Keluar dari aplikasi?')) return;
+    try {
+      await window.supabase.auth.signOut();
+    } catch (e) {
+      console.warn('Sign out gagal:', e);
+    }
+    try { sessionStorage.removeItem('rko_user'); } catch (e) {}
+    window.location.href = 'login.html';
+  };
+
+  // ============================================================
+  //  SESSION CHECK & INIT
+  // ============================================================
+  (async function init() {
+    // 1. Cek Supabase Auth
+    let session = null;
+    try {
+      const res = await window.supabase.auth.getSession();
+      session = res.data.session;
+    } catch (e) {
+      console.warn('Cek session gagal:', e);
+    }
+
+    if (!session) {
+      // Belum login → ke halaman login
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // 2. Ambil profil dari sessionStorage
+    let user = null;
+    try {
+      const stored = sessionStorage.getItem('rko_user');
+      if (stored) user = JSON.parse(stored);
+    } catch (e) {}
+
+    // Kalau profil hilang (misal sessionStorage dibersihkan), ambil ulang dari DB
+    if (!user || !user.role) {
+      try {
+        const email = session.user.email;
+        const { data, error } = await window.supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .limit(1);
+        if (error) throw error;
+        const profil = data && data[0];
+        if (!profil) {
+          await window.supabase.auth.signOut();
+          window.location.href = 'login.html';
+          return;
+        }
+        user = {
+          id: profil.id,
+          auth_id: session.user.id,
+          email: profil.email,
+          nama: profil.nama,
+          role: profil.role,
+          ruangan_id: profil.ruangan_id || null,
+          active: profil.active !== false
+        };
+        sessionStorage.setItem('rko_user', JSON.stringify(user));
+      } catch (e) {
+        console.error('Gagal ambil profil:', e);
+        window.location.href = 'login.html';
+        return;
+      }
+    }
+
+    // 3. Set user global dan tampilkan UI
+    window.currentUser = user;
+    const roleLabel = String(user.role).replace(/_/g, ' ');
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + roleLabel;
+    document.getElementById('greeting').textContent = 'Selamat datang, ' + user.nama;
+    document.getElementById('welcomeSub').textContent = 'Pilih menu di bawah untuk memulai.';
+    document.getElementById('roleTag').textContent = roleLabel;
+
+    // 4. Render menu sesuai role
+    renderMenu();
+  })();
 </script>
 </body>
 </html>
