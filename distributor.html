@@ -5,20 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Distributor — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
-    /* ===== GAYA SAMA SEPERTI SEBELUMNYA ===== */
     :root {
-      --green-deep: #0F3D2E;
-      --green-mid: #16A34A;
-      --green-bright: #3FCF6A;
-      --green-soft: #E7F5EC;
-      --bg: #F4F7F4;
-      --card: #FFFFFF;
-      --text-dark: #14201A;
-      --text-muted: #6B7A72;
-      --amber: #D97706;
-      --coral: #DC5B45;
-      --border: #E4EAE5;
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
     }
     * { box-sizing: border-box; }
     body {
@@ -148,39 +145,38 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
+  //  SESSION
   // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
-  //  CEK SESSION
-  // ============================================================
-  (function checkSession() {
-    const userStr = sessionStorage.getItem('rko_user');
-    if (!userStr) { window.location.href = 'index.html'; return; }
-    const currentUser = JSON.parse(userStr);
-    if (!['ADMIN', 'SUPER_ADMIN', 'GUDANG_FARMASI', 'DISTRIBUTOR_VIEW'].includes(currentUser.role)) {
-      alert('Anda tidak memiliki akses ke halaman ini.');
-      window.location.href = 'index.html';
-      return;
-    }
-    document.getElementById('whoLabel').textContent = currentUser.nama + ' · ' + currentUser.role;
-    window.currentUser = currentUser;
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI', 'DISTRIBUTOR_VIEW']
+    });
+    if (!user) return;
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
-  //  VARIABEL GLOBAL
+  //  HELPER
   // ============================================================
-  let distributorList = [];
-  let barangMap = {};
-  let grouped = {}; // distributor_id -> {total, items: [{nama, qty, satuan, rp}]}
-  let allDataLoaded = false;
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
 
-  // ============================================================
-  //  UTILITY
-  // ============================================================
   function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>"']/g, s => ({
@@ -189,7 +185,15 @@
   }
 
   // ============================================================
-  //  FILL PERIODE OPTIONS
+  //  VARIABEL
+  // ============================================================
+  let distributorList = [];
+  let barangMap = {};
+  let grouped = {};
+  let allDataLoaded = false;
+
+  // ============================================================
+  //  PERIODE OPTIONS
   // ============================================================
   function fillPeriodOptions(curBulan, curTahun) {
     const bulanSel = document.getElementById('bulanSelect');
@@ -206,16 +210,25 @@
       bulanSel.appendChild(opt);
     });
 
-    const tahunAwal = curTahun - 2;
-    const tahunAkhir = curTahun + 2;
-    for (let y = tahunAwal; y <= tahunAkhir; y++) {
+    for (let y = curTahun - 2; y <= curTahun + 2; y++) {
       const opt = document.createElement('option');
       opt.value = y;
       opt.textContent = y;
       if (y === curTahun) opt.selected = true;
       tahunSel.appendChild(opt);
     }
-    console.log('✅ Periode options diisi');
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    document.getElementById('searchBox').addEventListener('input', renderList);
+    loadAllData();
   }
 
   // ============================================================
@@ -224,30 +237,24 @@
   async function loadAllData() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
-    console.log(`🔍 Memuat data untuk bulan=${bulan}, tahun=${tahun}`);
 
     document.getElementById('distList').innerHTML = '<div class="empty-state">Memuat data...</div>';
 
     try {
-      const [distRes, barangRes, rencanaRes] = await Promise.all([
-        window.supabase.from('master_distributor').select('*'),
-        window.supabase.from('master_barang').select('*'),
-        window.supabase.from('rencana_belanja').select('*').eq('bulan', bulan).eq('tahun', tahun)
+      const [distData, barangData, rencanaData] = await Promise.all([
+        fetchAllRows('master_distributor'),
+        fetchAllRows('master_barang'),
+        fetchAllRows('rencana_belanja', q => q.eq('bulan', bulan).eq('tahun', tahun))
       ]);
 
-      if (distRes.error) throw new Error('Distributor: ' + distRes.error.message);
-      if (barangRes.error) throw new Error('Barang: ' + barangRes.error.message);
-      if (rencanaRes.error) throw new Error('Rencana: ' + rencanaRes.error.message);
-
-      distributorList = distRes.data || [];
+      distributorList = distData;
       barangMap = {};
-      (barangRes.data || []).forEach(b => { barangMap[b.id] = b; });
+      barangData.forEach(b => { barangMap[b.id] = b; });
 
-      const rencana = rencanaRes.data || [];
       grouped = {};
       let totalItem = 0, totalRp = 0;
 
-      rencana.forEach(r => {
+      rencanaData.forEach(r => {
         const distId = r.distributor_id;
         if (!distId) return;
         if (!grouped[distId]) grouped[distId] = { total: 0, items: [] };
@@ -264,8 +271,6 @@
         totalRp += rp;
       });
 
-      console.log(`✅ Data dimuat: ${Object.keys(grouped).length} distributor, ${totalItem} item, total Rp ${totalRp}`);
-
       document.getElementById('statTotalDist').textContent = Object.keys(grouped).length.toLocaleString('id-ID');
       document.getElementById('statTotalRp').textContent = 'Rp ' + totalRp.toLocaleString('id-ID');
       document.getElementById('statTotalItem').textContent = totalItem.toLocaleString('id-ID');
@@ -273,36 +278,31 @@
       allDataLoaded = true;
       renderList();
     } catch (err) {
-      console.error('❌ Error loadAllData:', err);
-      document.getElementById('distList').innerHTML = '<div class="empty-state">Gagal memuat data: ' + err.message + '</div>';
+      console.error('Error loadAllData:', err);
+      document.getElementById('distList').innerHTML = '<div class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</div>';
     }
   }
 
   // ============================================================
-  //  RENDER LIST (dengan filter search)
+  //  RENDER LIST
   // ============================================================
   function renderList() {
     const q = document.getElementById('searchBox').value.toLowerCase().trim();
-    console.log(`🔍 renderList, search query: "${q}"`);
-
     const container = document.getElementById('distList');
 
-    // Ambil semua distributor yang punya rencana belanja (ada di grouped)
     const availableDistIds = Object.keys(grouped);
     if (availableDistIds.length === 0) {
       container.innerHTML = '<div class="empty-state">Belum ada rencana belanja untuk periode ini.</div>';
       return;
     }
 
-    // Filter distributor berdasarkan nama (case-insensitive)
-    let filteredDistIds = availableDistIds.filter(id => {
+    const filteredDistIds = availableDistIds.filter(id => {
       const dist = distributorList.find(d => String(d.id) === String(id));
       if (!dist) return false;
       const nama = dist.nama_distributor.toLowerCase();
       return !q || nama.includes(q);
     });
 
-    // Urutkan berdasarkan total nilai terbesar
     filteredDistIds.sort((a, b) => grouped[b].total - grouped[a].total);
 
     if (filteredDistIds.length === 0) {
@@ -310,7 +310,6 @@
       return;
     }
 
-    // Build HTML
     container.innerHTML = filteredDistIds.map(id => {
       const dist = distributorList.find(d => String(d.id) === String(id));
       if (!dist) return '';
@@ -359,35 +358,6 @@
     const el = document.getElementById('card-' + id);
     if (el) el.classList.toggle('open');
   };
-
-  // ============================================================
-  //  EVENT LISTENERS
-  // ============================================================
-  document.addEventListener('DOMContentLoaded', function() {
-    // Inisialisasi periode
-    const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-
-    // Event listener bulan & tahun
-    document.getElementById('bulanSelect').addEventListener('change', function() {
-      console.log('📅 Bulan berubah ke:', this.value);
-      loadAllData();
-    });
-
-    document.getElementById('tahunSelect').addEventListener('change', function() {
-      console.log('📅 Tahun berubah ke:', this.value);
-      loadAllData();
-    });
-
-    // Event listener search box (dengan debounce opsional)
-    document.getElementById('searchBox').addEventListener('input', function() {
-      console.log('🔍 Search box input:', this.value);
-      renderList();
-    });
-
-    // Load data pertama
-    loadAllData();
-  });
 </script>
 </body>
 </html>
