@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Laporan Audit — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
   <style>
     :root {
       --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
@@ -111,7 +117,7 @@
     </div>
     <div class="field" style="margin-left:auto;">
       <label>&nbsp;</label>
-      <button class="tab-btn" style="padding:9px 16px; background:#F1F1EE; color:var(--text-dark); border-color:var(--border);" onclick="window.refreshAll()">&#8635; Muat Ulang</button>
+      <button style="padding:9px 16px; border:1px solid var(--border); background:#F1F1EE; color:var(--text-dark); border-radius:9px; font-size:13px; font-weight:600; cursor:pointer;" onclick="window.refreshAll()">&#8635; Muat Ulang</button>
     </div>
   </div>
 
@@ -127,7 +133,6 @@
     </button>
   </div>
 
-  <!-- PANEL LOG MUTASI -->
   <div class="panel" id="panelMutasi">
     <table>
       <thead>
@@ -152,7 +157,6 @@
     </div>
   </div>
 
-  <!-- PANEL LOG PENERIMAAN -->
   <div class="panel" id="panelPenerimaan" style="display:none;">
     <table>
       <thead>
@@ -178,7 +182,6 @@
     </div>
   </div>
 
-  <!-- PANEL RIWAYAT APPROVAL -->
   <div class="panel" id="panelApproval" style="display:none;">
     <table>
       <thead>
@@ -207,27 +210,16 @@
 
 <script>
   // ============================================================
-  //  KONFIGURASI SUPABASE
-  // ============================================================
-  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
-  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ============================================================
   //  SESSION
   // ============================================================
-  (function() {
-    let user = null;
-    try {
-      const stored = sessionStorage.getItem('rko_user');
-      if (stored) user = JSON.parse(stored);
-    } catch (e) {}
-    if (!user) {
-      user = { id: 6, email: 'admin@rsamp.go.id', nama: 'Super Admin', role: 'SUPER_ADMIN', active: true };
-      try { sessionStorage.setItem('rko_user', JSON.stringify(user)); } catch (e) {}
-    }
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI']
+    });
+    if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
     window.currentUser = user;
+    initData();
   })();
 
   // ============================================================
@@ -298,7 +290,7 @@
   let currentTab = 'mutasi';
 
   // ============================================================
-  //  PERIODE OPTIONS
+  //  PERIODE
   // ============================================================
   function fillPeriodOptions(curBulan, curTahun) {
     const bulanSel = document.getElementById('bulanSelect');
@@ -316,6 +308,18 @@
       if (y === curTahun) opt.selected = true;
       tahunSel.appendChild(opt);
     }
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    document.getElementById('searchBox').addEventListener('input', applyFilterAll);
+    loadAllData();
   }
 
   // ============================================================
@@ -346,7 +350,6 @@
       penerimaanMap = {}; penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
       mutasiMap = {}; mutasiData.forEach(m => { mutasiMap[m.id] = m; });
 
-      // Filter ID yang relevan dengan periode ini
       const pembelianIds = new Set(pembelianData.map(p => p.id));
       const penerimaanIdsPeriode = new Set(
         penerimaanData.filter(p => pembelianIds.has(p.pembelian_id)).map(p => p.id)
@@ -359,13 +362,8 @@
         fetchAllRows('approval_request', q => q.order('id', { ascending: false }))
       ]);
 
-      // Filter log mutasi: hanya yang mutasi_id-nya periode ini
       logMutasi = allMutasiLog.filter(l => mutasiIdsPeriode.has(l.mutasi_id));
-
-      // Filter log penerimaan: hanya yang penerimaan_id terkait periode ini
       logPenerimaan = allPenerimaanLog.filter(l => penerimaanIdsPeriode.has(l.penerimaan_id));
-
-      // Filter approval: hanya yang referensi_id penerimaannya periode ini
       listApproval = allApproval.filter(a => penerimaanIdsPeriode.has(a.referensi_id));
 
       applyFilterAll();
@@ -386,8 +384,6 @@
   // ============================================================
   //  FILTER
   // ============================================================
-  document.getElementById('searchBox').addEventListener('input', applyFilterAll);
-
   function applyFilterAll() {
     const q = document.getElementById('searchBox').value.toLowerCase();
 
@@ -468,7 +464,6 @@
 
         const badgeCls = l.aksi === 'BUAT' ? 'buat' : (l.aksi === 'KOREKSI' ? 'koreksi' : 'batal');
 
-        // Detail perubahan
         let detailHtml = '-';
         if (l.aksi === 'KOREKSI' && l.data_sebelum && l.data_sesudah) {
           try {
@@ -573,7 +568,6 @@
         const pengaju = userMap[a.diajukan_oleh];
         const penyetuju = userMap[a.disetujui_oleh];
 
-        // Diff data
         let diffHtml = '-';
         try {
           const lama = a.data_lama || {};
@@ -649,17 +643,6 @@
   window.refreshAll = function() {
     loadAllData();
   };
-
-  // ============================================================
-  //  INIT
-  // ============================================================
-  (function init() {
-    const now = new Date();
-    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    loadAllData();
-  })();
 </script>
 </body>
 </html>
