@@ -82,6 +82,10 @@
     .progress-bar .fill.warn { background: var(--amber); }
     .progress-bar .fill.danger { background: var(--coral); }
 
+    .satuan-jual { color: var(--green-deep); font-weight: 600; font-size: 11.5px; }
+    .satuan-beli { color: var(--amber); font-weight: 600; font-size: 11.5px; }
+    .barang-info { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
     @media (max-width: 900px) {
       .stat-grid { grid-template-columns: repeat(2, 1fr); }
       .grid-2 { grid-template-columns: 1fr; }
@@ -133,7 +137,7 @@
 
   <div class="panel">
     <h2>Mutasi vs RKO per ruangan</h2>
-    <p class="sub">Untuk menilai akurasi RKO user — jatah yang diberikan dibanding kebutuhan yang diminta</p>
+    <p class="sub">Jatah yang dikirim gudang (satuan beli/Box) dibanding total RKO ruangan (satuan beli/Box)</p>
     <div id="tabelMutasiRKO">
       <div class="loading-spinner">Memuat data mutasi...</div>
     </div>
@@ -141,7 +145,7 @@
 
   <div class="panel">
     <h2>Pemakaian ruangan non-farmasi</h2>
-    <p class="sub">Data pemakaian dari Lab, CSSD, dan ruangan lain yang diinput via NUHA atau manual</p>
+    <p class="sub">Data pemakaian dari Lab, CSSD, dan ruangan lain (satuan kecil/Tablet)</p>
     <div class="grid-2">
       <div>
         <canvas id="chartPemakaian" height="180"></canvas>
@@ -257,8 +261,7 @@
     const sel = document.getElementById('tahunSelect');
     for (let y = curTahun-2; y <= curTahun; y++) {
       const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y;
+      opt.value = y; opt.textContent = y;
       if (y === curTahun) opt.selected = true;
       sel.appendChild(opt);
     }
@@ -517,8 +520,8 @@
       <thead>
         <tr>
           <th>Ruangan</th>
-          <th class="num-cell">Total RKO</th>
-          <th class="num-cell">Total diterima</th>
+          <th class="num-cell">Total RKO (Box)</th>
+          <th class="num-cell">Total diterima (Box)</th>
           <th class="num-cell">Capaian</th>
           <th class="num-cell">Barang</th>
           <th>Status</th>
@@ -560,7 +563,7 @@
       </tbody>
     </table>
     <p style="font-size:11.5px; color:var(--text-muted); margin:10px 0 0; line-height:1.5;">
-      <strong>Capaian</strong> = (total qty diterima ruangan ÷ total RKO ruangan) × 100%. Nilai rendah menunjukkan RKO ruangan tersebut belum terpenuhi.
+      <strong>Capaian</strong> = (total qty diterima ruangan ÷ total RKO ruangan) × 100%. Semua dalam satuan beli (Box).
     </p>`;
   }
 
@@ -644,6 +647,7 @@
       const barang = barangMap[p.barang_id];
       grouped[noPo].push({
         nama_barang: barang ? barang.nama_barang : 'Barang tidak dikenal',
+        satuan_beli: barang ? (barang.satuan_beli || '') : '',
         qty_pesan: Number(po?.qty_pesan) || 0,
         qty_diterima: Number(p.qty_diterima) || 0,
         selisih: Number(p.selisih) || 0,
@@ -667,8 +671,8 @@
         html += `<tr>
           ${idx === 0 ? `<td rowspan="${items.length}">${escapeHtml(noPo)}</td>` : ''}
           <td>${escapeHtml(item.nama_barang)}</td>
-          <td class="num-cell">${item.qty_pesan}</td>
-          <td class="num-cell">${item.qty_diterima}</td>
+          <td class="num-cell">${item.qty_pesan} ${escapeHtml(item.satuan_beli)}</td>
+          <td class="num-cell">${item.qty_diterima} ${escapeHtml(item.satuan_beli)}</td>
           <td class="num-cell"><span class="badge danger">${item.selisih}</span></td>
           <td>${escapeHtml(item.tanggal_terima)}</td>
         </tr>`;
