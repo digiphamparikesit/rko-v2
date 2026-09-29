@@ -284,59 +284,71 @@
     }
   }
 
-  async function fillFormOptions() {
-    const bulan = document.getElementById('bulanSelect').value;
-    const tahun = document.getElementById('tahunSelect').value;
+ async function fillFormOptions() {
+  const bulan = document.getElementById('bulanSelect').value;
+  const tahun = document.getElementById('tahunSelect').value;
 
-    let kebutuhanData = [];
-    try {
-      kebutuhanData = await fetchAllRows('kebutuhan', q =>
-        q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)
-      );
-    } catch (e) {
-      console.warn('Gagal memuat kebutuhan:', e);
+  let kebutuhanData = [];
+  try {
+    kebutuhanData = await fetchAllRows('kebutuhan', q =>
+      q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)
+    );
+  } catch (e) {
+    console.warn('Gagal memuat kebutuhan:', e);
+  }
+
+  const barangIds = [...new Set(kebutuhanData.map(k => k.barang_id))];
+
+  // Hitung total RKO per barang (dari semua ruangan)
+  const totalRKOPerBarang = {};
+  kebutuhanData.forEach(k => {
+    totalRKOPerBarang[k.barang_id] = (totalRKOPerBarang[k.barang_id] || 0) + Number(k.kebutuhan);
+  });
+
+  const bSel = document.getElementById('fBarang');
+  bSel.innerHTML = '<option value="">Pilih barang...</option>';
+
+  const rencanaByBarang = {};
+  rencanaList.forEach(r => { rencanaByBarang[r.barang_id] = r; });
+
+  barangIds.forEach(id => {
+    const barang = barangMap[id];
+    if (!barang) return;
+    const rencana = rencanaByBarang[id];
+    const totalRKO = totalRKOPerBarang[id] || 0;
+    const satuanBeli = barang.satuan_beli || 'Box';
+
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.dataset.totalRko = totalRKO;
+    if (rencana && rencana.distributor_id) {
+      opt.dataset.distributor = rencana.distributor_id;
     }
 
-    const barangIds = [...new Set(kebutuhanData.map(k => k.barang_id))];
+    opt.textContent = `${barang.nama_barang} (total RKO: ${totalRKO} ${satuanBeli})`;
+    bSel.appendChild(opt);
+  });
 
-    const bSel = document.getElementById('fBarang');
-    bSel.innerHTML = '<option value="">Pilih barang...</option>';
+  const dSel = document.getElementById('fDistributor');
+  dSel.innerHTML = '<option value="">Pilih distributor...</option>';
+  distributorList.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = d.nama_distributor;
+    dSel.appendChild(opt);
+  });
 
-    const rencanaByBarang = {};
-    rencanaList.forEach(r => { rencanaByBarang[r.barang_id] = r; });
-
-    barangIds.forEach(id => {
-      const barang = barangMap[id];
-      if (!barang) return;
-      const rencana = rencanaByBarang[id];
-      const opt = document.createElement('option');
-      opt.value = id;
-      if (rencana && rencana.distributor_id) {
-        opt.dataset.distributor = rencana.distributor_id;
-      }
-      const label = rencana
-        ? `${barang.nama_barang} (rencana: ${rencana.rencana_qty_satuan_beli})`
-        : `${barang.nama_barang} (belum ada rencana)`;
-      opt.textContent = label;
-      bSel.appendChild(opt);
-    });
-
-    const dSel = document.getElementById('fDistributor');
-    dSel.innerHTML = '<option value="">Pilih distributor...</option>';
-    distributorList.forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = d.nama_distributor;
-      dSel.appendChild(opt);
-    });
-
-    bSel.addEventListener('change', () => {
-      const selected = bSel.options[bSel.selectedIndex];
-      if (selected && selected.dataset.distributor) {
-        document.getElementById('fDistributor').value = selected.dataset.distributor;
-      }
-    });
-  }
+  bSel.addEventListener('change', () => {
+    const selected = bSel.options[bSel.selectedIndex];
+    if (!selected) return;
+    if (selected.dataset.distributor) {
+      document.getElementById('fDistributor').value = selected.dataset.distributor;
+    }
+    if (selected.dataset.totalRko) {
+      document.getElementById('fQty').value = selected.dataset.totalRko;
+    }
+  });
+}
 
   // ============================================================
   //  FILTER & TABEL
