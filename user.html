@@ -91,6 +91,10 @@
     .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
     .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
     .error-box { background: #FBEAE7; color: var(--coral); padding: 12px 16px; border-radius: 10px; margin-bottom: 14px; border: 1px solid var(--coral); font-size: 13px; }
+
+    .barang-info { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .satuan-jual { color: var(--green-deep); font-weight: 600; }
+    .satuan-beli { color: var(--amber); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -137,11 +141,11 @@
       </div>
 
       <div class="panel side-panel">
-        <h2 class="side-title">Pemakaian ruangan</h2>
-        <p class="side-sub">Catat barang yang sudah dipakai di ruangan ini.</p>
-        <button class="btn btn-upload" style="width:100%; padding:10px; opacity:0.5; cursor:not-allowed;" disabled>
-          Segera — Belum Tersedia
-        </button>
+        <h2 class="side-title">Info Satuan</h2>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.6;">
+          <strong style="color:var(--green-deep);">Sisa stok</strong> diisi dalam <strong>satuan kecil</strong> (Tablet, Ampul, PCS) — sesuai hitungan fisik di ruangan.<br><br>
+          <strong style="color:var(--amber);">Kebutuhan</strong> diisi dalam <strong>satuan kemasan</strong> (Box, Botol, Roll) — sesuai yang dipesan ke gudang.
+        </div>
       </div>
     </aside>
 
@@ -166,7 +170,6 @@
           <thead>
             <tr>
               <th>Nama barang</th>
-              <th>Satuan</th>
               <th>Sisa stok</th>
               <th>Kebutuhan</th>
               <th>Estimasi Nilai (Rp)</th>
@@ -175,7 +178,7 @@
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
+            <tr><td colspan="6" class="empty-state">Memuat data...</td></tr>
           </tbody>
         </table>
         <div class="pager">
@@ -329,7 +332,6 @@
     if (masterBarangLoaded) return;
     fullMasterBarang = await fetchAllRows('master_barang', q => q.eq('status_aktif', true));
     masterBarangLoaded = true;
-    console.log('✅ Master barang dimuat:', fullMasterBarang.length, 'baris');
   }
 
   // ============================================================
@@ -338,10 +340,10 @@
   async function loadBarangDanKebutuhan() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
-    document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="empty-state">Memuat data...</td></tr>';
 
     if (!activeRuanganId) {
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Silakan pilih ruangan terlebih dahulu.</td></tr>';
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="empty-state">Silakan pilih ruangan terlebih dahulu.</td></tr>';
       return;
     }
 
@@ -366,12 +368,8 @@
       });
 
       const { data: kunjunganList } = await window.supabase
-        .from('kunjungan')
-        .select('*')
-        .eq('ruangan_id', activeRuanganId)
-        .eq('bulan', bulan)
-        .eq('tahun', tahun)
-        .limit(1);
+        .from('kunjungan').select('*')
+        .eq('ruangan_id', activeRuanganId).eq('bulan', bulan).eq('tahun', tahun).limit(1);
 
       const kunjungan = kunjunganList && kunjunganList[0];
       if (kunjungan) {
@@ -388,7 +386,7 @@
     } catch (err) {
       console.error(err);
       document.getElementById('tableBody').innerHTML =
-        '<tr><td colspan="7" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
+        '<tr><td colspan="6" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -411,8 +409,7 @@
     sel.innerHTML = '<option value="">-- Pilih Ruangan --</option>';
     ruanganList.forEach(r => {
       const opt = document.createElement('option');
-      opt.value = r.id;
-      opt.textContent = r.nama_ruangan;
+      opt.value = r.id; opt.textContent = r.nama_ruangan;
       sel.appendChild(opt);
     });
 
@@ -428,24 +425,19 @@
       updateUnitLabel();
     }
 
-    // Kunci dropdown untuk role USER
-    if (window.currentUser.role === 'USER') {
-      sel.disabled = true;
-    }
+    if (window.currentUser.role === 'USER') sel.disabled = true;
 
     sel.addEventListener('change', () => {
       activeRuanganId = Number(sel.value);
       updateUnitLabel();
       loadBarangDanKebutuhan();
     });
-
     document.getElementById('bulanSelect').addEventListener('change', () => { updatePeriodeLabel(); loadBarangDanKebutuhan(); });
     document.getElementById('tahunSelect').addEventListener('change', () => { updatePeriodeLabel(); loadBarangDanKebutuhan(); });
     document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
     document.getElementById('filterGolongan').addEventListener('change', () => { page = 1; applyFilter(); });
 
     loadFullMasterBarang().catch(err => console.warn('Preload master gagal:', err));
-
     await loadBarangDanKebutuhan();
   }
 
@@ -474,19 +466,35 @@
     const pageItems = filteredBarang.slice(start, start + PAGE_SIZE);
 
     if (pageItems.length === 0 && allBarang.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Ruangan ini belum punya barang. Klik "+ Tambah Barang" atau "Upload CSV Barang".</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Ruangan ini belum punya barang. Klik "+ Tambah Barang" atau "Upload CSV Barang".</td></tr>';
     } else if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Tidak ada barang yang cocok.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Tidak ada barang yang cocok.</td></tr>';
     } else {
       tbody.innerHTML = pageItems.map(b => {
         const existing = existingKebutuhan[b.id] || { sisa: '', kebutuhan: '', saved: false };
         const hpp = Number(b.hpp_beli) || 0;
+        const content = Number(b.content) || 1;
+        const satuanJual = b.satuan_jual || '-';
+        const satuanBeli = b.satuan_beli || '-';
         const estimasiAwal = (Number(existing.kebutuhan) || 0) * hpp;
-        return `<tr data-id="${b.id}" data-hpp="${hpp}">
-          <td>${escapeHtml(b.nama_barang)}</td>
-          <td>${escapeHtml(b.satuan_jual || '-')}</td>
-          <td><input type="number" class="qty" data-field="sisa" value="${existing.sisa}" onchange="window.markUnsaved(${b.id})" /></td>
-          <td><input type="number" class="qty" data-field="kebutuhan" value="${existing.kebutuhan}" onchange="window.markUnsaved(${b.id}); window.hitungEstimasi(${b.id});" oninput="window.hitungEstimasi(${b.id})" /></td>
+
+        const infoKonversi = content > 1
+          ? `${satuanJual} · 1 ${satuanBeli} = ${content} ${satuanJual}`
+          : satuanJual;
+
+        return `<tr data-id="${b.id}" data-hpp="${hpp}" data-content="${content}">
+          <td>
+            <div>${escapeHtml(b.nama_barang)}</div>
+            <div class="barang-info">${escapeHtml(infoKonversi)}</div>
+          </td>
+          <td>
+            <input type="number" class="qty" data-field="sisa" value="${existing.sisa}" onchange="window.markUnsaved(${b.id})" />
+            <span class="satuan-jual">${escapeHtml(satuanJual)}</span>
+          </td>
+          <td>
+            <input type="number" class="qty" data-field="kebutuhan" value="${existing.kebutuhan}" onchange="window.markUnsaved(${b.id}); window.hitungEstimasi(${b.id});" oninput="window.hitungEstimasi(${b.id})" />
+            <span class="satuan-beli">${escapeHtml(satuanBeli)}</span>
+          </td>
           <td><span id="estimasi-${b.id}" style="color:var(--text-muted);">Rp ${estimasiAwal.toLocaleString('id-ID')}</span></td>
           <td><span class="status-tag ${existing.saved ? 'saved' : 'unsaved'}" id="status-${b.id}">${existing.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
           <td><div style="display:flex; gap:6px;">
@@ -523,7 +531,8 @@
     try {
       const { error } = await window.supabase.from('kebutuhan').upsert({
         ruangan_id: activeRuanganId, barang_id: id, bulan, tahun,
-        sisa_stok_ruangan: Number(sisa) || 0, kebutuhan: Number(keb) || 0
+        sisa_stok_ruangan: Number(sisa) || 0,
+        kebutuhan: Number(keb) || 0
       }, { onConflict: 'ruangan_id,barang_id,bulan,tahun' });
       if (error) throw error;
       const t = document.getElementById('status-'+id); t.textContent = 'Tersimpan'; t.className = 'status-tag saved';
@@ -565,7 +574,6 @@
     document.getElementById('tambahBarangResults').innerHTML = '<div class="loading-note">Memuat master barang...</div>';
     document.getElementById('modalTambahBarang').classList.add('show');
     document.getElementById('tambahBarangSearch').focus();
-
     try {
       await loadFullMasterBarang();
       document.getElementById('tambahBarangResults').innerHTML = '<div class="empty-state">Ketik nama barang...</div>';
@@ -583,19 +591,17 @@
     const q = document.getElementById('tambahBarangSearch').value.trim().toLowerCase();
     const c = document.getElementById('tambahBarangResults');
     if (!q) { c.innerHTML = '<div class="empty-state">Ketik nama barang...</div>'; return; }
-
     const sudahAda = new Set(allBarang.map(b => b.id));
     const hasil = fullMasterBarang
       .filter(b => String(b.nama_barang).toLowerCase().includes(q) && !sudahAda.has(b.id))
       .slice(0, 30);
-
     if (hasil.length === 0) {
       c.innerHTML = '<div class="empty-state">Tidak ada barang yang cocok.</div>';
       return;
     }
     c.innerHTML = hasil.map(b => `
       <div class="search-result-item">
-        <span>${escapeHtml(b.nama_barang)} <span style="color:var(--text-muted); font-size:11.5px;">(${escapeHtml(b.satuan_jual || '-')}, ${escapeHtml(b.golongan || '-')})</span></span>
+        <span>${escapeHtml(b.nama_barang)} <span style="color:var(--text-muted); font-size:11.5px;">(${escapeHtml(b.satuan_jual || '-')}/${escapeHtml(b.satuan_beli || '-')}, ${escapeHtml(b.golongan || '-')})</span></span>
         <button class="btn btn-primary" style="padding:6px 12px;" onclick="window.tambahBarangKeRuangan(${b.id})">+ Tambah</button>
       </div>`).join('');
   };
@@ -605,7 +611,6 @@
       const { data: existing } = await window.supabase
         .from('barang_ruangan').select('id, status_aktif')
         .eq('ruangan_id', activeRuanganId).eq('barang_id', barangId).limit(1);
-
       if (existing && existing.length > 0) {
         if (existing[0].status_aktif) {
           alert('Barang sudah ada di ruangan ini.');
