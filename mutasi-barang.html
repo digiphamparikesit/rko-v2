@@ -65,7 +65,7 @@
     .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
     #modalOverlay { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
     #modalOverlay.show { display: flex; }
-    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 26px; }
+    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 720px; max-height: 90vh; overflow-y: auto; padding: 26px; }
     .modal h2 { font-size: 16px; margin: 0 0 6px; }
     .modal .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
@@ -75,6 +75,9 @@
     .summary-box { background: #FAFBFA; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; font-size: 13px; }
     .summary-box .row { display: flex; justify-content: space-between; padding: 3px 0; }
     .summary-box .row.total { font-weight: 700; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; }
+    .konversi-info { font-size: 11px; color: var(--amber); margin-top: 2px; }
+    .satuan-beli { color: var(--amber); font-weight: 600; }
+    .satuan-jual { color: var(--green-deep); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -118,7 +121,7 @@
       <div class="panel side-panel">
         <h2 class="side-title">Keterangan</h2>
         <div class="info-note">
-          Mutasi dijalankan per kedatangan, dibagi <strong>proporsional</strong> sesuai RKO semua ruangan. Barang yang sudah dimutasi tidak akan muncul lagi di daftar ini.
+          Mutasi dijalankan per kedatangan, dibagi <strong>proporsional</strong> sesuai RKO semua ruangan. Jatah yang dikirim dalam <span class="satuan-beli">satuan beli (Box)</span>, tapi stok ruangan otomatis dikonversi ke <span class="satuan-jual">satuan jual (Tablet)</span>.
         </div>
       </div>
     </aside>
@@ -158,7 +161,8 @@
           <th>Ruangan</th>
           <th class="num">RKO</th>
           <th class="num">Persen</th>
-          <th class="num">Jatah</th>
+          <th class="num">Jatah (Box)</th>
+          <th class="num">Stok ruangan (Tablet)</th>
         </tr>
       </thead>
       <tbody id="allocBody"></tbody>
@@ -366,6 +370,7 @@
       const keb = kebutuhanMap[r.barang_id] || [];
       const totalRKO = keb.reduce((s, k) => s + k.kebutuhan, 0);
       const jmlRuangan = keb.length;
+      const satuanBeli = barang.satuan_beli || 'Box';
 
       let badgeRKO;
       if (totalRKO === 0) {
@@ -377,8 +382,8 @@
       return `<tr>
         <td>${escapeHtml(po ? po.no_po : '-')}</td>
         <td>${escapeHtml(barang.nama_barang || 'Tidak dikenal')}</td>
-        <td class="num">${Number(r.qty_diterima || 0).toLocaleString('id-ID')}</td>
-        <td class="num">${totalRKO.toLocaleString('id-ID')}</td>
+        <td class="num">${Number(r.qty_diterima || 0).toLocaleString('id-ID')} <span class="satuan-beli">${escapeHtml(satuanBeli)}</span></td>
+        <td class="num">${totalRKO.toLocaleString('id-ID')} <span class="satuan-beli">${escapeHtml(satuanBeli)}</span></td>
         <td>${badgeRKO}</td>
         <td>${escapeHtml(r.tanggal_terima || '-')}</td>
         <td><button class="btn btn-primary" onclick="window.openPreview(${r.id})" ${totalRKO === 0 ? 'disabled' : ''}>Jalankan Mutasi</button></td>
@@ -398,6 +403,9 @@
     const keb = kebutuhanMap[r.barang_id] || [];
     const totalRKO = keb.reduce((s, k) => s + k.kebutuhan, 0);
     const stokTersedia = Number(r.qty_diterima) || 0;
+    const content = Number(barang.content) || 1;
+    const satuanBeli = barang.satuan_beli || 'Box';
+    const satuanJual = barang.satuan_jual || 'PCS';
 
     if (totalRKO === 0) {
       alert('Barang ini tidak punya RKO di periode ini. Tidak bisa dimutasi otomatis.');
@@ -429,18 +437,25 @@
 
     const result = alloc.map(a => {
       const s = sorted.find(x => x.ruangan_id === a.ruangan_id);
-      return { ...a, qty_dialokasikan: s.qty_dialokasikan };
+      return { ...a, qty_dialokasikan: s.qty_dialokasikan, qty_tablet: s.qty_dialokasikan * content };
     });
 
     document.getElementById('modalTitle').textContent = 'Konfirmasi Mutasi';
     document.getElementById('modalSub').innerHTML =
       `📦 <strong>${escapeHtml(barang.nama_barang || '-')}</strong> · PO ${escapeHtml(po ? po.no_po : '-')}`;
 
+    const infoKonversi = content > 1
+      ? `1 ${satuanBeli} = ${content} ${satuanJual}`
+      : `${satuanBeli} = ${satuanJual}`;
+
     document.getElementById('summaryBox').innerHTML = `
-      <div class="row"><span>Stok tersedia (BAIK)</span><span><strong>${stokTersedia.toLocaleString('id-ID')}</strong></span></div>
-      <div class="row"><span>Total RKO semua ruangan</span><span><strong>${totalRKO.toLocaleString('id-ID')}</strong></span></div>
+      <div class="row"><span>Satuan beli (dikirim gudang)</span><span><strong>${escapeHtml(satuanBeli)}</strong></span></div>
+      <div class="row"><span>Satuan jual (stok ruangan)</span><span><strong>${escapeHtml(satuanJual)}</strong></span></div>
+      <div class="row"><span>Konversi</span><span>${escapeHtml(infoKonversi)}</span></div>
+      <div class="row" style="border-top:1px solid var(--border); padding-top:6px; margin-top:4px;"><span>Stok tersedia (BAIK)</span><span><strong>${stokTersedia.toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</strong></span></div>
+      <div class="row"><span>Total RKO semua ruangan</span><span><strong>${totalRKO.toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</strong></span></div>
       <div class="row"><span>Jumlah ruangan penerima</span><span><strong>${result.length}</strong></span></div>
-      <div class="row total"><span>Total dialokasikan</span><span>${result.reduce((s,a)=>s+a.qty_dialokasikan,0).toLocaleString('id-ID')}</span></div>
+      <div class="row total"><span>Total dialokasikan</span><span>${result.reduce((s,a)=>s+a.qty_dialokasikan,0).toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</span></div>
     `;
 
     document.getElementById('allocBody').innerHTML = result.map(a => `
@@ -449,6 +464,7 @@
         <td class="num">${a.qty_rko.toLocaleString('id-ID')}</td>
         <td class="num">${a.persentase.toFixed(1)}%</td>
         <td class="num"><strong>${a.qty_dialokasikan.toLocaleString('id-ID')}</strong></td>
+        <td class="num"><span class="satuan-jual">${a.qty_tablet.toLocaleString('id-ID')} ${escapeHtml(satuanJual)}</span></td>
       </tr>
     `).join('');
 
@@ -481,13 +497,13 @@
       });
       if (error) throw error;
 
-      msg.textContent = '✅ Mutasi berhasil (id: ' + data + ')';
+      msg.textContent = '✅ Mutasi berhasil. Stok ruangan sudah dikonversi ke satuan jual.';
       msg.style.color = 'var(--green-mid)';
 
       setTimeout(() => {
         closeModal();
         loadAllData();
-      }, 1000);
+      }, 1200);
     } catch (err) {
       msg.textContent = '❌ Gagal: ' + err.message;
       msg.style.color = 'var(--coral)';
