@@ -58,7 +58,7 @@
     th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
     td.num { text-align: right; }
-    input.qty { width: 90px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; text-align: right; }
+    input.qty { width: 100px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; text-align: right; }
     input.ket { width: 160px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; }
 
     .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); }
@@ -95,6 +95,8 @@
     .badge.saved { background: var(--green-soft); color: var(--green-mid); }
     .badge.unsaved { background: #F1F1EE; color: var(--text-muted); }
     .id-display { font-family: "Courier New", monospace; font-weight: 700; color: var(--green-deep); }
+    .satuan-jual { color: var(--green-deep); font-weight: 600; font-size: 11.5px; }
+    .barang-info { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -140,7 +142,7 @@
       <div class="panel side-panel">
         <h2 class="side-title">Keterangan</h2>
         <div class="info-note">
-          Kolom <strong>Stok sistem</strong> adalah sisa stok ruangan menurut catatan (mutasi masuk − pemakaian). Isi <strong>Stok fisik</strong> sesuai hitungan nyata di ruangan. Selisih akan tercatat otomatis.
+          Semua angka dalam <strong>satuan kecil</strong> (Tablet, Ampul, PCS). Kolom <strong>Stok sistem</strong> adalah catatan sisa (mutasi masuk − pemakaian). Isi <strong>Stok fisik</strong> sesuai hitungan nyata di ruangan.
         </div>
       </div>
     </aside>
@@ -150,8 +152,7 @@
         <table>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Nama barang</th>
+              <th>Barang</th>
               <th class="num">Stok sistem</th>
               <th class="num">Stok fisik</th>
               <th class="num">Selisih</th>
@@ -160,7 +161,7 @@
               <th></th>
             </tr>
           </thead>
-          <tbody id="tableBody"><tr><td colspan="8" class="empty-state">Memuat data...</td></tr></tbody>
+          <tbody id="tableBody"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
         </table>
         <div class="pager">
           <span id="pagerInfo">-</span>
@@ -181,8 +182,7 @@
     <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px; line-height:1.5;">
       Kolom yang dibutuhkan:<br>
       <code style="background:#F1F1EE; padding:2px 6px; border-radius:5px; font-size:11.5px;">id_barang, stok_fisik, keterangan</code><br>
-      <span style="color:var(--coral);">* Kolom <b>id_barang</b> dan <b>stok_fisik</b> wajib.</span><br>
-      <span style="color:var(--text-muted); font-size:11px;">Barang harus terdaftar di ruangan yang sedang dipilih. Kalau tidak, akan ditandai bermasalah.</span>
+      <span style="color:var(--coral);">* Semua angka dalam <b>satuan kecil</b> (Tablet/Ampul/PCS).</span>
     </p>
 
     <input type="file" id="uploadFileInput" accept=".csv" onchange="window.handleUploadFile(event)" style="margin-bottom:14px;">
@@ -349,11 +349,11 @@
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
 
-    document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
 
     if (!activeRuanganId) {
       document.getElementById('ruanganInfo').value = '-';
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="empty-state">Silakan pilih ruangan terlebih dahulu.</td></tr>';
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Silakan pilih ruangan terlebih dahulu.</td></tr>';
       allStok = [];
       applyFilter();
       updateStats();
@@ -378,7 +378,7 @@
       stokRuanganMap = {};
       stokData.forEach(s => { stokRuanganMap[s.barang_id] = s; });
 
-      // Gabung: hanya barang yang terdaftar di ruangan DAN punya stok_ruangan periode ini
+      // Gabung: barang yang terdaftar di ruangan DAN ada stok_ruangan periode ini
       const semuaBarangId = new Set();
       stokData.forEach(s => {
         if (barangRuanganIds.has(s.barang_id)) semuaBarangId.add(s.barang_id);
@@ -390,9 +390,13 @@
         const fisik = stok && stok.stok_fisik !== null && stok.stok_fisik !== undefined
           ? Number(stok.stok_fisik) : null;
         const selisih = fisik !== null ? (fisik - stokSistem) : null;
+        const barang = barangMap[id] || {};
         return {
           barang_id: id,
-          nama_barang: barangMap[id]?.nama_barang || 'Barang tidak dikenal',
+          nama_barang: barang.nama_barang || 'Barang tidak dikenal',
+          satuan_jual: barang.satuan_jual || '-',
+          satuan_beli: barang.satuan_beli || '-',
+          content: Number(barang.content) || 1,
           stok_sistem: stokSistem,
           fisik: fisik,
           selisih: selisih,
@@ -408,7 +412,7 @@
     } catch (err) {
       console.error(err);
       document.getElementById('tableBody').innerHTML =
-        '<tr><td colspan="8" class="empty-state">Gagal memuat: ' + escapeHtml(err.message) + '</td></tr>';
+        '<tr><td colspan="7" class="empty-state">Gagal memuat: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -439,7 +443,7 @@
     const pageItems = filtered.slice(start, start + PAGE_SIZE);
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada barang dengan stok di ruangan ini. Stok terisi otomatis setelah mutasi dari gudang.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada barang dengan stok di ruangan ini. Stok terisi otomatis setelah mutasi dari gudang.</td></tr>';
     } else {
       tbody.innerHTML = pageItems.map(s => {
         const selisihTampil = s.selisih === null ? '-' : (s.selisih > 0 ? '+' + s.selisih : s.selisih);
@@ -447,11 +451,20 @@
           ? '<span class="badge netral">Belum diisi</span>'
           : (s.selisih === 0 ? '<span class="badge ok">Sesuai</span>' : '<span class="badge selisih">' + selisihTampil + '</span>');
 
+        const infoKonversi = s.content > 1
+          ? `${s.satuan_jual} · 1 ${s.satuan_beli} = ${s.content} ${s.satuan_jual}`
+          : s.satuan_jual;
+
         return `<tr data-id="${s.barang_id}">
-          <td><span class="id-display">${s.barang_id}</span></td>
-          <td>${escapeHtml(s.nama_barang)}</td>
-          <td class="num"><strong>${s.stok_sistem.toLocaleString('id-ID')}</strong></td>
-          <td><input type="number" class="qty" data-field="fisik" value="${s.fisik !== null ? s.fisik : ''}" min="0" placeholder="-" oninput="window.hitungSelisih(${s.barang_id})"></td>
+          <td>
+            <div>${escapeHtml(s.nama_barang)}</div>
+            <div class="barang-info">${escapeHtml(infoKonversi)}</div>
+          </td>
+          <td class="num"><strong>${s.stok_sistem.toLocaleString('id-ID')}</strong> <span class="satuan-jual">${escapeHtml(s.satuan_jual)}</span></td>
+          <td class="num">
+            <input type="number" class="qty" data-field="fisik" value="${s.fisik !== null ? s.fisik : ''}" min="0" placeholder="-" oninput="window.hitungSelisih(${s.barang_id})">
+            <span class="satuan-jual">${escapeHtml(s.satuan_jual)}</span>
+          </td>
           <td class="num" id="selisih-${s.barang_id}">${selisihBadge}</td>
           <td><input type="text" class="ket" data-field="ket" value="${escapeHtml(s.keterangan)}" placeholder="opsional"></td>
           <td><span class="badge ${s.saved ? 'saved' : 'unsaved'}" id="status-${s.barang_id}">${s.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
@@ -609,6 +622,8 @@
       let barangId = null;
       let stokSistem = 0;
       let fisik = null;
+      let satuanJual = '-';
+      let content = 1;
 
       if (!idRaw) { status = 'invalid'; alasan = 'ID kosong'; }
       else if (!/^\d+$/.test(idRaw)) { status = 'invalid'; alasan = 'ID harus angka'; }
@@ -624,6 +639,9 @@
         else {
           const stok = stokRuanganMap[barangId];
           stokSistem = stok ? Number(stok.stok_sisa || 0) : 0;
+          const b = barangMap[barangId];
+          satuanJual = b.satuan_jual || '-';
+          content = Number(b.content) || 1;
         }
       }
 
@@ -633,6 +651,8 @@
         id_raw: idRaw,
         barang_id: barangId,
         nama_barang: barangId && barangMap[barangId] ? barangMap[barangId].nama_barang : '-',
+        satuan_jual: satuanJual,
+        content: content,
         stok_sistem: stokSistem,
         fisik: fisik,
         selisih: fisik !== null ? (fisik - stokSistem) : null,
@@ -664,8 +684,8 @@
       return `<tr>
         <td><span class="id-display">${escapeHtml(r.id_raw)}</span></td>
         <td>${escapeHtml(r.nama_barang)}</td>
-        <td class="num">${r.status === 'valid' ? r.stok_sistem.toLocaleString('id-ID') : '-'}</td>
-        <td class="num">${r.status === 'valid' ? r.fisik.toLocaleString('id-ID') : '-'}</td>
+        <td class="num">${r.status === 'valid' ? r.stok_sistem.toLocaleString('id-ID') + ' ' + escapeHtml(r.satuan_jual) : '-'}</td>
+        <td class="num">${r.status === 'valid' ? r.fisik.toLocaleString('id-ID') + ' ' + escapeHtml(r.satuan_jual) : '-'}</td>
         <td class="num">${r.status === 'valid' ? selisihTampil : '-'}</td>
         <td><span class="badge-status" style="color:${warna}; background:${bg};">${escapeHtml(label)}</span></td>
       </tr>`;
@@ -712,10 +732,7 @@
             ruangan_id: activeRuanganId,
             barang_id: r.barang_id,
             bulan, tahun,
-            stok_awal: 0,
-            total_terima: 0,
-            total_pakai: 0,
-            stok_sisa: 0,
+            stok_awal: 0, total_terima: 0, total_pakai: 0, stok_sisa: 0,
             stok_fisik: r.fisik,
             keterangan_opname: r.keterangan || null,
             diopname_pada: now,
@@ -764,9 +781,7 @@
     await loadRuanganList();
 
     const sel = document.getElementById('ruanganSelect');
-    if (sel.value) {
-      activeRuanganId = Number(sel.value);
-    }
+    if (sel.value) activeRuanganId = Number(sel.value);
 
     sel.addEventListener('change', function() {
       activeRuanganId = Number(this.value) || null;
@@ -777,9 +792,7 @@
     document.getElementById('tahunSelect').addEventListener('change', () => { page = 1; loadAllData(); });
     document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
 
-    if (activeRuanganId) {
-      loadAllData();
-    }
+    if (activeRuanganId) loadAllData();
   })();
 </script>
 </body>
