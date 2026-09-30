@@ -354,9 +354,9 @@
     });
     const margin = jual - hpp;
     document.getElementById('statQty').textContent = qty.toLocaleString('id-ID');
-    document.getElementById('statHpp').textContent = 'Rp ' + hpp.toLocaleString('id-ID');
-    document.getElementById('statJual').textContent = 'Rp ' + jual.toLocaleString('id-ID');
-    document.getElementById('statMargin').textContent = 'Rp ' + margin.toLocaleString('id-ID');
+    document.getElementById('statHpp').textContent = 'Rp ' + window.formatRp(hpp);
+    document.getElementById('statJual').textContent = 'Rp ' + window.formatRp(jual);
+    document.getElementById('statMargin').textContent = 'Rp ' + window.formatRp(margin);
     document.getElementById('statMargin').className = 'num ' + (margin >= 0 ? 'pos' : 'neg');
   }
 
@@ -375,9 +375,9 @@
           <td><span class="id-display">${p.barang_id}</span></td>
           <td>${escapeHtml(barang ? barang.nama_barang : 'Barang tidak dikenal')}</td>
           <td class="num">${Number(p.qty_terjual || 0).toLocaleString('id-ID')}</td>
-          <td class="num">Rp ${Number(p.hpp_terjual || 0).toLocaleString('id-ID')}</td>
-          <td class="num">Rp ${Number(p.harga_jual || 0).toLocaleString('id-ID')}</td>
-          <td class="num ${margin >= 0 ? 'pos' : 'neg'}">Rp ${margin.toLocaleString('id-ID')}</td>
+          <td class="num">Rp ${window.formatRp(p.hpp_terjual)}</td>
+          <td class="num">Rp ${window.formatRp(p.harga_jual)}</td>
+          <td class="num ${margin >= 0 ? 'pos' : 'neg'}">Rp ${window.formatRp(margin)}</td>
         </tr>`;
       }).join('');
     }
