@@ -132,5 +132,14 @@
     getUser: getUser
   };
 
+  // ============================================================
+  //  FORMAT RUPIAH GLOBAL
+  //  Bulatkan ke integer, format Indonesia (pemisah ribuan titik).
+  //  Dipakai di semua halaman agar tampilan Rp konsisten.
+  // ============================================================
+  window.formatRp = function(v) {
+    return Math.round(Number(v) || 0).toLocaleString('id-ID');
+  };
+
   console.log('[AUTH] Modul auth.js siap.');
 })();
