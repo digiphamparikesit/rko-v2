@@ -158,7 +158,7 @@
       <div class="panel side-panel" id="panelInfoUser" style="display:none;">
         <h2 class="side-title">Info</h2>
         <div class="info-note">
-          Halaman ini menampilkan status RKO ruangan Anda. Kalau status masih <strong>Belum ada PO</strong> atau <strong>PO sudah dibuat</strong>, berarti barang belum dikirim ke ruangan.
+          Halaman ini menampilkan status RKO ruangan Anda. Kalau status masih <strong>Belum ada PO</strong> atau <strong>PO sudah dibuat</strong>, berarti barang belum dikirim ke ruangan. Klik <strong>Riwayat</strong> untuk melihat kartu stok per bulan.
         </div>
       </div>
     </aside>
@@ -251,7 +251,7 @@
   // ============================================================
   let barangMap = {};
   let ruanganMap = {};
-  let allRows = [];      // hasil agregat per barang
+  let allRows = [];
   let filtered = [];
   let page = 1;
   const PAGE_SIZE = 15;
@@ -284,7 +284,6 @@
     const now = new Date();
     fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
 
-    // Tampilkan info khusus user
     if (isUserRuangan()) {
       document.getElementById('panelInfoUser').style.display = 'block';
       document.getElementById('fieldRuangan').style.display = 'none';
@@ -327,7 +326,7 @@
   }
 
   // ============================================================
-  //  TABLE HEAD — beda untuk USER vs petugas
+  //  TABLE HEAD
   // ============================================================
   function renderTableHead() {
     const thead = document.getElementById('tableHead');
@@ -339,6 +338,7 @@
         <th class="num">Sisa</th>
         <th>Capaian</th>
         <th>Status</th>
+        <th>Aksi</th>
       </tr>`;
     } else {
       thead.innerHTML = `<tr>
@@ -355,12 +355,13 @@
   }
 
   // ============================================================
-  //  LOAD DATA — agregasi
+  //  LOAD DATA
   // ============================================================
   async function loadAllData() {
     const bulan = Number(document.getElementById('bulanSelect').value);
     const tahun = Number(document.getElementById('tahunSelect').value);
-    document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="loading-note">Memuat data...</td></tr>';
+    const colspan = isUserRuangan() ? 7 : 8;
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="' + colspan + '" class="loading-note">Memuat data...</td></tr>';
 
     try {
       const gudangFilter = getGudangFilter();
@@ -380,11 +381,9 @@
       ruanganMap = {};
       ruanganData.forEach(r => { ruanganMap[r.id] = r; });
 
-      // Kumpulkan pembelian_ids & mutasi_ids periode ini
       const pembelianIds = new Set(pembelianData.map(p => p.id));
       const mutasiIds = new Set(mutasiData.map(m => m.id));
 
-      // Kebutuhan: filter per gudang / per ruangan
       const ruanganFilter = document.getElementById('filterRuangan').value;
       let kebutuhanFiltered = kebutuhanData;
       if (ruanganFilter) {
@@ -393,7 +392,6 @@
         kebutuhanFiltered = kebutuhanFiltered.filter(k => String(k.ruangan_id) === String(window.currentUser.ruangan_id));
       }
 
-      // Filter per gudang
       if (gudangFilter !== 'ALL') {
         kebutuhanFiltered = kebutuhanFiltered.filter(k => {
           const b = barangMap[k.barang_id];
@@ -401,7 +399,6 @@
         });
       }
 
-      // Agregat per barang
       const perBarang = {};
 
       kebutuhanFiltered.forEach(k => {
@@ -423,20 +420,17 @@
         perBarang[bid].ruanganSet.add(k.ruangan_id);
       });
 
-      // Mutasi detail (hanya untuk mutasi periode ini & status AKTIF)
       mutasiDetailData.forEach(d => {
         if (!mutasiIds.has(d.mutasi_id)) return;
         const m = mutasiData.find(x => x.id === d.mutasi_id);
         if (!m) return;
         const bid = m.barang_id;
         if (!perBarang[bid]) return;
-        // Kalau filter ruangan aktif, hitung hanya untuk ruangan itu
         if (ruanganFilter && String(d.ruangan_id) !== String(ruanganFilter)) return;
         if (isUserRuangan() && String(d.ruangan_id) !== String(window.currentUser.ruangan_id)) return;
         perBarang[bid].total_dimutasi += Number(d.qty_dialokasikan || 0);
       });
 
-      // Pembelian & penerimaan
       pembelianData.forEach(p => {
         const bid = p.barang_id;
         if (!perBarang[bid]) return;
@@ -451,7 +445,6 @@
         perBarang[bid].penerimaan_belum_mutasi += 1;
       });
 
-      // Tentukan status per barang
       allRows = Object.values(perBarang).map(row => {
         const capaian = row.total_rko > 0
           ? Math.round((row.total_dimutasi / row.total_rko) * 100)
@@ -495,8 +488,9 @@
       applyFilter();
     } catch (err) {
       console.error(err);
+      const colspan = isUserRuangan() ? 7 : 8;
       document.getElementById('tableBody').innerHTML =
-        '<tr><td colspan="8" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
+        '<tr><td colspan="' + colspan + '" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -534,7 +528,8 @@
     const items = filtered.slice(start, start + PAGE_SIZE);
 
     if (items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Tidak ada data RKO untuk periode ini.</td></tr>';
+      const colspan = isUserRuangan() ? 7 : 8;
+      tbody.innerHTML = '<tr><td colspan="' + colspan + '" class="empty-state">Tidak ada data RKO untuk periode ini.</td></tr>';
       updatePager();
       return;
     }
@@ -542,6 +537,7 @@
     tbody.innerHTML = items.map(r => {
       const badge = statusBadge(r.status);
       const barFill = r.capaian >= 100 ? '' : (r.capaian >= 50 ? 'warn' : 'danger');
+      const tombolRiwayat = `<a class="btn btn-secondary" href="riwayat-barang.html?id=${r.barang_id}">Riwayat</a>`;
 
       if (isUserRuangan()) {
         return `<tr>
@@ -557,6 +553,7 @@
             ${r.capaian}%
           </td>
           <td>${badge}</td>
+          <td>${tombolRiwayat}</td>
         </tr>`;
       } else {
         return `<tr>
@@ -593,26 +590,26 @@
   }
 
   function aksiTombol(r) {
-  let tombolUtama = '';
-  if (r.status === 'RKO') {
-    tombolUtama = '<a class="btn btn-primary" href="pembelian.html">Buat PO</a>';
-  } else if (r.status === 'PO') {
-    const adaDikirim = r.pembelian_list.some(p => p.status === 'DIKIRIM' || p.status === 'DITERIMA_SEBAGIAN');
-    if (adaDikirim) {
-      tombolUtama = '<a class="btn btn-warning" href="penerimaan.html">Terima</a>';
+    let tombolUtama = '';
+    if (r.status === 'RKO') {
+      tombolUtama = '<a class="btn btn-primary" href="pembelian.html">Buat PO</a>';
+    } else if (r.status === 'PO') {
+      const adaDikirim = r.pembelian_list.some(p => p.status === 'DIKIRIM' || p.status === 'DITERIMA_SEBAGIAN');
+      if (adaDikirim) {
+        tombolUtama = '<a class="btn btn-warning" href="penerimaan.html">Terima</a>';
+      } else {
+        tombolUtama = '<a class="btn btn-secondary" href="pembelian.html">Lihat PO</a>';
+      }
+    } else if (r.status === 'DATANG' || r.status === 'SEBAGIAN') {
+      tombolUtama = '<a class="btn btn-primary" href="mutasi-barang.html">Mutasi</a>';
     } else {
-      tombolUtama = '<a class="btn btn-secondary" href="pembelian.html">Lihat PO</a>';
+      tombolUtama = '<span style="color:var(--text-muted); font-size:11px;">—</span>';
     }
-  } else if (r.status === 'DATANG' || r.status === 'SEBAGIAN') {
-    tombolUtama = '<a class="btn btn-primary" href="mutasi-barang.html">Mutasi</a>';
-  } else {
-    tombolUtama = '<span style="color:var(--text-muted); font-size:11px;">—</span>';
+
+    const tombolRiwayat = `<a class="btn btn-secondary" style="margin-left:6px;" href="riwayat-barang.html?id=${r.barang_id}">Riwayat</a>`;
+
+    return tombolUtama + tombolRiwayat;
   }
-
-  const tombolRiwayat = `<a class="btn btn-secondary" style="margin-left:6px;" href="riwayat-barang.html?id=${r.barang_id}">Riwayat</a>`;
-
-  return tombolUtama + tombolRiwayat;
-}
 
   function updatePager() {
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
