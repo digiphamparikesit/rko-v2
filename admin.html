@@ -410,7 +410,8 @@
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[s]));
   }
-  function formatRp(v) { return (Number(v) || 0).toLocaleString('id-ID'); }
+  // formatRp() sekarang tersedia sebagai window.formatRp dari auth.js
+  // (versi global sudah memakai Math.round agar tidak muncul desimal)
   function showError(msg) {
     const c = document.getElementById('errorContainer');
     c.style.display = 'block';
