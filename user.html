@@ -495,7 +495,7 @@
             <input type="number" class="qty" data-field="kebutuhan" value="${existing.kebutuhan}" onchange="window.markUnsaved(${b.id}); window.hitungEstimasi(${b.id});" oninput="window.hitungEstimasi(${b.id})" />
             <span class="satuan-beli">${escapeHtml(satuanBeli)}</span>
           </td>
-          <td><span id="estimasi-${b.id}" style="color:var(--text-muted);">Rp ${estimasiAwal.toLocaleString('id-ID')}</span></td>
+          <td><span id="estimasi-${b.id}" style="color:var(--text-muted);">Rp ${window.formatRp(estimasiAwal)}</span></td>
           <td><span class="status-tag ${existing.saved ? 'saved' : 'unsaved'}" id="status-${b.id}">${existing.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
           <td><div style="display:flex; gap:6px;">
             <button class="btn btn-primary" onclick="window.saveRow(${b.id})">Simpan</button>
@@ -518,7 +518,7 @@
     const keb = Number(row.querySelector('[data-field="kebutuhan"]').value) || 0;
     const hpp = Number(row.dataset.hpp) || 0;
     const el = document.getElementById('estimasi-'+id);
-    if (el) el.textContent = 'Rp ' + (keb*hpp).toLocaleString('id-ID');
+    if (el) el.textContent = 'Rp ' + window.formatRp(keb * hpp);
   };
 
   window.saveRow = async function(id) {
