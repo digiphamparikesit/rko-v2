@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring RKO — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
+  <style>
+    :root {
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--green-deep); color: #fff; padding: 18px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+    select option { color: #14201A; }
+
+    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+    .stat-card .num { font-size: 22px; font-weight: 700; line-height: 1.1; }
+    .stat-card .lbl { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.3; }
+    .stat-card.merah { border-color: #F3D0C4; background: #FDF6F3; }
+    .stat-card.kuning { border-color: #FAE5B8; background: #FEFAF0; }
+    .stat-card.hijau { border-color: #C4E8D2; background: #F1FAF4; }
+
+    .layout-split { display: grid; grid-template-columns: 1fr 3.5fr; gap: 16px; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
+    .side-panel { padding: 18px 20px; }
+    .side-title { font-size: 14px; margin: 0 0 12px; }
+    .info-note { background: var(--green-soft); color: var(--green-deep); padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .field input, .field select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1000px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num { text-align: right; }
+
+    .barang-nama { font-weight: 600; font-size: 13px; }
+    .barang-info { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .satuan-beli { color: var(--amber); font-weight: 600; font-size: 11px; }
+
+    .badge-status { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+    .badge-status.rko { background: #F1F1EE; color: var(--text-muted); }
+    .badge-status.po { background: #E9EEFB; color: #3B5BDB; }
+    .badge-status.datang { background: #FDF1E0; color: var(--amber); }
+    .badge-status.sebagian { background: #FBEAE7; color: var(--coral); }
+    .badge-status.selesai { background: var(--green-soft); color: var(--green-mid); }
+
+    .progress-bar { height: 6px; background: #EEF2EE; border-radius: 999px; overflow: hidden; display: inline-block; width: 70px; vertical-align: middle; margin-right: 6px; }
+    .progress-bar .fill { height: 100%; background: var(--green-mid); }
+    .progress-bar .fill.warn { background: var(--amber); }
+    .progress-bar .fill.danger { background: var(--coral); }
+
+    .btn { padding: 6px 12px; border: none; border-radius: 7px; font-weight: 600; font-size: 11.5px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-primary { background: var(--green-mid); color: #fff; }
+    .btn-primary:hover { background: #128a3e; }
+    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
+    .btn-warning { background: var(--amber); color: #fff; }
+    .btn-warning:hover { background: #B45309; }
+
+    .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); }
+    .pager button { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 12.5px; }
+    .pager button:disabled { opacity: 0.4; cursor: default; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13.5px; }
+    .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 40px 0; }
+
+    @media (max-width: 1100px) {
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 860px) {
+      .layout-split { grid-template-columns: 1fr; }
+      .left-col { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Monitoring RKO — status pelayanan per barang</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="bulanSelect"></select>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <section class="stat-grid" id="statGrid">
+    <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl">Total barang di-RKO</div></div>
+    <div class="stat-card merah"><div class="num" id="statRko">-</div><div class="lbl">Belum ada PO</div></div>
+    <div class="stat-card kuning"><div class="num" id="statPo">-</div><div class="lbl">PO sudah dibuat</div></div>
+    <div class="stat-card kuning"><div class="num" id="statDatang">-</div><div class="lbl">Barang datang, belum mutasi</div></div>
+    <div class="stat-card hijau"><div class="num" id="statSelesai">-</div><div class="lbl">Sudah dilayani penuh</div></div>
+  </section>
+
+  <div class="layout-split">
+    <aside class="left-col">
+      <div class="panel side-panel">
+        <h2 class="side-title">Filter</h2>
+        <div class="field">
+          <label>Cari nama barang</label>
+          <input type="text" id="searchBox" placeholder="Cari nama barang...">
+        </div>
+        <div class="field" id="fieldRuangan">
+          <label>Ruangan</label>
+          <select id="filterRuangan">
+            <option value="">Semua ruangan</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status pelayanan</label>
+          <select id="filterStatus">
+            <option value="">Semua status</option>
+            <option value="RKO">Belum ada PO</option>
+            <option value="PO">PO sudah dibuat</option>
+            <option value="DATANG">Barang datang, belum mutasi</option>
+            <option value="SEBAGIAN">Sebagian dimutasi</option>
+            <option value="SELESAI">Sudah dilayani penuh</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel side-panel" id="panelInfoUser" style="display:none;">
+        <h2 class="side-title">Info</h2>
+        <div class="info-note">
+          Halaman ini menampilkan status RKO ruangan Anda. Kalau status masih <strong>Belum ada PO</strong> atau <strong>PO sudah dibuat</strong>, berarti barang belum dikirim ke ruangan.
+        </div>
+      </div>
+    </aside>
+
+    <section class="right-col">
+      <div class="panel">
+        <table>
+          <thead id="tableHead">
+            <!-- Header diisi oleh JS -->
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="8" class="empty-state">Memuat data...</td></tr>
+          </tbody>
+        </table>
+        <div class="pager">
+          <span id="pagerInfo">-</span>
+          <div>
+            <button id="btnPrev" onclick="window.changePage(-1)">&larr; Sebelumnya</button>
+            <button id="btnNext" onclick="window.changePage(1)">Berikutnya &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: [
+        'USER',
+        'PETUGAS_MUTASI_OBAT',
+        'PETUGAS_MUTASI_BMHP',
+        'KOORDINATOR_LOGISTIK_FARMASI',
+        'KEPALA_INSTALASI_FARMASI',
+        'ADMIN',
+        'SUPER_ADMIN'
+      ]
+    });
+    if (!user) return;
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+    initData();
+  })();
+
+  // ============================================================
+  //  ROLE HELPER
+  // ============================================================
+  function isUserRuangan() {
+    return window.currentUser.role === 'USER';
+  }
+
+  function getGudangFilter() {
+    const role = window.currentUser.role;
+    if (role === 'PETUGAS_MUTASI_OBAT') return 'OBAT';
+    if (role === 'PETUGAS_MUTASI_BMHP') return 'BMHP';
+    return 'ALL';
+  }
+
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
+  let barangMap = {};
+  let ruanganMap = {};
+  let allRows = [];      // hasil agregat per barang
+  let filtered = [];
+  let page = 1;
+  const PAGE_SIZE = 15;
+
+  // ============================================================
+  //  PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    namaBulan.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1; opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bulanSel.appendChild(opt);
+    });
+    for (let y = curTahun - 2; y <= curTahun + 2; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tahunSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  async function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+
+    // Tampilkan info khusus user
+    if (isUserRuangan()) {
+      document.getElementById('panelInfoUser').style.display = 'block';
+      document.getElementById('fieldRuangan').style.display = 'none';
+    }
+
+    await loadRuanganOptions();
+
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
+    document.getElementById('filterStatus').addEventListener('change', () => { page = 1; applyFilter(); });
+    document.getElementById('filterRuangan').addEventListener('change', () => { page = 1; applyFilter(); });
+
+    renderTableHead();
+    loadAllData();
+  }
+
+  async function loadRuanganOptions() {
+    const sel = document.getElementById('filterRuangan');
+    try {
+      const ruangan = await fetchAllRows('master_ruangan', q => q.order('nama_ruangan'));
+      const aktif = ruangan.filter(r => r.aktif !== false);
+
+      if (isUserRuangan()) {
+        const myId = window.currentUser.ruangan_id;
+        const my = aktif.find(r => String(r.id) === String(myId));
+        if (my) {
+          sel.innerHTML = `<option value="${my.id}" selected>${escapeHtml(my.nama_ruangan)}</option>`;
+        } else {
+          sel.innerHTML = '<option value="">(Anda belum terdaftar di ruangan manapun)</option>';
+        }
+        sel.disabled = true;
+      } else {
+        sel.innerHTML = '<option value="">Semua ruangan</option>' +
+          aktif.map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // ============================================================
+  //  TABLE HEAD — beda untuk USER vs petugas
+  // ============================================================
+  function renderTableHead() {
+    const thead = document.getElementById('tableHead');
+    if (isUserRuangan()) {
+      thead.innerHTML = `<tr>
+        <th>Barang</th>
+        <th class="num">RKO (Box)</th>
+        <th class="num">Diterima (Box)</th>
+        <th class="num">Sisa</th>
+        <th>Capaian</th>
+        <th>Status</th>
+      </tr>`;
+    } else {
+      thead.innerHTML = `<tr>
+        <th>Barang</th>
+        <th class="num">Ruangan</th>
+        <th class="num">Total RKO (Box)</th>
+        <th class="num">Dimutasi (Box)</th>
+        <th class="num">Sisa</th>
+        <th>Capaian</th>
+        <th>Status</th>
+        <th>Aksi</th>
+      </tr>`;
+    }
+  }
+
+  // ============================================================
+  //  LOAD DATA — agregasi
+  // ============================================================
+  async function loadAllData() {
+    const bulan = Number(document.getElementById('bulanSelect').value);
+    const tahun = Number(document.getElementById('tahunSelect').value);
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="loading-note">Memuat data...</td></tr>';
+
+    try {
+      const gudangFilter = getGudangFilter();
+
+      const [kebutuhanData, barangData, ruanganData, pembelianData, penerimaanData, mutasiData, mutasiDetailData] = await Promise.all([
+        fetchAllRows('kebutuhan', q => q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)),
+        fetchAllRows('master_barang'),
+        fetchAllRows('master_ruangan'),
+        fetchAllRows('pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('penerimaan', q => q.eq('kondisi', 'BAIK')),
+        fetchAllRows('mutasi_ruangan', q => q.eq('bulan', bulan).eq('tahun', tahun).eq('status', 'AKTIF')),
+        fetchAllRows('mutasi_ruangan_detail')
+      ]);
+
+      barangMap = {};
+      barangData.forEach(b => { barangMap[b.id] = b; });
+      ruanganMap = {};
+      ruanganData.forEach(r => { ruanganMap[r.id] = r; });
+
+      // Kumpulkan pembelian_ids & mutasi_ids periode ini
+      const pembelianIds = new Set(pembelianData.map(p => p.id));
+      const mutasiIds = new Set(mutasiData.map(m => m.id));
+
+      // Kebutuhan: filter per gudang / per ruangan
+      const ruanganFilter = document.getElementById('filterRuangan').value;
+      let kebutuhanFiltered = kebutuhanData;
+      if (ruanganFilter) {
+        kebutuhanFiltered = kebutuhanFiltered.filter(k => String(k.ruangan_id) === String(ruanganFilter));
+      } else if (isUserRuangan()) {
+        kebutuhanFiltered = kebutuhanFiltered.filter(k => String(k.ruangan_id) === String(window.currentUser.ruangan_id));
+      }
+
+      // Filter per gudang
+      if (gudangFilter !== 'ALL') {
+        kebutuhanFiltered = kebutuhanFiltered.filter(k => {
+          const b = barangMap[k.barang_id];
+          return b && b.gudang_penyimpanan === gudangFilter;
+        });
+      }
+
+      // Agregat per barang
+      const perBarang = {};
+
+      kebutuhanFiltered.forEach(k => {
+        const bid = k.barang_id;
+        if (!perBarang[bid]) {
+          const barang = barangMap[bid] || {};
+          perBarang[bid] = {
+            barang_id: bid,
+            nama_barang: barang.nama_barang || 'Barang tidak dikenal',
+            satuan_beli: barang.satuan_beli || 'Box',
+            total_rko: 0,
+            ruanganSet: new Set(),
+            total_dimutasi: 0,
+            pembelian_list: [],
+            penerimaan_belum_mutasi: 0
+          };
+        }
+        perBarang[bid].total_rko += Number(k.kebutuhan || 0);
+        perBarang[bid].ruanganSet.add(k.ruangan_id);
+      });
+
+      // Mutasi detail (hanya untuk mutasi periode ini & status AKTIF)
+      mutasiDetailData.forEach(d => {
+        if (!mutasiIds.has(d.mutasi_id)) return;
+        const m = mutasiData.find(x => x.id === d.mutasi_id);
+        if (!m) return;
+        const bid = m.barang_id;
+        if (!perBarang[bid]) return;
+        // Kalau filter ruangan aktif, hitung hanya untuk ruangan itu
+        if (ruanganFilter && String(d.ruangan_id) !== String(ruanganFilter)) return;
+        if (isUserRuangan() && String(d.ruangan_id) !== String(window.currentUser.ruangan_id)) return;
+        perBarang[bid].total_dimutasi += Number(d.qty_dialokasikan || 0);
+      });
+
+      // Pembelian & penerimaan
+      pembelianData.forEach(p => {
+        const bid = p.barang_id;
+        if (!perBarang[bid]) return;
+        perBarang[bid].pembelian_list.push(p);
+      });
+
+      penerimaanData.forEach(pr => {
+        if (!pembelianIds.has(pr.pembelian_id)) return;
+        if (pr.sudah_dimutasi === true) return;
+        const bid = pr.barang_id;
+        if (!perBarang[bid]) return;
+        perBarang[bid].penerimaan_belum_mutasi += 1;
+      });
+
+      // Tentukan status per barang
+      allRows = Object.values(perBarang).map(row => {
+        const capaian = row.total_rko > 0
+          ? Math.round((row.total_dimutasi / row.total_rko) * 100)
+          : 0;
+        const sisa = Math.max(0, row.total_rko - row.total_dimutasi);
+
+        let status = 'RKO';
+        if (row.total_dimutasi >= row.total_rko && row.total_rko > 0) {
+          status = 'SELESAI';
+        } else if (row.total_dimutasi > 0) {
+          status = 'SEBAGIAN';
+        } else if (row.penerimaan_belum_mutasi > 0) {
+          status = 'DATANG';
+        } else if (row.pembelian_list.length > 0) {
+          status = 'PO';
+        }
+
+        return {
+          barang_id: row.barang_id,
+          nama_barang: row.nama_barang,
+          satuan_beli: row.satuan_beli,
+          total_rko: row.total_rko,
+          total_dimutasi: row.total_dimutasi,
+          sisa: sisa,
+          capaian: capaian,
+          jumlah_ruangan: row.ruanganSet.size,
+          pembelian_list: row.pembelian_list,
+          status: status
+        };
+      });
+
+      allRows.sort((a, b) => {
+        const order = { RKO: 0, PO: 1, DATANG: 2, SEBAGIAN: 3, SELESAI: 4 };
+        const oa = order[a.status] ?? 9;
+        const ob = order[b.status] ?? 9;
+        if (oa !== ob) return oa - ob;
+        return String(a.nama_barang).localeCompare(String(b.nama_barang));
+      });
+
+      updateStats();
+      applyFilter();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('tableBody').innerHTML =
+        '<tr><td colspan="8" class="empty-state">Gagal memuat data: ' + escapeHtml(err.message) + '</td></tr>';
+    }
+  }
+
+  function updateStats() {
+    const total = allRows.length;
+    const rko = allRows.filter(r => r.status === 'RKO').length;
+    const po = allRows.filter(r => r.status === 'PO').length;
+    const datang = allRows.filter(r => r.status === 'DATANG').length;
+    const selesai = allRows.filter(r => r.status === 'SELESAI').length;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statRko').textContent = rko;
+    document.getElementById('statPo').textContent = po;
+    document.getElementById('statDatang').textContent = datang;
+    document.getElementById('statSelesai').textContent = selesai;
+  }
+
+  // ============================================================
+  //  FILTER & RENDER
+  // ============================================================
+  function applyFilter() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+
+    filtered = allRows.filter(r => {
+      const matchQ = !q || String(r.nama_barang).toLowerCase().includes(q);
+      const matchS = !status || r.status === status;
+      return matchQ && matchS;
+    });
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    const start = (page - 1) * PAGE_SIZE;
+    const items = filtered.slice(start, start + PAGE_SIZE);
+
+    if (items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Tidak ada data RKO untuk periode ini.</td></tr>';
+      updatePager();
+      return;
+    }
+
+    tbody.innerHTML = items.map(r => {
+      const badge = statusBadge(r.status);
+      const barFill = r.capaian >= 100 ? '' : (r.capaian >= 50 ? 'warn' : 'danger');
+
+      if (isUserRuangan()) {
+        return `<tr>
+          <td>
+            <div class="barang-nama">${escapeHtml(r.nama_barang)}</div>
+            <div class="barang-info">Satuan: <span class="satuan-beli">${escapeHtml(r.satuan_beli)}</span></div>
+          </td>
+          <td class="num">${r.total_rko.toLocaleString('id-ID')}</td>
+          <td class="num">${r.total_dimutasi.toLocaleString('id-ID')}</td>
+          <td class="num">${r.sisa.toLocaleString('id-ID')}</td>
+          <td>
+            <span class="progress-bar"><span class="fill ${barFill}" style="width:${Math.min(100, r.capaian)}%"></span></span>
+            ${r.capaian}%
+          </td>
+          <td>${badge}</td>
+        </tr>`;
+      } else {
+        return `<tr>
+          <td>
+            <div class="barang-nama">${escapeHtml(r.nama_barang)}</div>
+            <div class="barang-info">Satuan: <span class="satuan-beli">${escapeHtml(r.satuan_beli)}</span></div>
+          </td>
+          <td class="num">${r.jumlah_ruangan}</td>
+          <td class="num">${r.total_rko.toLocaleString('id-ID')}</td>
+          <td class="num">${r.total_dimutasi.toLocaleString('id-ID')}</td>
+          <td class="num">${r.sisa.toLocaleString('id-ID')}</td>
+          <td>
+            <span class="progress-bar"><span class="fill ${barFill}" style="width:${Math.min(100, r.capaian)}%"></span></span>
+            ${r.capaian}%
+          </td>
+          <td>${badge}</td>
+          <td>${aksiTombol(r)}</td>
+        </tr>`;
+      }
+    }).join('');
+
+    updatePager();
+  }
+
+  function statusBadge(status) {
+    const map = {
+      RKO:       '<span class="badge-status rko">Belum ada PO</span>',
+      PO:        '<span class="badge-status po">PO sudah dibuat</span>',
+      DATANG:    '<span class="badge-status datang">Barang datang, belum mutasi</span>',
+      SEBAGIAN:  '<span class="badge-status sebagian">Sebagian dimutasi</span>',
+      SELESAI:   '<span class="badge-status selesai">Sudah dilayani penuh</span>'
+    };
+    return map[status] || '';
+  }
+
+  function aksiTombol(r) {
+    if (r.status === 'RKO') {
+      return '<a class="btn btn-primary" href="pembelian.html">Buat PO</a>';
+    } else if (r.status === 'PO') {
+      const adaDikirim = r.pembelian_list.some(p => p.status === 'DIKIRIM' || p.status === 'DITERIMA_SEBAGIAN');
+      if (adaDikirim) {
+        return '<a class="btn btn-warning" href="penerimaan.html">Terima</a>';
+      }
+      return '<a class="btn btn-secondary" href="pembelian.html">Lihat PO</a>';
+    } else if (r.status === 'DATANG' || r.status === 'SEBAGIAN') {
+      return '<a class="btn btn-primary" href="mutasi-barang.html">Mutasi</a>';
+    }
+    return '<span style="color:var(--text-muted); font-size:11px;">—</span>';
+  }
+
+  function updatePager() {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    document.getElementById('pagerInfo').textContent = `${filtered.length} barang · Halaman ${page} dari ${totalPages}`;
+    document.getElementById('btnPrev').disabled = page <= 1;
+    document.getElementById('btnNext').disabled = page >= totalPages;
+  }
+
+  window.changePage = function(delta) { page += delta; renderTable(); };
+</script>
+</body>
+</html>
