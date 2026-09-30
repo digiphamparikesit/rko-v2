@@ -81,7 +81,7 @@
     .selisih-card .info strong { color: var(--coral); }
     .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
 
-    /* Search dropdown distributor */
+    /* Search dropdown distributor & barang */
     .dist-item { padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border); }
     .dist-item:last-child { border-bottom: none; }
     .dist-item:hover, .dist-item.active { background: var(--green-soft); color: var(--green-deep); }
@@ -179,7 +179,15 @@
     <h2>Buat PO Baru</h2>
     <div id="formInfo" style="display:none;"></div>
     <div class="field"><label>No. PO</label><input type="text" id="fNoPo" placeholder="Nomor PO dari sistem RS"></div>
-    <div class="field"><label>Barang</label><select id="fBarang"><option value="">Pilih barang...</option></select></div>
+    
+    <!-- MENGUBAH BARANG MENJADI INPUT SEARCHING -->
+    <div class="field">
+      <label>Barang</label>
+      <input type="text" id="fBarangInput" placeholder="Ketik nama barang..." autocomplete="off">
+      <div id="barangDropdown" style="display:none; max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.1); position:relative; z-index:10; margin-top:2px;"></div>
+      <input type="hidden" id="fBarang">
+    </div>
+
     <div class="field">
       <label>Distributor</label>
       <input type="text" id="fDistributor" placeholder="Ketik nama distributor..." autocomplete="off">
@@ -294,6 +302,7 @@
   let pembelianList = [];
   let filteredList = [];
   let uploadRows = [];
+  let barangRkoList = []; // Untuk menyimpan data barang yang akan ditampilkan di dropdown pencarian
   window._selisihData = null;
 
   // ============================================================
@@ -409,35 +418,115 @@
       totalRKOPerBarang[k.barang_id] = (totalRKOPerBarang[k.barang_id] || 0) + Number(k.kebutuhan);
     });
 
-    const bSel = document.getElementById('fBarang');
-    bSel.innerHTML = '<option value="">Pilih barang...</option>';
+    // Hitung berapa yang sudah di-PO untuk barang tersebut di bulan & tahun yang sama
+    const orderedQtyPerBarang = {};
+    pembelianList.forEach(p => {
+      orderedQtyPerBarang[p.barang_id] = (orderedQtyPerBarang[p.barang_id] || 0) + Number(p.qty_pesan || 0);
+    });
 
     const rencanaByBarang = {};
     rencanaList.forEach(r => { rencanaByBarang[r.barang_id] = r; });
 
+    // Bangun data untuk dropdown pencarian barang
+    barangRkoList = [];
     barangIds.forEach(id => {
       const barang = barangMap[id];
       if (!barang) return;
       const rencana = rencanaByBarang[id];
       const totalRKO = totalRKOPerBarang[id] || 0;
-      const satuanBeli = barang.satuan_beli || 'Box';
-
-      const opt = document.createElement('option');
-      opt.value = id;
-      opt.dataset.totalRko = totalRKO;
-      if (rencana && rencana.distributor_id) {
-        opt.dataset.distributor = rencana.distributor_id;
+      const orderedQty = orderedQtyPerBarang[id] || 0;
+      const sisaRKO = Math.max(0, totalRKO - orderedQty); // Sisa RKO yang belum di-PO
+      
+      // Hanya masukkan ke list jika masih ada sisa RKO yang perlu dibeli
+      if (sisaRKO > 0) {
+        barangRkoList.push({
+          id: id,
+          nama_barang: barang.nama_barang,
+          satuan_beli: barang.satuan_beli || 'Box',
+          sisaRKO: sisaRKO,
+          distributor_id: rencana ? rencana.distributor_id : null
+        });
       }
-      opt.textContent = `${barang.nama_barang} (total RKO: ${totalRKO} ${satuanBeli})`;
-      bSel.appendChild(opt);
     });
 
-    // Setup distributor pencarian
+    // ============================================================
+    //  SETUP PENCARIAN BARANG
+    // ============================================================
+    const bInput = document.getElementById('fBarangInput');
+    const bDropdown = document.getElementById('barangDropdown');
+    
+    // Hapus listener lama (clone node trick)
+    const newBInput = bInput.cloneNode(true);
+    bInput.parentNode.replaceChild(newBInput, bInput);
+    const bInputFresh = document.getElementById('fBarangInput');
+
+    function renderBarangOptions(query) {
+      const q = String(query || '').toLowerCase().trim();
+      let hasil = barangRkoList;
+      if (q) {
+        hasil = barangRkoList.filter(b =>
+          String(b.nama_barang || '').toLowerCase().includes(q)
+        );
+      }
+      hasil = hasil.slice(0, 50); // Batasi 50 hasil agar tidak berat
+
+      if (hasil.length === 0) {
+        bDropdown.innerHTML = '<div style="padding:10px 12px; font-size:12.5px; color:var(--text-muted);">Tidak ditemukan.</div>';
+        bDropdown.style.display = 'block';
+        return;
+      }
+      bDropdown.innerHTML = hasil.map(b => `
+        <div class="dist-item" data-id="${b.id}" data-nama="${escapeHtml(b.nama_barang)}" data-rko="${b.sisaRKO}" data-dist="${b.distributor_id || ''}">
+          ${escapeHtml(b.nama_barang)}
+          <span style="font-size:11px; color:var(--text-muted);">(Sisa RKO: ${b.sisaRKO} ${b.satuan_beli})</span>
+        </div>
+      `).join('');
+      bDropdown.style.display = 'block';
+
+      bDropdown.querySelectorAll('.dist-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.getElementById('fBarangInput').value = el.dataset.nama;
+          document.getElementById('fBarang').value = el.dataset.id;
+          bDropdown.style.display = 'none';
+
+          // Auto-pilih distributor
+          if (el.dataset.dist) {
+            const dId = Number(el.dataset.dist);
+            const dist = distributorList.find(x => Number(x.id) === dId);
+            if (dist) {
+              document.getElementById('fDistributor').value = dist.nama_distributor;
+              document.getElementById('fDistributorId').value = dist.id;
+            }
+          }
+          // Auto-isi Qty dengan Sisa RKO
+          if (el.dataset.rko) {
+            document.getElementById('fQty').value = el.dataset.rko;
+          }
+        });
+      });
+    }
+
+    bInputFresh.addEventListener('input', () => {
+      document.getElementById('fBarang').value = '';
+      renderBarangOptions(bInputFresh.value);
+    });
+
+    bInputFresh.addEventListener('focus', () => {
+      renderBarangOptions(bInputFresh.value);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!bInputFresh.contains(e.target) && !bDropdown.contains(e.target)) {
+        bDropdown.style.display = 'none';
+      }
+    });
+
+    // ============================================================
+    //  SETUP PENCARIAN DISTRIBUTOR
+    // ============================================================
     const distInput = document.getElementById('fDistributor');
     const distDropdown = document.getElementById('distDropdown');
-    const distHidden = document.getElementById('fDistributorId');
-
-    // Hapus listener lama (clone node trick)
+    
     const newInput = distInput.cloneNode(true);
     distInput.parentNode.replaceChild(newInput, distInput);
     const distInputFresh = document.getElementById('fDistributor');
@@ -486,23 +575,6 @@
     document.addEventListener('click', (e) => {
       if (!distInputFresh.contains(e.target) && !distDropdown.contains(e.target)) {
         distDropdown.style.display = 'none';
-      }
-    });
-
-    // Auto-pilih distributor dari barang terpilih
-    bSel.addEventListener('change', () => {
-      const selected = bSel.options[bSel.selectedIndex];
-      if (!selected) return;
-      if (selected.dataset.distributor) {
-        const dId = Number(selected.dataset.distributor);
-        const dist = distributorList.find(x => Number(x.id) === dId);
-        if (dist) {
-          document.getElementById('fDistributor').value = dist.nama_distributor;
-          document.getElementById('fDistributorId').value = dist.id;
-        }
-      }
-      if (selected.dataset.totalRko) {
-        document.getElementById('fQty').value = selected.dataset.totalRko;
       }
     });
   }
@@ -582,8 +654,13 @@
     document.getElementById('formMsg').textContent = '';
     document.getElementById('fNoPo').value = '';
     document.getElementById('fNoPo').readOnly = false;
-    document.getElementById('fBarang').disabled = false;
+    
+    // Reset input barang searching
+    document.getElementById('fBarangInput').value = '';
+    document.getElementById('fBarangInput').disabled = false;
     document.getElementById('fBarang').value = '';
+    document.getElementById('barangDropdown').style.display = 'none';
+
     document.getElementById('fDistributor').value = '';
     document.getElementById('fDistributorId').value = '';
     document.getElementById('distDropdown').style.display = 'none';
@@ -599,6 +676,20 @@
   };
 
   window.closeForm = function() {
+    document.getElementById('fNoPo').readOnly = false;
+    document.getElementById('fNoPo').placeholder = 'Nomor PO dari sistem RS';
+    
+    // Reset input barang searching
+    document.getElementById('fBarangInput').disabled = false;
+    document.getElementById('fBarangInput').value = '';
+    document.getElementById('fBarang').value = '';
+    document.getElementById('barangDropdown').style.display = 'none';
+
+    document.getElementById('formInfo').style.display = 'none';
+    const simpanBtn = document.querySelector('#modalOverlay .btn-primary');
+    simpanBtn.textContent = 'Simpan PO';
+    simpanBtn.onclick = window.submitForm;
+    document.querySelector('#modalOverlay .modal h2').textContent = 'Buat PO Baru';
     document.getElementById('modalOverlay').classList.remove('show');
   };
 
@@ -611,7 +702,7 @@
     const msg = document.getElementById('formMsg');
 
     if (!noPo) { msg.textContent = 'Isi No. PO.'; return; }
-    if (!barangId) { msg.textContent = 'Pilih barang.'; return; }
+    if (!barangId) { msg.textContent = 'Pilih barang dari daftar pencarian.'; return; }
     if (!distNamaKetik) { msg.textContent = 'Distributor wajib diisi.'; return; }
     if (!distId) { msg.textContent = 'Pilih distributor dari daftar pencarian.'; return; }
     if (qty <= 0) { msg.textContent = 'Qty > 0.'; return; }
@@ -839,8 +930,12 @@
     document.getElementById('fNoPo').value = '';
     document.getElementById('fNoPo').placeholder = 'Otomatis: PO-RE-...';
     document.getElementById('fNoPo').readOnly = true;
+    
+    // Set input barang searching
+    document.getElementById('fBarangInput').value = namaBarang;
+    document.getElementById('fBarangInput').disabled = true;
     document.getElementById('fBarang').value = barangId;
-    document.getElementById('fBarang').disabled = true;
+    document.getElementById('barangDropdown').style.display = 'none';
 
     const distObj = distributorList.find(d => String(d.id) === String(distributorId));
     document.getElementById('fDistributor').value = distObj ? distObj.nama_distributor : '';
@@ -941,19 +1036,6 @@
       msg.textContent = '❌ Gagal: ' + err.message;
       msg.style.color = 'var(--coral)';
     }
-  };
-
-  const _origCloseForm = window.closeForm;
-  window.closeForm = function() {
-    document.getElementById('fNoPo').readOnly = false;
-    document.getElementById('fNoPo').placeholder = 'Nomor PO dari sistem RS';
-    document.getElementById('fBarang').disabled = false;
-    document.getElementById('formInfo').style.display = 'none';
-    const simpanBtn = document.querySelector('#modalOverlay .btn-primary');
-    simpanBtn.textContent = 'Simpan PO';
-    simpanBtn.onclick = window.submitForm;
-    document.querySelector('#modalOverlay .modal h2').textContent = 'Buat PO Baru';
-    _origCloseForm();
   };
 
   // ============================================================
