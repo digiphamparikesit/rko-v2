@@ -278,8 +278,8 @@
       if (r.status === 'LUNAS') lunas += rp;
       else { belum += rp; jumlahBelum++; }
     });
-    document.getElementById('statBelumBayar').textContent = 'Rp ' + belum.toLocaleString('id-ID');
-    document.getElementById('statLunas').textContent = 'Rp ' + lunas.toLocaleString('id-ID');
+    document.getElementById('statBelumBayar').textContent = 'Rp ' + window.formatRp(belum);
+    document.getElementById('statLunas').textContent = 'Rp ' + window.formatRp(lunas);
     document.getElementById('statJumlahTransaksi').textContent = jumlahBelum.toLocaleString('id-ID');
   }
 
@@ -306,7 +306,7 @@
       return `<tr data-barang-id="${r.barang_id}">
         <td>${escapeHtml(b ? b.nama_barang : 'Barang tidak dikenal')}</td>
         <td>${escapeHtml(dist ? dist.nama_distributor : '-')}</td>
-        <td class="num">Rp ${Number(r.rencana_rp || 0).toLocaleString('id-ID')}</td>
+        <td class="num">Rp ${window.formatRp(r.rencana_rp)}</td>
         <td><input type="number" class="qty" data-field="qty" value="${existing.qty}" onchange="window.markUnsaved(${r.barang_id})"></td>
         <td><input type="number" class="qty" data-field="rp" value="${existing.rp}" style="width:110px;" onchange="window.markUnsaved(${r.barang_id})"></td>
         <td><input type="number" class="qty" data-field="ppn" value="${existing.ppn}" onchange="window.markUnsaved(${r.barang_id})"></td>
