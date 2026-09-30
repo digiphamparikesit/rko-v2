@@ -593,19 +593,26 @@
   }
 
   function aksiTombol(r) {
-    if (r.status === 'RKO') {
-      return '<a class="btn btn-primary" href="pembelian.html">Buat PO</a>';
-    } else if (r.status === 'PO') {
-      const adaDikirim = r.pembelian_list.some(p => p.status === 'DIKIRIM' || p.status === 'DITERIMA_SEBAGIAN');
-      if (adaDikirim) {
-        return '<a class="btn btn-warning" href="penerimaan.html">Terima</a>';
-      }
-      return '<a class="btn btn-secondary" href="pembelian.html">Lihat PO</a>';
-    } else if (r.status === 'DATANG' || r.status === 'SEBAGIAN') {
-      return '<a class="btn btn-primary" href="mutasi-barang.html">Mutasi</a>';
+  let tombolUtama = '';
+  if (r.status === 'RKO') {
+    tombolUtama = '<a class="btn btn-primary" href="pembelian.html">Buat PO</a>';
+  } else if (r.status === 'PO') {
+    const adaDikirim = r.pembelian_list.some(p => p.status === 'DIKIRIM' || p.status === 'DITERIMA_SEBAGIAN');
+    if (adaDikirim) {
+      tombolUtama = '<a class="btn btn-warning" href="penerimaan.html">Terima</a>';
+    } else {
+      tombolUtama = '<a class="btn btn-secondary" href="pembelian.html">Lihat PO</a>';
     }
-    return '<span style="color:var(--text-muted); font-size:11px;">—</span>';
+  } else if (r.status === 'DATANG' || r.status === 'SEBAGIAN') {
+    tombolUtama = '<a class="btn btn-primary" href="mutasi-barang.html">Mutasi</a>';
+  } else {
+    tombolUtama = '<span style="color:var(--text-muted); font-size:11px;">—</span>';
   }
+
+  const tombolRiwayat = `<a class="btn btn-secondary" style="margin-left:6px;" href="riwayat-barang.html?id=${r.barang_id}">Riwayat</a>`;
+
+  return tombolUtama + tombolRiwayat;
+}
 
   function updatePager() {
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
