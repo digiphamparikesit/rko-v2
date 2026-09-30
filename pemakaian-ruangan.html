@@ -460,11 +460,20 @@
     document.getElementById('tableBody').innerHTML = '<tr><td colspan="5" class="empty-state">Memuat data...</td></tr>';
 
     try {
-      const [barangData, ruanganData, pemakaianData] = await Promise.all([
-        fetchAllRows('master_barang'),
-        fetchAllRows('master_ruangan'),
-        fetchAllRows('pemakaian_ruangan', q => q.eq('bulan', bulan).eq('tahun', tahun).order('id', { ascending: false }))
-      ]);
+  const isUserRuangan = window.currentUser.role === 'USER';
+  const myRuanganId = window.currentUser.ruangan_id;
+
+  const [barangData, ruanganData, pemakaianData] = await Promise.all([
+    fetchAllRows('master_barang'),
+    fetchAllRows('master_ruangan'),
+    fetchAllRows('pemakaian_ruangan', q => {
+      let query = q.eq('bulan', bulan).eq('tahun', tahun).order('id', { ascending: false });
+      if (isUserRuangan && myRuanganId) {
+        query = query.eq('ruangan_id', myRuanganId);
+      }
+      return query;
+    })
+  ]);
 
       barangMap = {};
       barangByName = {};
@@ -801,19 +810,31 @@
   //  INPUT MANUAL
   // ============================================================
   window.openManualModal = function() {
-    const rSel = document.getElementById('mRuangan');
+  const rSel = document.getElementById('mRuangan');
+  const isUserRuangan = window.currentUser.role === 'USER';
+  const myRuanganId = window.currentUser.ruangan_id;
+
+  if (isUserRuangan && myRuanganId) {
+    const r = ruanganList.find(x => String(x.id) === String(myRuanganId));
+    rSel.innerHTML = r ? `<option value="${r.id}" selected>${escapeHtml(r.nama_ruangan)}</option>` : '<option value="">(ruangan tidak ditemukan)</option>';
+    rSel.disabled = true;
+    setTimeout(() => { rSel.dispatchEvent(new Event('change')); }, 50);
+  } else {
     rSel.innerHTML = '<option value="">Pilih ruangan...</option>' +
       ruanganList.filter(r => r.aktif !== false)
         .map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
+    rSel.disabled = false;
     document.getElementById('mBarang').innerHTML = '<option value="">Pilih ruangan dulu...</option>';
-    document.getElementById('mInfoBarang').textContent = '';
-    document.getElementById('mSatuanInfo').textContent = '';
-    document.getElementById('mQty').value = '';
-    document.getElementById('mTanggal').value = '';
-    document.getElementById('mCatatan').value = '';
-    document.getElementById('manualMsg').textContent = '';
-    document.getElementById('modalManual').classList.add('show');
-  };
+  }
+
+  document.getElementById('mInfoBarang').textContent = '';
+  document.getElementById('mSatuanInfo').textContent = '';
+  document.getElementById('mQty').value = '';
+  document.getElementById('mTanggal').value = '';
+  document.getElementById('mCatatan').value = '';
+  document.getElementById('manualMsg').textContent = '';
+  document.getElementById('modalManual').classList.add('show');
+};
 
   window.closeManualModal = function() {
     document.getElementById('modalManual').classList.remove('show');
