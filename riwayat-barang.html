@@ -34,13 +34,11 @@
     a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
     a.back:hover { color: #fff; }
 
-    main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+    main { max-width: 1400px; margin: 0 auto; padding: 24px 20px 60px; }
 
     .card-info {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 14px; padding: 20px 24px; margin-bottom: 16px;
-      display: flex; justify-content: space-between; align-items: flex-start;
-      flex-wrap: wrap; gap: 16px;
     }
     .card-info h1 { font-size: 18px; margin: 0 0 6px; }
     .card-info .meta { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
@@ -49,11 +47,15 @@
     .filter-bar {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 14px; padding: 14px 20px; margin-bottom: 16px;
-      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+      display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
     }
+    .filter-bar .filter-item { display: flex; align-items: center; gap: 8px; }
     .filter-bar label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-    .filter-bar select, .filter-bar input {
+    .filter-bar select {
       padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
+    }
+    .filter-bar .info-satuan {
+      margin-left: auto; font-size: 12px; color: var(--text-muted);
     }
 
     .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
@@ -66,13 +68,54 @@
     th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
     th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
     td.num { text-align: right; }
-    tr.ringkasan { background: #FAFBFA; font-weight: 600; }
+
+    tr.row-bulan { cursor: pointer; transition: background 0.1s; }
+    tr.row-bulan:hover { background: #FAFBFA; }
+    tr.row-bulan.open { background: #F0F8F3; }
+    tr.row-bulan td:first-child::before {
+      content: '▸ ';
+      display: inline-block;
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-right: 4px;
+      transition: transform 0.15s;
+    }
+    tr.row-bulan.open td:first-child::before {
+      content: '▾ ';
+      color: var(--green-mid);
+    }
+
+    tr.row-detail { display: none; }
+    tr.row-detail.open { display: table-row; }
+    tr.row-detail td {
+      background: #F8FBF9;
+      padding: 16px 20px;
+      white-space: normal;
+    }
+
+    .detail-wrap { display: flex; flex-direction: column; gap: 16px; }
+    .detail-section { border-left: 3px solid var(--green-mid); padding-left: 12px; }
+    .detail-section h4 {
+      margin: 0 0 8px;
+      font-size: 12.5px;
+      color: var(--green-deep);
+      font-weight: 700;
+    }
+    .detail-section.empty { border-left-color: #D6DDD8; }
+    .detail-section.empty h4 { color: var(--text-muted); }
+
+    .detail-table { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; border-radius: 6px; overflow: hidden; }
+    .detail-table th, .detail-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+    .detail-table th { background: #FAFBFA; font-size: 10.5px; text-transform: uppercase; color: var(--text-muted); }
+    .detail-table tr:last-child td { border-bottom: none; }
 
     .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
     .badge.ok { background: var(--green-soft); color: var(--green-mid); }
     .badge.kurang { background: #FBEAE7; color: var(--coral); }
     .badge.netral { background: #F1F1EE; color: var(--text-muted); }
     .badge.lebih { background: #FDF1E0; color: var(--amber); }
+    .badge.nuha { background: #E9EEFB; color: #3B5BDB; }
+    .badge.manual { background: var(--green-soft); color: var(--green-mid); }
 
     .progress-bar { height: 6px; background: #EEF2EE; border-radius: 999px; overflow: hidden; display: inline-block; width: 60px; vertical-align: middle; margin-right: 6px; }
     .progress-bar .fill { height: 100%; background: var(--green-mid); }
@@ -88,8 +131,12 @@
     .back-link { display: inline-block; margin-bottom: 16px; color: var(--green-mid); text-decoration: none; font-size: 13px; font-weight: 600; }
     .back-link:hover { text-decoration: underline; }
 
+    .hint { font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px; }
+
     @media (max-width: 860px) {
       .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .filter-bar .info-satuan { margin-left: 0; }
     }
   </style>
 </head>
@@ -118,11 +165,33 @@
 
   <div id="filterContainer" style="display:none;">
     <div class="filter-bar">
-      <label>Ruangan:</label>
-      <select id="filterRuangan"></select>
-      <label>Tahun:</label>
-      <select id="filterTahun"></select>
-      <div style="margin-left:auto; font-size:12px; color:var(--text-muted);" id="keteranganSatuan"></div>
+      <div class="filter-item">
+        <label>Ruangan:</label>
+        <select id="filterRuangan"></select>
+      </div>
+      <div class="filter-item">
+        <label>Tahun:</label>
+        <select id="filterTahun"></select>
+      </div>
+      <div class="filter-item">
+        <label>Bulan:</label>
+        <select id="filterBulan">
+          <option value="">Semua bulan</option>
+          <option value="1">Januari</option>
+          <option value="2">Februari</option>
+          <option value="3">Maret</option>
+          <option value="4">April</option>
+          <option value="5">Mei</option>
+          <option value="6">Juni</option>
+          <option value="7">Juli</option>
+          <option value="8">Agustus</option>
+          <option value="9">September</option>
+          <option value="10">Oktober</option>
+          <option value="11">November</option>
+          <option value="12">Desember</option>
+        </select>
+      </div>
+      <div class="info-satuan" id="keteranganSatuan"></div>
     </div>
   </div>
 
@@ -136,6 +205,7 @@
   </div>
 
   <div id="tableContainer" style="display:none;">
+    <div class="hint">Klik baris bulan untuk melihat detail kedatangan dan pemakaian.</div>
     <div class="panel">
       <table>
         <thead>
@@ -210,6 +280,13 @@
     return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
   }
 
+  function formatTanggal(tgl) {
+    if (!tgl) return '-';
+    const d = new Date(tgl);
+    if (isNaN(d)) return tgl;
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
   const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
   // ============================================================
@@ -219,16 +296,24 @@
   let barang = null;
   let allRuangan = [];
   let activeRuanganId = null;
-  let allStok = [];
+  let activeTahun = null;
+  let activeBulan = null;
+
   let allKebutuhan = [];
-  let allMutasiDetail = [];
+  let allStok = [];
   let allMutasi = [];
+  let allMutasiDetail = [];
+  let allPenerimaan = [];
+  let allPembelian = [];
+  let allPemakaian = [];
+  let allOpname = [];
+  let userMap = {};
+  let ruanganMap = {};
 
   // ============================================================
-  //  INIT — ambil barang_id dari URL
+  //  INIT
   // ============================================================
   async function initData() {
-    // Format URL: riwayat-barang.html?id=38
     const params = new URLSearchParams(window.location.search);
     barangId = Number(params.get('id'));
 
@@ -239,7 +324,6 @@
     }
 
     try {
-      // Ambil data barang
       const { data: brData, error: brErr } = await window.supabase
         .from('master_barang').select('*').eq('id', barangId).limit(1);
       if (brErr) throw brErr;
@@ -252,16 +336,21 @@
 
       renderInfoBarang();
 
-      // Ambil daftar ruangan
       allRuangan = await fetchAllRows('master_ruangan', q => q.order('nama_ruangan'));
+      ruanganMap = {};
+      allRuangan.forEach(r => { ruanganMap[r.id] = r; });
 
-      // Set filter ruangan berdasarkan role
+      const users = await fetchAllRows('users');
+      userMap = {};
+      users.forEach(u => { userMap[u.id] = u; });
+
       fillFilterRuangan();
-
-      // Isi tahun
       fillFilterTahun();
+      document.getElementById('filterBulan').addEventListener('change', () => {
+        activeBulan = document.getElementById('filterBulan').value ? Number(document.getElementById('filterBulan').value) : null;
+        loadRiwayat();
+      });
 
-      // Load data
       await loadRiwayat();
     } catch (err) {
       console.error(err);
@@ -310,7 +399,6 @@
       }
       sel.disabled = true;
     } else {
-      // Petugas / admin: bisa pilih semua atau satu ruangan
       sel.innerHTML = '<option value="">Semua ruangan</option>' +
         allRuangan.filter(r => r.aktif !== false)
           .map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
@@ -333,49 +421,71 @@
       if (y === curYear) opt.selected = true;
       sel.appendChild(opt);
     }
-    sel.addEventListener('change', loadRiwayat);
+    activeTahun = curYear;
+    sel.addEventListener('change', () => {
+      activeTahun = Number(sel.value);
+      loadRiwayat();
+    });
   }
 
   // ============================================================
   //  LOAD RIWAYAT
   // ============================================================
   async function loadRiwayat() {
-    const tahun = Number(document.getElementById('filterTahun').value);
+    const tahun = activeTahun;
 
     document.getElementById('tableContainer').style.display = 'none';
     document.getElementById('statContainer').style.display = 'none';
     document.getElementById('emptyContainer').style.display = 'none';
 
     try {
-      // Kebutuhan (RKO) untuk barang ini di tahun terpilih
-      let kebutuhanQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun).gt('kebutuhan', 0);
-      if (activeRuanganId) {
-        kebutuhanQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun).gt('kebutuhan', 0).eq('ruangan_id', activeRuanganId);
-      }
-      allKebutuhan = await fetchAllRows('kebutuhan', kebutuhanQuery);
+      // Kebutuhan (RKO)
+      let qKeb = q => q.eq('barang_id', barangId).eq('tahun', tahun).gt('kebutuhan', 0);
+      if (activeRuanganId) qKeb = q => qKeb(q).eq('ruangan_id', activeRuanganId);
+      allKebutuhan = await fetchAllRows('kebutuhan', qKeb);
 
       // Stok ruangan
-      let stokQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun);
-      if (activeRuanganId) {
-        stokQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun).eq('ruangan_id', activeRuanganId);
-      }
-      allStok = await fetchAllRows('stok_ruangan', stokQuery);
+      let qStok = q => q.eq('barang_id', barangId).eq('tahun', tahun);
+      if (activeRuanganId) qStok = q => qStok(q).eq('ruangan_id', activeRuanganId);
+      allStok = await fetchAllRows('stok_ruangan', qStok);
 
-      // Mutasi header (untuk dapat id)
-      let mutasiQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun).eq('status', 'AKTIF');
-      allMutasi = await fetchAllRows('mutasi_ruangan', mutasiQuery);
+      // Opname (dari stok_ruangan yang punya stok_fisik)
+      // (sudah termasuk di allStok)
 
-      // Mutasi detail
+      // Mutasi header
+      const qMutasi = q => q.eq('barang_id', barangId).eq('tahun', tahun).eq('status', 'AKTIF');
+      allMutasi = await fetchAllRows('mutasi_ruangan', qMutasi);
+
+      // Detail mutasi
       if (allMutasi.length > 0) {
         const mutasiIds = allMutasi.map(m => m.id);
-        let detailQuery = q => q.in('mutasi_id', mutasiIds);
-        if (activeRuanganId) {
-          detailQuery = q => q.in('mutasi_id', mutasiIds).eq('ruangan_id', activeRuanganId);
-        }
-        allMutasiDetail = await fetchAllRows('mutasi_ruangan_detail', detailQuery);
+        let qDetail = q => q.in('mutasi_id', mutasiIds);
+        if (activeRuanganId) qDetail = q => qDetail(q).eq('ruangan_id', activeRuanganId);
+        allMutasiDetail = await fetchAllRows('mutasi_ruangan_detail', qDetail);
       } else {
         allMutasiDetail = [];
       }
+
+      // Penerimaan yang terkait mutasi
+      const penerimaanIds = [...new Set(allMutasi.map(m => m.penerimaan_id).filter(Boolean))];
+      if (penerimaanIds.length > 0) {
+        allPenerimaan = await fetchAllRows('penerimaan', q => q.in('id', penerimaanIds));
+      } else {
+        allPenerimaan = [];
+      }
+
+      // Pembelian terkait penerimaan
+      const pembelianIds = [...new Set(allPenerimaan.map(p => p.pembelian_id).filter(Boolean))];
+      if (pembelianIds.length > 0) {
+        allPembelian = await fetchAllRows('pembelian', q => q.in('id', pembelianIds));
+      } else {
+        allPembelian = [];
+      }
+
+      // Pemakaian
+      let qPakai = q => q.eq('barang_id', barangId).eq('tahun', tahun);
+      if (activeRuanganId) qPakai = q => qPakai(q).eq('ruangan_id', activeRuanganId);
+      allPemakaian = await fetchAllRows('pemakaian_ruangan', qPakai);
 
       renderRiwayat();
     } catch (err) {
@@ -386,7 +496,7 @@
   }
 
   function renderRiwayat() {
-    const tahun = Number(document.getElementById('filterTahun').value);
+    const tahun = activeTahun;
     const content = Number(barang.content) || 1;
     const satuanJual = barang.satuan_jual || '-';
     const satuanBeli = barang.satuan_beli || '-';
@@ -406,7 +516,6 @@
       };
     }
 
-    // RKO
     allKebutuhan.forEach(k => {
       const b = Number(k.bulan);
       if (perBulan[b]) {
@@ -415,7 +524,6 @@
       }
     });
 
-    // Stok
     allStok.forEach(s => {
       const b = Number(s.bulan);
       if (perBulan[b]) {
@@ -429,10 +537,9 @@
       }
     });
 
-    // Mutasi detail (dalam Box)
     const mutasiByBulan = {};
     allMutasi.forEach(m => {
-      mutasiByBulan[m.id] = { bulan: Number(m.bulan) };
+      mutasiByBulan[m.id] = { bulan: Number(m.bulan), mutasi: m };
     });
     allMutasiDetail.forEach(d => {
       const m = mutasiByBulan[d.mutasi_id];
@@ -443,18 +550,20 @@
       }
     });
 
-    // Render baris
+    // Filter bulan kalau dipilih
+    const bulanFilter = activeBulan;
+
     const rows = [];
     let totalRKO = 0, totalTerima = 0, totalPakai = 0, sisaAkhir = 0;
 
     for (let m = 1; m <= 12; m++) {
       const row = perBulan[m];
       if (!row.ada_data) continue;
+      if (bulanFilter && m !== bulanFilter) continue;
       totalRKO += row.rko;
       totalTerima += row.diterima;
       totalPakai += row.dipakai;
       if (row.sisa !== null) sisaAkhir = row.sisa;
-
       rows.push(row);
     }
 
@@ -463,7 +572,6 @@
       return;
     }
 
-    // Render tabel
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = rows.map(r => {
       const capaian = r.rko > 0 ? Math.round((r.diterima / r.rko) * 100) : null;
@@ -484,7 +592,9 @@
         statusBadge = '<span class="badge kurang">Sebagian</span>';
       }
 
-      return `<tr>
+      const detailHtml = renderDetailBulan(r.bulan, tahun);
+
+      return `<tr class="row-bulan" data-bulan="${r.bulan}" onclick="window.toggleDetail(${r.bulan})">
         <td><strong>${NAMA_BULAN[r.bulan-1]} ${tahun}</strong></td>
         <td class="num">${r.stok_awal.toLocaleString('id-ID')} <span class="satuan-jual">${escapeHtml(satuanJual)}</span></td>
         <td class="num">${r.rko.toLocaleString('id-ID')} <span class="satuan-beli">${escapeHtml(satuanBeli)}</span></td>
@@ -494,6 +604,9 @@
         <td class="num">${r.fisik !== null ? r.fisik.toLocaleString('id-ID') : '-'}</td>
         <td>${capaianHtml}</td>
         <td>${statusBadge}</td>
+      </tr>
+      <tr class="row-detail" id="detail-${r.bulan}">
+        <td colspan="9">${detailHtml}</td>
       </tr>`;
     }).join('');
 
@@ -505,11 +618,195 @@
     document.getElementById('statTotalPakai').innerHTML = `${totalPakai.toLocaleString('id-ID')} <span class="satuan-jual">${escapeHtml(satuanJual)}</span>`;
     document.getElementById('statSisaAkhir').innerHTML = `${sisaAkhir.toLocaleString('id-ID')} <span class="satuan-jual">${escapeHtml(satuanJual)}</span>`;
 
-    // Keterangan satuan
     document.getElementById('keteranganSatuan').innerHTML =
       `Satuan beli: <span class="satuan-beli">${escapeHtml(satuanBeli)}</span> ·
        satuan jual: <span class="satuan-jual">${escapeHtml(satuanJual)}</span> · 1 ${escapeHtml(satuanBeli)} = ${content} ${escapeHtml(satuanJual)}`;
+
+    // Kalau filter bulan dipilih, otomatis expand
+    if (bulanFilter) {
+      const el = document.getElementById('detail-' + bulanFilter);
+      if (el) {
+        el.classList.add('open');
+        const head = document.querySelector(`tr.row-bulan[data-bulan="${bulanFilter}"]`);
+        if (head) head.classList.add('open');
+      }
+    }
   }
+
+  // ============================================================
+  //  DETAIL PER BULAN
+  // ============================================================
+  function renderDetailBulan(bulan, tahun) {
+    const satuanJual = barang.satuan_jual || '-';
+    const satuanBeli = barang.satuan_beli || '-';
+    const content = Number(barang.content) || 1;
+
+    // === 1. Penerimaan (mutasi masuk) ===
+    const mutasiBulan = allMutasi.filter(m => Number(m.bulan) === bulan);
+    const mutasiIdsBulan = new Set(mutasiBulan.map(m => m.id));
+
+    const detailBulanIni = allMutasiDetail.filter(d => mutasiIdsBulan.has(d.mutasi_id));
+
+    // Grouping per mutasi
+    const perMutasi = {};
+    mutasiBulan.forEach(m => {
+      perMutasi[m.id] = {
+        mutasi: m,
+        detail: detailBulanIni.filter(d => d.mutasi_id === m.id),
+        total_box: 0,
+        total_tablet: 0
+      };
+    });
+    Object.values(perMutasi).forEach(item => {
+      item.total_box = item.detail.reduce((s, d) => s + Number(d.qty_dialokasikan || 0), 0);
+      item.total_tablet = item.total_box * content;
+    });
+
+    let penerimaanHtml = '';
+    const listMutasi = Object.values(perMutasi).filter(m => m.total_box > 0);
+
+    if (listMutasi.length === 0) {
+      penerimaanHtml = `<div class="detail-section empty"><h4>Penerimaan bulan ini</h4><div style="font-size:12px; color:var(--text-muted);">Tidak ada penerimaan.</div></div>`;
+    } else {
+      const showRuangan = !activeRuanganId;
+      const rows = [];
+
+      listMutasi.forEach(item => {
+        const m = item.mutasi;
+        const penerimaan = allPenerimaan.find(p => p.id === m.penerimaan_id);
+        const pembelian = penerimaan ? allPembelian.find(p => p.id === penerimaan.pembelian_id) : null;
+        const petugas = m.petugas_id ? userMap[m.petugas_id] : null;
+
+        item.detail.forEach(d => {
+          const ruangan = ruanganMap[d.ruangan_id] || {};
+          rows.push(`<tr>
+            ${showRuangan ? `<td>${escapeHtml(ruangan.nama_ruangan || '-')}</td>` : ''}
+            <td>${formatTanggal(m.tanggal_mutasi)}</td>
+            <td>${escapeHtml(pembelian ? pembelian.no_po : '-')}</td>
+            <td>${escapeHtml(penerimaan ? (penerimaan.no_batch || '-') : '-')}</td>
+            <td>${formatTanggal(penerimaan ? penerimaan.tanggal_kadaluarsa : null)}</td>
+            <td class="num">${Number(d.qty_dialokasikan || 0).toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</td>
+            <td class="num">${(Number(d.qty_dialokasikan || 0) * content).toLocaleString('id-ID')} ${escapeHtml(satuanJual)}</td>
+            <td>${escapeHtml(petugas ? petugas.nama : '-')}</td>
+          </tr>`);
+        });
+      });
+
+      penerimaanHtml = `
+        <div class="detail-section">
+          <h4>Penerimaan bulan ini · ${listMutasi.length} kedatangan</h4>
+          <table class="detail-table">
+            <thead><tr>
+              ${showRuangan ? '<th>Ruangan</th>' : ''}
+              <th>Tanggal</th>
+              <th>No. PO</th>
+              <th>Batch</th>
+              <th>Kadaluarsa</th>
+              <th class="num">Qty</th>
+              <th class="num">Setara</th>
+              <th>Petugas</th>
+            </tr></thead>
+            <tbody>${rows.join('')}</tbody>
+          </table>
+        </div>`;
+    }
+
+    // === 2. Pemakaian ===
+    const pemakaianBulan = allPemakaian.filter(p => Number(p.bulan) === bulan);
+    let pemakaianHtml = '';
+    if (pemakaianBulan.length === 0) {
+      pemakaianHtml = `<div class="detail-section empty"><h4>Pemakaian bulan ini</h4><div style="font-size:12px; color:var(--text-muted);">Tidak ada pemakaian.</div></div>`;
+    } else {
+      const showRuangan = !activeRuanganId;
+      const rows = pemakaianBulan.map(p => {
+        const ruangan = ruanganMap[p.ruangan_id] || {};
+        const user = p.dicatat_oleh ? userMap[p.dicatat_oleh] : null;
+        const sumberBadge = p.sumber_data === 'UPLOAD_NUHA'
+          ? '<span class="badge nuha">NUHA</span>'
+          : '<span class="badge manual">Manual</span>';
+        return `<tr>
+          ${showRuangan ? `<td>${escapeHtml(ruangan.nama_ruangan || '-')}</td>` : ''}
+          <td>${formatTanggal(p.tanggal_pakai)}</td>
+          <td class="num">${Number(p.qty_pakai || 0).toLocaleString('id-ID')} ${escapeHtml(satuanJual)}</td>
+          <td>${sumberBadge}</td>
+          <td>${escapeHtml(user ? user.nama : '-')}</td>
+          <td>${escapeHtml(p.catatan || '-')}</td>
+        </tr>`;
+      });
+
+      pemakaianHtml = `
+        <div class="detail-section">
+          <h4>Pemakaian bulan ini · ${pemakaianBulan.length} transaksi</h4>
+          <table class="detail-table">
+            <thead><tr>
+              ${showRuangan ? '<th>Ruangan</th>' : ''}
+              <th>Tanggal</th>
+              <th class="num">Qty</th>
+              <th>Sumber</th>
+              <th>Dicatat oleh</th>
+              <th>Catatan</th>
+            </tr></thead>
+            <tbody>${rows.join('')}</tbody>
+          </table>
+        </div>`;
+    }
+
+    // === 3. Opname ===
+    const opnameBulan = allStok.filter(s => Number(s.bulan) === bulan && s.stok_fisik !== null && s.stok_fisik !== undefined);
+    let opnameHtml = '';
+    if (opnameBulan.length === 0) {
+      opnameHtml = `<div class="detail-section empty"><h4>Stok opname bulan ini</h4><div style="font-size:12px; color:var(--text-muted);">Tidak ada opname.</div></div>`;
+    } else {
+      const showRuangan = !activeRuanganId;
+      const rows = opnameBulan.map(s => {
+        const ruangan = ruanganMap[s.ruangan_id] || {};
+        const selisih = Number(s.stok_fisik) - Number(s.stok_sisa);
+        const selisihBadge = selisih === 0
+          ? '<span class="badge ok">Sesuai</span>'
+          : `<span class="badge ${selisih > 0 ? 'lebih' : 'kurang'}">${selisih > 0 ? '+' : ''}${selisih.toLocaleString('id-ID')}</span>`;
+        const user = s.diopname_oleh ? userMap[s.diopname_oleh] : null;
+        return `<tr>
+          ${showRuangan ? `<td>${escapeHtml(ruangan.nama_ruangan || '-')}</td>` : ''}
+          <td>${formatTanggal(s.diopname_pada)}</td>
+          <td class="num">${Number(s.stok_sisa || 0).toLocaleString('id-ID')} ${escapeHtml(satuanJual)}</td>
+          <td class="num">${Number(s.stok_fisik || 0).toLocaleString('id-ID')} ${escapeHtml(satuanJual)}</td>
+          <td>${selisihBadge}</td>
+          <td>${escapeHtml(s.keterangan_opname || '-')}</td>
+          <td>${escapeHtml(user ? user.nama : '-')}</td>
+        </tr>`;
+      });
+
+      opnameHtml = `
+        <div class="detail-section">
+          <h4>Stok opname bulan ini</h4>
+          <table class="detail-table">
+            <thead><tr>
+              ${showRuangan ? '<th>Ruangan</th>' : ''}
+              <th>Tanggal</th>
+              <th class="num">Stok sistem</th>
+              <th class="num">Stok fisik</th>
+              <th>Selisih</th>
+              <th>Keterangan</th>
+              <th>Petugas</th>
+            </tr></thead>
+            <tbody>${rows.join('')}</tbody>
+          </table>
+        </div>`;
+    }
+
+    return `<div class="detail-wrap">${penerimaanHtml}${pemakaianHtml}${opnameHtml}</div>`;
+  }
+
+  // ============================================================
+  //  TOGGLE DETAIL
+  // ============================================================
+  window.toggleDetail = function(bulan) {
+    const rowDetail = document.getElementById('detail-' + bulan);
+    const rowHead = document.querySelector(`tr.row-bulan[data-bulan="${bulan}"]`);
+    if (!rowDetail || !rowHead) return;
+    rowDetail.classList.toggle('open');
+    rowHead.classList.toggle('open');
+  };
 </script>
 </body>
 </html>
