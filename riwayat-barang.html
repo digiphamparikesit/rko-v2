@@ -506,7 +506,6 @@
     document.getElementById('statSisaAkhir').innerHTML = `${sisaAkhir.toLocaleString('id-ID')} <span class="satuan-jual">${escapeHtml(satuanJual)}</span>`;
 
     // Keterangan satuan
-    const content = Number(barang.content) || 1;
     document.getElementById('keteranganSatuan').innerHTML =
       `Satuan beli: <span class="satuan-beli">${escapeHtml(satuanBeli)}</span> ·
        satuan jual: <span class="satuan-jual">${escapeHtml(satuanJual)}</span> · 1 ${escapeHtml(satuanBeli)} = ${content} ${escapeHtml(satuanJual)}`;
