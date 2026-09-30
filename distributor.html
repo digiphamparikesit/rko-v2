@@ -272,7 +272,7 @@
       });
 
       document.getElementById('statTotalDist').textContent = Object.keys(grouped).length.toLocaleString('id-ID');
-      document.getElementById('statTotalRp').textContent = 'Rp ' + totalRp.toLocaleString('id-ID');
+      document.getElementById('statTotalRp').textContent = 'Rp ' + window.formatRp(totalRp);
       document.getElementById('statTotalItem').textContent = totalItem.toLocaleString('id-ID');
 
       allDataLoaded = true;
@@ -318,7 +318,7 @@
         <tr>
           <td>${escapeHtml(it.nama)}</td>
           <td class="num">${Number(it.qty||0).toLocaleString('id-ID')} ${escapeHtml(it.satuan)}</td>
-          <td class="num">Rp ${Number(it.rp||0).toLocaleString('id-ID')}</td>
+          <td class="num">Rp ${window.formatRp(it.rp)}</td>
         </tr>
       `).join('');
 
@@ -331,7 +331,7 @@
             </div>
             <div class="dist-right">
               <div class="dist-total">
-                <div class="rp">Rp ${data.total.toLocaleString('id-ID')}</div>
+                <div class="rp">Rp ${window.formatRp(data.total)}</div>
                 <div class="cnt">${data.items.length} item</div>
               </div>
               <span class="chevron">&#9656;</span>
