@@ -320,67 +320,91 @@
   //  SINKRONISASI STOK RUANGAN (dalam satuan jual)
   // ============================================================
   window.sinkronStokRuangan = async function(ruanganId, barangId, bulan, tahun) {
-    try {
-      const { data: stokRows, error: e1 } = await window.supabase
-        .from('stok_ruangan').select('*')
-        .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
-        .eq('bulan', bulan).eq('tahun', tahun).limit(1);
-      if (e1) throw e1;
+  try {
+    // Ambil stok_ruangan yang ada
+    const { data: stokRows, error: e1 } = await window.supabase
+      .from('stok_ruangan').select('*')
+      .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
+      .eq('bulan', bulan).eq('tahun', tahun).limit(1);
+    if (e1) throw e1;
 
-      const stok = (stokRows && stokRows.length > 0) ? stokRows[0] : null;
+    // Total pemakaian bulan ini
+    const { data: pemakaianRows, error: e2 } = await window.supabase
+      .from('pemakaian_ruangan').select('qty_pakai')
+      .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
+      .eq('bulan', bulan).eq('tahun', tahun);
+    if (e2) throw e2;
+    const totalPakai = (pemakaianRows || []).reduce((s, p) => s + Number(p.qty_pakai || 0), 0);
 
-      const { data: pemakaianRows, error: e2 } = await window.supabase
-        .from('pemakaian_ruangan').select('qty_pakai')
-        .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
-        .eq('bulan', bulan).eq('tahun', tahun);
-      if (e2) throw e2;
-      const totalPakai = (pemakaianRows || []).reduce((s, p) => s + Number(p.qty_pakai || 0), 0);
+    // Total terima dari mutasi (konversi box → tablet)
+    const { data: mutasiRows, error: e3 } = await window.supabase
+      .from('mutasi_ruangan').select('id')
+      .eq('barang_id', barangId).eq('bulan', bulan).eq('tahun', tahun).eq('status', 'AKTIF');
+    if (e3) throw e3;
 
-      const { data: mutasiRows, error: e3 } = await window.supabase
-        .from('mutasi_ruangan').select('id')
-        .eq('barang_id', barangId).eq('bulan', bulan).eq('tahun', tahun)
-        .eq('status', 'AKTIF');
-      if (e3) throw e3;
-
-      const mutasiIds = (mutasiRows || []).map(m => m.id);
-      let totalTerima = 0;
-      if (mutasiIds.length > 0) {
-        const { data: detailRows, error: e4 } = await window.supabase
-          .from('mutasi_ruangan_detail').select('qty_dialokasikan')
-          .eq('ruangan_id', ruanganId).in('mutasi_id', mutasiIds);
-        if (e4) throw e4;
-
-        // Konversi: qty_box × content = total tablet
-        const { data: barangData } = await window.supabase
-          .from('master_barang').select('content').eq('id', barangId).limit(1);
-        const content = Number((barangData && barangData[0] && barangData[0].content) || 1);
-        totalTerima = (detailRows || []).reduce((s, d) => s + Number(d.qty_dialokasikan || 0), 0) * content;
-      }
-
-      const stokSisa = totalTerima - totalPakai;
-
-      if (stok) {
-        const { error } = await window.supabase.from('stok_ruangan')
-          .update({
-            total_terima: totalTerima,
-            total_pakai: totalPakai,
-            stok_sisa: stokSisa,
-            terakhir_diperbarui: new Date().toISOString()
-          }).eq('id', stok.id);
-        if (error) throw error;
-      } else {
-        const { error } = await window.supabase.from('stok_ruangan').insert({
-          ruangan_id: ruanganId, barang_id: barangId, bulan, tahun,
-          stok_awal: 0, total_terima: totalTerima, total_pakai: totalPakai,
-          stok_sisa: stokSisa, terakhir_diperbarui: new Date().toISOString()
-        });
-        if (error) throw error;
-      }
-    } catch (err) {
-      console.warn('Sinkron stok gagal:', err);
-      throw err;
+    const mutasiIds = (mutasiRows || []).map(m => m.id);
+    let totalTerima = 0;
+    if (mutasiIds.length > 0) {
+      const { data: detailRows, error: e4 } = await window.supabase
+        .from('mutasi_ruangan_detail').select('qty_dialokasikan')
+        .eq('ruangan_id', ruanganId).in('mutasi_id', mutasiIds);
+      if (e4) throw e4;
+      const { data: barangData } = await window.supabase
+        .from('master_barang').select('content').eq('id', barangId).limit(1);
+      const content = Number((barangData && barangData[0] && barangData[0].content) || 1);
+      totalTerima = (detailRows || []).reduce((s, d) => s + Number(d.qty_dialokasikan || 0), 0) * content;
     }
-  };
+
+    // Stok awal — carry-over dari bulan lalu
+    let stokAwal = 0;
+    let stokRow = (stokRows && stokRows.length > 0) ? stokRows[0] : null;
+
+    if (stokRow) {
+      // Kalau baris sudah ada, stok_awal tidak diubah (sudah di-set saat insert pertama)
+      stokAwal = Number(stokRow.stok_awal || 0);
+    } else {
+      // Baris belum ada — hitung carry-over dari bulan lalu
+      const bulanLalu = bulan === 1 ? 12 : bulan - 1;
+      const tahunLalu = bulan === 1 ? tahun - 1 : tahun;
+      const { data: lastRows } = await window.supabase
+        .from('stok_ruangan').select('stok_fisik, stok_sisa')
+        .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
+        .eq('bulan', bulanLalu).eq('tahun', tahunLalu).limit(1);
+      if (lastRows && lastRows.length > 0) {
+        const last = lastRows[0];
+        stokAwal = last.stok_fisik !== null && last.stok_fisik !== undefined
+          ? Number(last.stok_fisik)
+          : Number(last.stok_sisa || 0);
+      }
+    }
+
+    const stokSisa = stokAwal + totalTerima - totalPakai;
+
+    if (stokRow) {
+      const { error } = await window.supabase.from('stok_ruangan')
+        .update({
+          total_terima: totalTerima,
+          total_pakai: totalPakai,
+          stok_sisa: stokSisa,
+          terakhir_diperbarui: new Date().toISOString()
+        }).eq('id', stokRow.id);
+      if (error) throw error;
+    } else {
+      const { error } = await window.supabase.from('stok_ruangan').insert({
+        ruangan_id: ruanganId, barang_id: barangId, bulan, tahun,
+        stok_awal: stokAwal,
+        total_terima: totalTerima,
+        total_pakai: totalPakai,
+        stok_sisa: stokSisa,
+        terakhir_diperbarui: new Date().toISOString()
+      });
+      if (error) throw error;
+    }
+  } catch (err) {
+    console.warn('Sinkron stok gagal:', err);
+    throw err;
+  }
+};
 
   // ============================================================
   //  VARIABEL
