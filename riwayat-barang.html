@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riwayat Barang — RKO RSAMP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
+  <style>
+    :root {
+      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
+      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
+      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
+    header.topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--green-deep); color: #fff; padding: 18px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
+    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
+    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
+    a.back:hover { color: #fff; }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+
+    .card-info {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 24px; margin-bottom: 16px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .card-info h1 { font-size: 18px; margin: 0 0 6px; }
+    .card-info .meta { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
+    .card-info .meta strong { color: var(--text-dark); }
+
+    .filter-bar {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 20px; margin-bottom: 16px;
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    .filter-bar label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+    .filter-bar select, .filter-bar input {
+      padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
+    }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; }
+    .stat-card .num { font-size: 20px; font-weight: 700; line-height: 1.2; }
+    .stat-card .lbl { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
+    td.num { text-align: right; }
+    tr.ringkasan { background: #FAFBFA; font-weight: 600; }
+
+    .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .badge.ok { background: var(--green-soft); color: var(--green-mid); }
+    .badge.kurang { background: #FBEAE7; color: var(--coral); }
+    .badge.netral { background: #F1F1EE; color: var(--text-muted); }
+    .badge.lebih { background: #FDF1E0; color: var(--amber); }
+
+    .progress-bar { height: 6px; background: #EEF2EE; border-radius: 999px; overflow: hidden; display: inline-block; width: 60px; vertical-align: middle; margin-right: 6px; }
+    .progress-bar .fill { height: 100%; background: var(--green-mid); }
+    .progress-bar .fill.warn { background: var(--amber); }
+    .progress-bar .fill.danger { background: var(--coral); }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13.5px; }
+    .loading-spinner { text-align: center; padding: 40px; color: var(--text-muted); }
+
+    .satuan-jual { color: var(--green-deep); font-weight: 600; font-size: 11.5px; }
+    .satuan-beli { color: var(--amber); font-weight: 600; font-size: 11.5px; }
+
+    .back-link { display: inline-block; margin-bottom: 16px; color: var(--green-mid); text-decoration: none; font-size: 13px; font-weight: 600; }
+    .back-link:hover { text-decoration: underline; }
+
+    @media (max-width: 860px) {
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Riwayat barang — kartu stok per bulan</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <a class="back" href="monitoring-rko.html">&#8592; Monitoring RKO</a>
+  </div>
+</header>
+
+<main>
+  <a class="back-link" href="monitoring-rko.html">&#8592; Kembali ke Monitoring RKO</a>
+
+  <div id="infoContainer">
+    <div class="loading-spinner">Memuat data barang...</div>
+  </div>
+
+  <div id="filterContainer" style="display:none;">
+    <div class="filter-bar">
+      <label>Ruangan:</label>
+      <select id="filterRuangan"></select>
+      <label>Tahun:</label>
+      <select id="filterTahun"></select>
+      <div style="margin-left:auto; font-size:12px; color:var(--text-muted);" id="keteranganSatuan"></div>
+    </div>
+  </div>
+
+  <div id="statContainer" style="display:none;">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" id="statTotalRKO">-</div><div class="lbl">Total RKO</div></div>
+      <div class="stat-card"><div class="num" id="statTotalTerima">-</div><div class="lbl">Total diterima</div></div>
+      <div class="stat-card"><div class="num" id="statTotalPakai">-</div><div class="lbl">Total dipakai</div></div>
+      <div class="stat-card"><div class="num" id="statSisaAkhir">-</div><div class="lbl">Sisa stok terakhir</div></div>
+    </div>
+  </div>
+
+  <div id="tableContainer" style="display:none;">
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Bulan</th>
+            <th class="num">Stok awal</th>
+            <th class="num">RKO (Box)</th>
+            <th class="num">Diterima (Box)</th>
+            <th class="num">Dipakai</th>
+            <th class="num">Sisa stok</th>
+            <th class="num">Fisik (opname)</th>
+            <th>Capaian</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="emptyContainer" style="display:none;">
+    <div class="panel">
+      <div class="empty-state">Belum ada riwayat untuk barang ini.</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: [
+        'USER',
+        'PETUGAS_MUTASI_OBAT',
+        'PETUGAS_MUTASI_BMHP',
+        'KOORDINATOR_LOGISTIK_FARMASI',
+        'KEPALA_INSTALASI_FARMASI',
+        'ADMIN',
+        'SUPER_ADMIN'
+      ]
+    });
+    if (!user) return;
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+    initData();
+  })();
+
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+  // ============================================================
+  //  GLOBAL
+  // ============================================================
+  let barangId = null;
+  let barang = null;
+  let allRuangan = [];
+  let activeRuanganId = null;
+  let allStok = [];
+  let allKebutuhan = [];
+  let allMutasiDetail = [];
+  let allMutasi = [];
+
+  // ============================================================
+  //  INIT — ambil barang_id dari URL
+  // ============================================================
+  async function initData() {
+    // Format URL: riwayat-barang.html?id=38
+    const params = new URLSearchParams(window.location.search);
+    barangId = Number(params.get('id'));
+
+    if (!barangId) {
+      document.getElementById('infoContainer').innerHTML =
+        '<div class="panel"><div class="empty-state">Barang tidak ditentukan. Buka halaman ini dari menu Monitoring RKO.</div></div>';
+      return;
+    }
+
+    try {
+      // Ambil data barang
+      const { data: brData, error: brErr } = await window.supabase
+        .from('master_barang').select('*').eq('id', barangId).limit(1);
+      if (brErr) throw brErr;
+      barang = brData && brData[0];
+      if (!barang) {
+        document.getElementById('infoContainer').innerHTML =
+          '<div class="panel"><div class="empty-state">Barang tidak ditemukan.</div></div>';
+        return;
+      }
+
+      renderInfoBarang();
+
+      // Ambil daftar ruangan
+      allRuangan = await fetchAllRows('master_ruangan', q => q.order('nama_ruangan'));
+
+      // Set filter ruangan berdasarkan role
+      fillFilterRuangan();
+
+      // Isi tahun
+      fillFilterTahun();
+
+      // Load data
+      await loadRiwayat();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('infoContainer').innerHTML =
+        '<div class="panel"><div class="empty-state">Gagal memuat: ' + escapeHtml(err.message) + '</div></div>';
+    }
+  }
+
+  function renderInfoBarang() {
+    const content = Number(barang.content) || 1;
+    const satuanJual = barang.satuan_jual || '-';
+    const satuanBeli = barang.satuan_beli || '-';
+    const infoKonversi = content > 1
+      ? `1 ${satuanBeli} = ${content} ${satuanJual}`
+      : `${satuanBeli} = ${satuanJual}`;
+
+    document.getElementById('infoContainer').innerHTML = `
+      <div class="card-info">
+        <div>
+          <h1>${escapeHtml(barang.nama_barang)}</h1>
+          <div class="meta">
+            ID: <strong>${barang.id}</strong> ·
+            Golongan: <strong>${escapeHtml(barang.golongan || '-')}</strong> ·
+            Gudang: <strong>${escapeHtml(barang.gudang_penyimpanan || '-')}</strong><br>
+            Satuan beli: <span class="satuan-beli">${escapeHtml(satuanBeli)}</span> ·
+            Satuan jual: <span class="satuan-jual">${escapeHtml(satuanJual)}</span> ·
+            Konversi: <strong>${escapeHtml(infoKonversi)}</strong>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function fillFilterRuangan() {
+    const sel = document.getElementById('filterRuangan');
+    const isUserRuangan = window.currentUser.role === 'USER';
+    const myRuanganId = window.currentUser.ruangan_id;
+
+    if (isUserRuangan && myRuanganId) {
+      const my = allRuangan.find(r => String(r.id) === String(myRuanganId));
+      if (my) {
+        sel.innerHTML = `<option value="${my.id}" selected>${escapeHtml(my.nama_ruangan)}</option>`;
+        activeRuanganId = my.id;
+      } else {
+        sel.innerHTML = '<option value="">(tidak terdaftar)</option>';
+      }
+      sel.disabled = true;
+    } else {
+      // Petugas / admin: bisa pilih semua atau satu ruangan
+      sel.innerHTML = '<option value="">Semua ruangan</option>' +
+        allRuangan.filter(r => r.aktif !== false)
+          .map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
+      activeRuanganId = null;
+    }
+
+    sel.addEventListener('change', () => {
+      activeRuanganId = sel.value ? Number(sel.value) : null;
+      loadRiwayat();
+    });
+  }
+
+  function fillFilterTahun() {
+    const sel = document.getElementById('filterTahun');
+    const curYear = new Date().getFullYear();
+    sel.innerHTML = '';
+    for (let y = curYear - 2; y <= curYear + 1; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === curYear) opt.selected = true;
+      sel.appendChild(opt);
+    }
+    sel.addEventListener('change', loadRiwayat);
+  }
+
+  // ============================================================
+  //  LOAD RIWAYAT
+  // ============================================================
+  async function loadRiwayat() {
+    const tahun = Number(document.getElementById('filterTahun').value);
+
+    document.getElementById('tableContainer').style.display = 'none';
+    document.getElementById('statContainer').style.display = 'none';
+    document.getElementById('emptyContainer').style.display = 'none';
+
+    try {
+      // Kebutuhan (RKO) untuk barang ini di tahun terpilih
+      let kebutuhanQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun).gt('kebutuhan', 0);
+      if (activeRuanganId) {
+        kebutuhanQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun).gt('kebutuhan', 0).eq('ruangan_id', activeRuanganId);
+      }
+      allKebutuhan = await fetchAllRows('kebutuhan', kebutuhanQuery);
+
+      // Stok ruangan
+      let stokQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun);
+      if (activeRuanganId) {
+        stokQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun).eq('ruangan_id', activeRuanganId);
+      }
+      allStok = await fetchAllRows('stok_ruangan', stokQuery);
+
+      // Mutasi header (untuk dapat id)
+      let mutasiQuery = q => q.eq('barang_id', barangId).eq('tahun', tahun).eq('status', 'AKTIF');
+      allMutasi = await fetchAllRows('mutasi_ruangan', mutasiQuery);
+
+      // Mutasi detail
+      if (allMutasi.length > 0) {
+        const mutasiIds = allMutasi.map(m => m.id);
+        let detailQuery = q => q.in('mutasi_id', mutasiIds);
+        if (activeRuanganId) {
+          detailQuery = q => q.in('mutasi_id', mutasiIds).eq('ruangan_id', activeRuanganId);
+        }
+        allMutasiDetail = await fetchAllRows('mutasi_ruangan_detail', detailQuery);
+      } else {
+        allMutasiDetail = [];
+      }
+
+      renderRiwayat();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('infoContainer').innerHTML +=
+        '<div class="panel" style="margin-top:16px;"><div class="empty-state">Gagal memuat riwayat: ' + escapeHtml(err.message) + '</div></div>';
+    }
+  }
+
+  function renderRiwayat() {
+    const tahun = Number(document.getElementById('filterTahun').value);
+    const content = Number(barang.content) || 1;
+    const satuanJual = barang.satuan_jual || '-';
+    const satuanBeli = barang.satuan_beli || '-';
+
+    // Agregat per bulan
+    const perBulan = {};
+    for (let m = 1; m <= 12; m++) {
+      perBulan[m] = {
+        bulan: m,
+        stok_awal: 0,
+        rko: 0,
+        diterima: 0,
+        dipakai: 0,
+        sisa: null,
+        fisik: null,
+        ada_data: false
+      };
+    }
+
+    // RKO
+    allKebutuhan.forEach(k => {
+      const b = Number(k.bulan);
+      if (perBulan[b]) {
+        perBulan[b].rko += Number(k.kebutuhan || 0);
+        perBulan[b].ada_data = true;
+      }
+    });
+
+    // Stok
+    allStok.forEach(s => {
+      const b = Number(s.bulan);
+      if (perBulan[b]) {
+        perBulan[b].stok_awal += Number(s.stok_awal || 0);
+        perBulan[b].dipakai += Number(s.total_pakai || 0);
+        perBulan[b].sisa = (perBulan[b].sisa || 0) + Number(s.stok_sisa || 0);
+        if (s.stok_fisik !== null && s.stok_fisik !== undefined) {
+          perBulan[b].fisik = (perBulan[b].fisik || 0) + Number(s.stok_fisik);
+        }
+        perBulan[b].ada_data = true;
+      }
+    });
+
+    // Mutasi detail (dalam Box)
+    const mutasiByBulan = {};
+    allMutasi.forEach(m => {
+      mutasiByBulan[m.id] = { bulan: Number(m.bulan) };
+    });
+    allMutasiDetail.forEach(d => {
+      const m = mutasiByBulan[d.mutasi_id];
+      if (!m) return;
+      const b = m.bulan;
+      if (perBulan[b]) {
+        perBulan[b].diterima += Number(d.qty_dialokasikan || 0);
+      }
+    });
+
+    // Render baris
+    const rows = [];
+    let totalRKO = 0, totalTerima = 0, totalPakai = 0, sisaAkhir = 0;
+
+    for (let m = 1; m <= 12; m++) {
+      const row = perBulan[m];
+      if (!row.ada_data) continue;
+      totalRKO += row.rko;
+      totalTerima += row.diterima;
+      totalPakai += row.dipakai;
+      if (row.sisa !== null) sisaAkhir = row.sisa;
+
+      rows.push(row);
+    }
+
+    if (rows.length === 0) {
+      document.getElementById('emptyContainer').style.display = 'block';
+      return;
+    }
+
+    // Render tabel
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = rows.map(r => {
+      const capaian = r.rko > 0 ? Math.round((r.diterima / r.rko) * 100) : null;
+      let capaianHtml, statusBadge;
+
+      if (r.rko === 0) {
+        capaianHtml = '-';
+        statusBadge = '<span class="badge netral">Tidak ada RKO</span>';
+      } else if (r.diterima >= r.rko) {
+        capaianHtml = `<span class="progress-bar"><span class="fill" style="width:100%"></span></span>${capaian}%`;
+        statusBadge = '<span class="badge ok">Lengkap</span>';
+      } else if (r.diterima === 0) {
+        capaianHtml = `<span class="progress-bar"><span class="fill danger" style="width:0%"></span></span>0%`;
+        statusBadge = '<span class="badge kurang">Belum diterima</span>';
+      } else {
+        const cls = capaian >= 50 ? 'warn' : 'danger';
+        capaianHtml = `<span class="progress-bar"><span class="fill ${cls}" style="width:${capaian}%"></span></span>${capaian}%`;
+        statusBadge = '<span class="badge kurang">Sebagian</span>';
+      }
+
+      return `<tr>
+        <td><strong>${NAMA_BULAN[r.bulan-1]} ${tahun}</strong></td>
+        <td class="num">${r.stok_awal.toLocaleString('id-ID')} <span class="satuan-jual">${escapeHtml(satuanJual)}</span></td>
+        <td class="num">${r.rko.toLocaleString('id-ID')} <span class="satuan-beli">${escapeHtml(satuanBeli)}</span></td>
+        <td class="num">${r.diterima.toLocaleString('id-ID')} <span class="satuan-beli">${escapeHtml(satuanBeli)}</span></td>
+        <td class="num">${r.dipakai.toLocaleString('id-ID')} <span class="satuan-jual">${escapeHtml(satuanJual)}</span></td>
+        <td class="num">${r.sisa !== null ? r.sisa.toLocaleString('id-ID') : '-'} <span class="satuan-jual">${escapeHtml(satuanJual)}</span></td>
+        <td class="num">${r.fisik !== null ? r.fisik.toLocaleString('id-ID') : '-'}</td>
+        <td>${capaianHtml}</td>
+        <td>${statusBadge}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('tableContainer').style.display = 'block';
+    document.getElementById('statContainer').style.display = 'block';
+
+    document.getElementById('statTotalRKO').innerHTML = `${totalRKO.toLocaleString('id-ID')} <span class="satuan-beli">${escapeHtml(satuanBeli)}</span>`;
+    document.getElementById('statTotalTerima').innerHTML = `${totalTerima.toLocaleString('id-ID')} <span class="satuan-beli">${escapeHtml(satuanBeli)}</span>`;
+    document.getElementById('statTotalPakai').innerHTML = `${totalPakai.toLocaleString('id-ID')} <span class="satuan-jual">${escapeHtml(satuanJual)}</span>`;
+    document.getElementById('statSisaAkhir').innerHTML = `${sisaAkhir.toLocaleString('id-ID')} <span class="satuan-jual">${escapeHtml(satuanJual)}</span>`;
+
+    // Keterangan satuan
+    const content = Number(barang.content) || 1;
+    document.getElementById('keteranganSatuan').innerHTML =
+      `Satuan beli: <span class="satuan-beli">${escapeHtml(satuanBeli)}</span> ·
+       satuan jual: <span class="satuan-jual">${escapeHtml(satuanJual)}</span> · 1 ${escapeHtml(satuanBeli)} = ${content} ${escapeHtml(satuanJual)}`;
+  }
+</script>
+</body>
+</html>
