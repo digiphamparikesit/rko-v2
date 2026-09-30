@@ -136,6 +136,13 @@
           <label>Cari nama barang</label>
           <input type="text" id="searchBox" placeholder="Cari nama barang...">
         </div>
+        <div class="field">
+          <label>Tampilkan</label>
+          <select id="filterTampil">
+            <option value="belum">Belum selesai saja</option>
+            <option value="semua">Semua</option>
+          </select>
+        </div>
         <div class="field" id="fieldRuangan">
           <label>Ruangan</label>
           <select id="filterRuangan">
@@ -295,6 +302,7 @@
     document.getElementById('tahunSelect').addEventListener('change', loadAllData);
     document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
     document.getElementById('filterStatus').addEventListener('change', () => { page = 1; applyFilter(); });
+    document.getElementById('filterTampil').addEventListener('change', () => { page = 1; applyFilter(); });
     document.getElementById('filterRuangan').addEventListener('change', () => { page = 1; loadAllData(); });
 
     renderTableHead();
@@ -513,11 +521,13 @@
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
     const status = document.getElementById('filterStatus').value;
+    const tampil = document.getElementById('filterTampil').value;
 
     filtered = allRows.filter(r => {
       const matchQ = !q || String(r.nama_barang).toLowerCase().includes(q);
       const matchS = !status || r.status === status;
-      return matchQ && matchS;
+      const matchTampil = tampil === 'semua' || r.status !== 'SELESAI';
+      return matchQ && matchS && matchTampil;
     });
     renderTable();
   }
@@ -529,7 +539,12 @@
 
     if (items.length === 0) {
       const colspan = isUserRuangan() ? 7 : 8;
-      tbody.innerHTML = '<tr><td colspan="' + colspan + '" class="empty-state">Tidak ada data RKO untuk periode ini.</td></tr>';
+      const tampil = document.getElementById('filterTampil').value;
+      let pesan = 'Tidak ada data RKO untuk periode ini.';
+      if (tampil === 'belum' && allRows.length > 0 && allRows.every(r => r.status === 'SELESAI')) {
+        pesan = 'Semua barang sudah dilayani penuh. Ubah filter "Tampilkan" ke "Semua" untuk melihat seluruh riwayat.';
+      }
+      tbody.innerHTML = '<tr><td colspan="' + colspan + '" class="empty-state">' + pesan + '</td></tr>';
       updatePager();
       return;
     }
