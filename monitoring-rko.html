@@ -295,7 +295,7 @@
     document.getElementById('tahunSelect').addEventListener('change', loadAllData);
     document.getElementById('searchBox').addEventListener('input', () => { page = 1; applyFilter(); });
     document.getElementById('filterStatus').addEventListener('change', () => { page = 1; applyFilter(); });
-    document.getElementById('filterRuangan').addEventListener('change', () => { page = 1; applyFilter(); });
+    document.getElementById('filterRuangan').addEventListener('change', () => { page = 1; loadAllData(); });
 
     renderTableHead();
     loadAllData();
