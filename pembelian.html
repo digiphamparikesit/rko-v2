@@ -29,14 +29,8 @@
     select option { color: #14201A; }
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
 
-    /* === STAT GRID === */
-    .stat-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;
-    }
-    .stat-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 16px 18px;
-    }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
     .stat-card .num { font-size: 20px; font-weight: 700; line-height: 1.2; }
     .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
     .stat-card.biru { border-color: #D7DEEF; background: #F3F6FC; }
@@ -72,8 +66,8 @@
     .badge.sebagian { background: #FBEAE7; color: var(--coral); }
     .badge.selesai { background: var(--green-soft); color: var(--green-mid); }
     select.status-select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
-    #modalOverlay, #modalUpload, #modalSelisih { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
-    #modalOverlay.show, #modalUpload.show, #modalSelisih.show { display: flex; }
+    #modalOverlay, #modalUpload, #modalSelisih, #modalDetail { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
+    #modalOverlay.show, #modalUpload.show, #modalSelisih.show, #modalDetail.show { display: flex; }
     .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; padding: 26px; }
     .modal-wide { max-width: 720px; }
     .modal h2 { font-size: 16px; margin: 0 0 16px; }
@@ -86,6 +80,23 @@
     .selisih-card .info { font-size: 13px; }
     .selisih-card .info strong { color: var(--coral); }
     .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
+
+    /* Detail PO */
+    .detail-info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px dashed var(--border); }
+    .detail-info-row:last-child { border-bottom: none; }
+    .detail-info-row .label { color: var(--text-muted); }
+    .detail-info-row .val { font-weight: 600; text-align: right; }
+
+    .log-item { padding: 10px 12px; border-left: 3px solid var(--green-mid); background: #FAFBFA; border-radius: 8px; margin-bottom: 8px; font-size: 12.5px; }
+    .log-item .log-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .log-item .log-aksi { font-weight: 700; color: var(--green-deep); }
+    .log-item .log-waktu { font-size: 11px; color: var(--text-muted); }
+    .log-item .log-detail { font-size: 12px; color: var(--text-dark); margin-top: 4px; line-height: 1.5; }
+    .log-item .log-user { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .log-item.buat { border-left-color: #3B5BDB; }
+    .log-item.buat .log-aksi { color: #3B5BDB; }
+    .log-item.ubah { border-left-color: var(--amber); }
+    .log-item.ubah .log-aksi { color: var(--amber); }
   </style>
 </head>
 <body>
@@ -147,9 +158,10 @@
               <th class="num">Qty pesan</th>
               <th>Tanggal PO</th>
               <th>Status</th>
+              <th>Aksi</th>
             </tr>
           </thead>
-          <tbody id="tableBody"><tr><td colspan="6" class="empty-state">Memuat data...</td></tr></tbody>
+          <tbody id="tableBody"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -205,6 +217,23 @@
     <div class="form-msg" id="selisihMsg"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="window.closeSelisihModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL PO -->
+<div id="modalDetail">
+  <div class="modal modal-wide">
+    <h2 id="detailTitle">Detail PO</h2>
+    <div id="detailInfo" style="margin-bottom:16px;"></div>
+
+    <div style="border-top:1px solid var(--border); padding-top:14px; margin-top:14px;">
+      <h3 style="font-size:13px; margin:0 0 10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px;">Riwayat Perubahan</h3>
+      <div id="detailLog" style="max-height:280px; overflow-y:auto;"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeDetail()">Tutup</button>
     </div>
   </div>
 </div>
@@ -296,7 +325,7 @@
   async function loadAllData() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
-    document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="empty-state">Memuat data...</td></tr>';
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
 
     try {
       const [barangData, distData, rencanaData, pembelianData] = await Promise.all([
@@ -318,7 +347,7 @@
     } catch (err) {
       console.error(err);
       document.getElementById('tableBody').innerHTML =
-        '<tr><td colspan="6" class="empty-state">Gagal memuat data: ' + err.message + '</td></tr>';
+        '<tr><td colspan="7" class="empty-state">Gagal memuat data: ' + err.message + '</td></tr>';
     }
   }
 
@@ -332,7 +361,6 @@
     ).length;
     const selesai = pembelianList.filter(p => p.status === 'SELESAI').length;
 
-    // Total nilai estimasi: qty_pesan × hpp_beli barang
     let totalNilai = 0;
     pembelianList.forEach(p => {
       const barang = barangMap[p.barang_id];
@@ -440,7 +468,7 @@
   function renderTable() {
     const tbody = document.getElementById('tableBody');
     if (filteredList.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Belum ada PO untuk periode ini.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada PO untuk periode ini.</td></tr>';
       return;
     }
     tbody.innerHTML = filteredList.map(p => {
@@ -458,14 +486,27 @@
           <option value="DITERIMA_SEBAGIAN" ${p.status === 'DITERIMA_SEBAGIAN' ? 'selected' : ''}>Diterima sebagian</option>
           <option value="SELESAI" ${p.status === 'SELESAI' ? 'selected' : ''}>Selesai</option>
         </select></td>
+        <td><button class="btn btn-secondary" style="padding:5px 12px; font-size:11.5px;" onclick="window.openDetail(${p.id})">Detail</button></td>
       </tr>`;
     }).join('');
   }
 
   window.updateStatus = async function(id, status) {
     try {
+      const poLama = pembelianList.find(p => p.id === id);
+      const statusLama = poLama ? poLama.status : null;
+
       const { error } = await window.supabase.from('pembelian').update({ status }).eq('id', id);
       if (error) throw error;
+
+      await window.supabase.from('pembelian_log').insert({
+        pembelian_id: id,
+        aksi: 'UBAH_STATUS',
+        nilai_lama: statusLama,
+        nilai_baru: status,
+        diubah_oleh: window.currentUser.id || null
+      });
+
       await loadAllData();
     } catch (err) { alert('Gagal update status: ' + err.message); }
   };
@@ -507,7 +548,8 @@
     if (qty <= 0) { msg.textContent = 'Qty > 0.'; return; }
     msg.textContent = 'Menyimpan...';
     try {
-      const { error } = await window.supabase.from('pembelian').insert({
+      const statusAwal = document.getElementById('fStatus').value;
+      const { data: inserted, error } = await window.supabase.from('pembelian').insert({
         no_po: noPo,
         barang_id: barangId,
         distributor_id: distId,
@@ -515,9 +557,21 @@
         tahun: document.getElementById('tahunSelect').value,
         qty_pesan: qty,
         tanggal_po: document.getElementById('fTanggal').value || null,
-        status: document.getElementById('fStatus').value
-      });
+        status: statusAwal
+      }).select('id');
+
       if (error) throw error;
+
+      if (inserted && inserted[0]) {
+        await window.supabase.from('pembelian_log').insert({
+          pembelian_id: inserted[0].id,
+          aksi: 'BUAT',
+          nilai_baru: 'Status awal: ' + statusAwal,
+          catatan: 'Qty pesan: ' + qty,
+          diubah_oleh: window.currentUser.id || null
+        });
+      }
+
       closeForm();
       await loadAllData();
     } catch (err) { msg.textContent = 'Gagal: ' + err.message; }
@@ -622,8 +676,18 @@
       const BATCH = 500;
       for (let i = 0; i < items.length; i += BATCH) {
         const chunk = items.slice(i, i + BATCH);
-        const { error } = await window.supabase.from('pembelian').insert(chunk);
+        const { data: inserted, error } = await window.supabase.from('pembelian').insert(chunk).select('id');
         if (error) throw error;
+
+        if (inserted && inserted.length > 0) {
+          const logs = inserted.map(row => ({
+            pembelian_id: row.id,
+            aksi: 'BUAT_VIA_UPLOAD',
+            nilai_baru: 'Status awal: DIKIRIM',
+            diubah_oleh: window.currentUser.id || null
+          }));
+          await window.supabase.from('pembelian_log').insert(logs);
+        }
       }
       msg.textContent = 'Berhasil! ' + valid.length + ' PO diimpor.';
       setTimeout(() => { closeUploadModal(); loadAllData(); }, 1200);
@@ -757,7 +821,7 @@
       const bulan = document.getElementById('bulanSelect').value;
       const tahun = document.getElementById('tahunSelect').value;
 
-      const { error: insertError } = await window.supabase.from('pembelian').insert({
+      const { data: inserted, error: insertError } = await window.supabase.from('pembelian').insert({
         no_po: noPo,
         barang_id: dataSelisih.barang_id,
         distributor_id: distId,
@@ -766,9 +830,18 @@
         qty_pesan: qty,
         tanggal_po: tanggal || now.toISOString().slice(0,10),
         status: 'DIKIRIM'
-      });
+      }).select('id');
 
       if (insertError) throw insertError;
+
+      if (inserted && inserted[0]) {
+        await window.supabase.from('pembelian_log').insert({
+          pembelian_id: inserted[0].id,
+          aksi: 'BUAT_PO_ULANG',
+          catatan: 'Dari PO lama id ' + dataSelisih.pembelian_id + '. Qty selisih: ' + qty,
+          diubah_oleh: window.currentUser.id || null
+        });
+      }
 
       const { error: updateError } = await window.supabase
         .from('penerimaan')
@@ -806,6 +879,92 @@
     simpanBtn.onclick = window.submitForm;
     document.querySelector('#modalOverlay .modal h2').textContent = 'Buat PO Baru';
     _origCloseForm();
+  };
+
+  // ============================================================
+  //  DETAIL PO + LOG
+  // ============================================================
+  window.openDetail = async function(pembelianId) {
+    const po = pembelianList.find(p => p.id === pembelianId);
+    if (!po) return;
+
+    const barang = barangMap[po.barang_id] || {};
+    const dist = distributorList.find(d => d.id === po.distributor_id);
+
+    const statusLabel = {
+      DRAFT: 'Draft', DIKIRIM: 'Dikirim',
+      DITERIMA_SEBAGIAN: 'Diterima sebagian', SELESAI: 'Selesai'
+    }[po.status] || po.status;
+
+    document.getElementById('detailTitle').textContent = 'Detail PO ' + po.no_po;
+    document.getElementById('detailInfo').innerHTML = `
+      <div class="detail-info-row"><span class="label">No. PO</span><span class="val">${escapeHtml(po.no_po)}</span></div>
+      <div class="detail-info-row"><span class="label">Barang</span><span class="val">${escapeHtml(barang.nama_barang || '-')}</span></div>
+      <div class="detail-info-row"><span class="label">Distributor</span><span class="val">${escapeHtml(dist ? dist.nama_distributor : '-')}</span></div>
+      <div class="detail-info-row"><span class="label">Qty pesan</span><span class="val">${Number(po.qty_pesan || 0).toLocaleString('id-ID')} ${escapeHtml(barang.satuan_beli || '')}</span></div>
+      <div class="detail-info-row"><span class="label">Tanggal PO</span><span class="val">${escapeHtml(po.tanggal_po || '-')}</span></div>
+      <div class="detail-info-row"><span class="label">Status saat ini</span><span class="val">${statusLabel}</span></div>
+    `;
+
+    document.getElementById('detailLog').innerHTML = '<div class="loading-note">Memuat riwayat...</div>';
+    document.getElementById('modalDetail').classList.add('show');
+
+    try {
+      const { data, error } = await window.supabase
+        .from('pembelian_log')
+        .select('*')
+        .eq('pembelian_id', pembelianId)
+        .order('diubah_pada', { ascending: true });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        document.getElementById('detailLog').innerHTML = '<div class="empty-state" style="padding:20px;">Belum ada riwayat perubahan.</div>';
+        return;
+      }
+
+      const logUserIds = [...new Set(data.map(l => l.diubah_oleh).filter(Boolean))];
+      let logUsers = {};
+      if (logUserIds.length > 0) {
+        const { data: users } = await window.supabase.from('users').select('id, nama').in('id', logUserIds);
+        (users || []).forEach(u => { logUsers[u.id] = u.nama; });
+      }
+
+      document.getElementById('detailLog').innerHTML = data.map(l => {
+        const cls = l.aksi.startsWith('BUAT') ? 'buat' : 'ubah';
+        const waktu = new Date(l.diubah_pada).toLocaleString('id-ID', {
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+        const userNama = l.diubah_oleh ? (logUsers[l.diubah_oleh] || 'User #' + l.diubah_oleh) : '-';
+
+        let detail = '';
+        if (l.nilai_lama && l.nilai_baru) {
+          detail = `${escapeHtml(l.nilai_lama)} → <strong>${escapeHtml(l.nilai_baru)}</strong>`;
+        } else if (l.nilai_baru) {
+          detail = escapeHtml(l.nilai_baru);
+        }
+        if (l.catatan) {
+          detail += (detail ? ' · ' : '') + escapeHtml(l.catatan);
+        }
+
+        return `<div class="log-item ${cls}">
+          <div class="log-head">
+            <span class="log-aksi">${escapeHtml(l.aksi)}</span>
+            <span class="log-waktu">${waktu}</span>
+          </div>
+          ${detail ? '<div class="log-detail">' + detail + '</div>' : ''}
+          <div class="log-user">oleh ${escapeHtml(userNama)}</div>
+        </div>`;
+      }).join('');
+    } catch (err) {
+      console.error(err);
+      document.getElementById('detailLog').innerHTML = '<div class="empty-state" style="padding:20px; color:var(--coral);">Gagal memuat riwayat: ' + escapeHtml(err.message) + '</div>';
+    }
+  };
+
+  window.closeDetail = function() {
+    document.getElementById('modalDetail').classList.remove('show');
   };
 </script>
 </body>
