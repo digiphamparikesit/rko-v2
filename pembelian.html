@@ -81,6 +81,12 @@
     .selisih-card .info strong { color: var(--coral); }
     .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
 
+    /* Search dropdown distributor */
+    .dist-item { padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border); }
+    .dist-item:last-child { border-bottom: none; }
+    .dist-item:hover, .dist-item.active { background: var(--green-soft); color: var(--green-deep); }
+    .dist-item .kontak { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
     /* Detail PO */
     .detail-info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px dashed var(--border); }
     .detail-info-row:last-child { border-bottom: none; }
@@ -115,7 +121,6 @@
 </header>
 
 <main>
-  <!-- STAT GRID -->
   <section class="stat-grid">
     <div class="stat-card biru">
       <div class="num" id="statTotalPO">-</div>
@@ -175,7 +180,12 @@
     <div id="formInfo" style="display:none;"></div>
     <div class="field"><label>No. PO</label><input type="text" id="fNoPo" placeholder="Nomor PO dari sistem RS"></div>
     <div class="field"><label>Barang</label><select id="fBarang"><option value="">Pilih barang...</option></select></div>
-    <div class="field"><label>Distributor</label><select id="fDistributor"><option value="">Pilih distributor...</option></select></div>
+    <div class="field">
+      <label>Distributor</label>
+      <input type="text" id="fDistributor" placeholder="Ketik nama distributor..." autocomplete="off">
+      <div id="distDropdown" style="display:none; max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.1); position:relative; z-index:10; margin-top:2px;"></div>
+      <input type="hidden" id="fDistributorId">
+    </div>
     <div class="field"><label>Qty pesan</label><input type="number" id="fQty" placeholder="0"></div>
     <div class="field"><label>Tanggal PO</label><input type="date" id="fTanggal"></div>
     <div class="field"><label>Status awal</label><select id="fStatus"><option value="DRAFT">Draft</option><option value="DIKIRIM">Dikirim</option></select></div>
@@ -377,7 +387,7 @@
   }
 
   // ============================================================
-  //  FORM OPTIONS
+  //  FORM OPTIONS (barang + distributor pencarian)
   // ============================================================
   async function fillFormOptions() {
     const bulan = document.getElementById('bulanSelect').value;
@@ -422,20 +432,74 @@
       bSel.appendChild(opt);
     });
 
-    const dSel = document.getElementById('fDistributor');
-    dSel.innerHTML = '<option value="">Pilih distributor...</option>';
-    distributorList.forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = d.nama_distributor;
-      dSel.appendChild(opt);
+    // Setup distributor pencarian
+    const distInput = document.getElementById('fDistributor');
+    const distDropdown = document.getElementById('distDropdown');
+    const distHidden = document.getElementById('fDistributorId');
+
+    // Hapus listener lama (clone node trick)
+    const newInput = distInput.cloneNode(true);
+    distInput.parentNode.replaceChild(newInput, distInput);
+    const distInputFresh = document.getElementById('fDistributor');
+
+    function renderDistOptions(query) {
+      const q = String(query || '').toLowerCase().trim();
+      let hasil = distributorList;
+      if (q) {
+        hasil = distributorList.filter(d =>
+          String(d.nama_distributor || '').toLowerCase().includes(q)
+        );
+      }
+      hasil = hasil.slice(0, 50);
+
+      if (hasil.length === 0) {
+        distDropdown.innerHTML = '<div style="padding:10px 12px; font-size:12.5px; color:var(--text-muted);">Tidak ditemukan.</div>';
+        distDropdown.style.display = 'block';
+        return;
+      }
+      distDropdown.innerHTML = hasil.map(d => `
+        <div class="dist-item" data-id="${d.id}" data-nama="${escapeHtml(d.nama_distributor)}">
+          ${escapeHtml(d.nama_distributor)}
+          ${d.kontak ? '<div class="kontak">' + escapeHtml(d.kontak) + '</div>' : ''}
+        </div>
+      `).join('');
+      distDropdown.style.display = 'block';
+
+      distDropdown.querySelectorAll('.dist-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.getElementById('fDistributor').value = el.dataset.nama;
+          document.getElementById('fDistributorId').value = el.dataset.id;
+          distDropdown.style.display = 'none';
+        });
+      });
+    }
+
+    distInputFresh.addEventListener('input', () => {
+      document.getElementById('fDistributorId').value = '';
+      renderDistOptions(distInputFresh.value);
     });
 
+    distInputFresh.addEventListener('focus', () => {
+      renderDistOptions(distInputFresh.value);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!distInputFresh.contains(e.target) && !distDropdown.contains(e.target)) {
+        distDropdown.style.display = 'none';
+      }
+    });
+
+    // Auto-pilih distributor dari barang terpilih
     bSel.addEventListener('change', () => {
       const selected = bSel.options[bSel.selectedIndex];
       if (!selected) return;
       if (selected.dataset.distributor) {
-        document.getElementById('fDistributor').value = selected.dataset.distributor;
+        const dId = Number(selected.dataset.distributor);
+        const dist = distributorList.find(x => Number(x.id) === dId);
+        if (dist) {
+          document.getElementById('fDistributor').value = dist.nama_distributor;
+          document.getElementById('fDistributorId').value = dist.id;
+        }
       }
       if (selected.dataset.totalRko) {
         document.getElementById('fQty').value = selected.dataset.totalRko;
@@ -521,6 +585,8 @@
     document.getElementById('fBarang').disabled = false;
     document.getElementById('fBarang').value = '';
     document.getElementById('fDistributor').value = '';
+    document.getElementById('fDistributorId').value = '';
+    document.getElementById('distDropdown').style.display = 'none';
     document.getElementById('fQty').value = '';
     document.getElementById('fTanggal').value = '';
     document.getElementById('fStatus').value = 'DRAFT';
@@ -539,13 +605,17 @@
   window.submitForm = async function() {
     const noPo = document.getElementById('fNoPo').value.trim();
     const barangId = document.getElementById('fBarang').value;
-    const distId = document.getElementById('fDistributor').value;
+    const distId = document.getElementById('fDistributorId').value;
+    const distNamaKetik = document.getElementById('fDistributor').value.trim();
     const qty = Number(document.getElementById('fQty').value) || 0;
     const msg = document.getElementById('formMsg');
+
     if (!noPo) { msg.textContent = 'Isi No. PO.'; return; }
     if (!barangId) { msg.textContent = 'Pilih barang.'; return; }
-    if (!distId) { msg.textContent = 'Pilih distributor.'; return; }
+    if (!distNamaKetik) { msg.textContent = 'Distributor wajib diisi.'; return; }
+    if (!distId) { msg.textContent = 'Pilih distributor dari daftar pencarian.'; return; }
     if (qty <= 0) { msg.textContent = 'Qty > 0.'; return; }
+
     msg.textContent = 'Menyimpan...';
     try {
       const statusAwal = document.getElementById('fStatus').value;
@@ -771,7 +841,12 @@
     document.getElementById('fNoPo').readOnly = true;
     document.getElementById('fBarang').value = barangId;
     document.getElementById('fBarang').disabled = true;
-    document.getElementById('fDistributor').value = distributorId || '';
+
+    const distObj = distributorList.find(d => String(d.id) === String(distributorId));
+    document.getElementById('fDistributor').value = distObj ? distObj.nama_distributor : '';
+    document.getElementById('fDistributorId').value = distributorId || '';
+    document.getElementById('distDropdown').style.display = 'none';
+
     document.getElementById('fQty').value = selisihQty;
     document.getElementById('fTanggal').value = new Date().toISOString().slice(0,10);
     document.getElementById('fStatus').value = 'DIKIRIM';
@@ -803,7 +878,7 @@
   window.submitPoUlang = async function() {
     const msg = document.getElementById('formMsg');
     const qty = Number(document.getElementById('fQty').value) || 0;
-    const distId = document.getElementById('fDistributor').value;
+    const distId = document.getElementById('fDistributorId').value;
     const tanggal = document.getElementById('fTanggal').value;
 
     if (qty <= 0) { msg.textContent = 'Qty harus > 0.'; return; }
