@@ -28,6 +28,23 @@
     .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
     select option { color: #14201A; }
     main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
+
+    /* === STAT GRID === */
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 18px;
+    }
+    .stat-card .num { font-size: 20px; font-weight: 700; line-height: 1.2; }
+    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .stat-card.biru { border-color: #D7DEEF; background: #F3F6FC; }
+    .stat-card.kuning { border-color: #FAE5B8; background: #FEFAF0; }
+    .stat-card.hijau { border-color: #C4E8D2; background: #F1FAF4; }
+    @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .stat-grid { grid-template-columns: 1fr; } }
+
     .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
     .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
     .side-panel { padding: 18px 20px; }
@@ -87,6 +104,26 @@
 </header>
 
 <main>
+  <!-- STAT GRID -->
+  <section class="stat-grid">
+    <div class="stat-card biru">
+      <div class="num" id="statTotalPO">-</div>
+      <div class="lbl">Total PO bulan ini</div>
+    </div>
+    <div class="stat-card kuning">
+      <div class="num" id="statBelumDikirim">-</div>
+      <div class="lbl">PO belum selesai</div>
+    </div>
+    <div class="stat-card hijau">
+      <div class="num" id="statSelesai">-</div>
+      <div class="lbl">PO selesai</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="statTotalNilai">Rp -</div>
+      <div class="lbl">Total nilai PO (estimasi)</div>
+    </div>
+  </section>
+
   <div class="layout-split">
     <aside class="left-col">
       <div class="panel side-panel">
@@ -277,6 +314,7 @@
 
       fillFormOptions();
       applyFilter();
+      updateStats();
     } catch (err) {
       console.error(err);
       document.getElementById('tableBody').innerHTML =
@@ -284,71 +322,98 @@
     }
   }
 
- async function fillFormOptions() {
-  const bulan = document.getElementById('bulanSelect').value;
-  const tahun = document.getElementById('tahunSelect').value;
+  // ============================================================
+  //  STATISTIK
+  // ============================================================
+  function updateStats() {
+    const totalPO = pembelianList.length;
+    const belumSelesai = pembelianList.filter(p =>
+      p.status === 'DRAFT' || p.status === 'DIKIRIM' || p.status === 'DITERIMA_SEBAGIAN'
+    ).length;
+    const selesai = pembelianList.filter(p => p.status === 'SELESAI').length;
 
-  let kebutuhanData = [];
-  try {
-    kebutuhanData = await fetchAllRows('kebutuhan', q =>
-      q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)
-    );
-  } catch (e) {
-    console.warn('Gagal memuat kebutuhan:', e);
+    // Total nilai estimasi: qty_pesan × hpp_beli barang
+    let totalNilai = 0;
+    pembelianList.forEach(p => {
+      const barang = barangMap[p.barang_id];
+      if (!barang) return;
+      const hpp = Number(barang.hpp_beli) || 0;
+      const qty = Number(p.qty_pesan) || 0;
+      totalNilai += qty * hpp;
+    });
+
+    document.getElementById('statTotalPO').textContent = totalPO.toLocaleString('id-ID');
+    document.getElementById('statBelumDikirim').textContent = belumSelesai.toLocaleString('id-ID');
+    document.getElementById('statSelesai').textContent = selesai.toLocaleString('id-ID');
+    document.getElementById('statTotalNilai').textContent = 'Rp ' + totalNilai.toLocaleString('id-ID');
   }
 
-  const barangIds = [...new Set(kebutuhanData.map(k => k.barang_id))];
+  // ============================================================
+  //  FORM OPTIONS
+  // ============================================================
+  async function fillFormOptions() {
+    const bulan = document.getElementById('bulanSelect').value;
+    const tahun = document.getElementById('tahunSelect').value;
 
-  // Hitung total RKO per barang (dari semua ruangan)
-  const totalRKOPerBarang = {};
-  kebutuhanData.forEach(k => {
-    totalRKOPerBarang[k.barang_id] = (totalRKOPerBarang[k.barang_id] || 0) + Number(k.kebutuhan);
-  });
-
-  const bSel = document.getElementById('fBarang');
-  bSel.innerHTML = '<option value="">Pilih barang...</option>';
-
-  const rencanaByBarang = {};
-  rencanaList.forEach(r => { rencanaByBarang[r.barang_id] = r; });
-
-  barangIds.forEach(id => {
-    const barang = barangMap[id];
-    if (!barang) return;
-    const rencana = rencanaByBarang[id];
-    const totalRKO = totalRKOPerBarang[id] || 0;
-    const satuanBeli = barang.satuan_beli || 'Box';
-
-    const opt = document.createElement('option');
-    opt.value = id;
-    opt.dataset.totalRko = totalRKO;
-    if (rencana && rencana.distributor_id) {
-      opt.dataset.distributor = rencana.distributor_id;
+    let kebutuhanData = [];
+    try {
+      kebutuhanData = await fetchAllRows('kebutuhan', q =>
+        q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)
+      );
+    } catch (e) {
+      console.warn('Gagal memuat kebutuhan:', e);
     }
 
-    opt.textContent = `${barang.nama_barang} (total RKO: ${totalRKO} ${satuanBeli})`;
-    bSel.appendChild(opt);
-  });
+    const barangIds = [...new Set(kebutuhanData.map(k => k.barang_id))];
 
-  const dSel = document.getElementById('fDistributor');
-  dSel.innerHTML = '<option value="">Pilih distributor...</option>';
-  distributorList.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d.id;
-    opt.textContent = d.nama_distributor;
-    dSel.appendChild(opt);
-  });
+    const totalRKOPerBarang = {};
+    kebutuhanData.forEach(k => {
+      totalRKOPerBarang[k.barang_id] = (totalRKOPerBarang[k.barang_id] || 0) + Number(k.kebutuhan);
+    });
 
-  bSel.addEventListener('change', () => {
-    const selected = bSel.options[bSel.selectedIndex];
-    if (!selected) return;
-    if (selected.dataset.distributor) {
-      document.getElementById('fDistributor').value = selected.dataset.distributor;
-    }
-    if (selected.dataset.totalRko) {
-      document.getElementById('fQty').value = selected.dataset.totalRko;
-    }
-  });
-}
+    const bSel = document.getElementById('fBarang');
+    bSel.innerHTML = '<option value="">Pilih barang...</option>';
+
+    const rencanaByBarang = {};
+    rencanaList.forEach(r => { rencanaByBarang[r.barang_id] = r; });
+
+    barangIds.forEach(id => {
+      const barang = barangMap[id];
+      if (!barang) return;
+      const rencana = rencanaByBarang[id];
+      const totalRKO = totalRKOPerBarang[id] || 0;
+      const satuanBeli = barang.satuan_beli || 'Box';
+
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.dataset.totalRko = totalRKO;
+      if (rencana && rencana.distributor_id) {
+        opt.dataset.distributor = rencana.distributor_id;
+      }
+      opt.textContent = `${barang.nama_barang} (total RKO: ${totalRKO} ${satuanBeli})`;
+      bSel.appendChild(opt);
+    });
+
+    const dSel = document.getElementById('fDistributor');
+    dSel.innerHTML = '<option value="">Pilih distributor...</option>';
+    distributorList.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.nama_distributor;
+      dSel.appendChild(opt);
+    });
+
+    bSel.addEventListener('change', () => {
+      const selected = bSel.options[bSel.selectedIndex];
+      if (!selected) return;
+      if (selected.dataset.distributor) {
+        document.getElementById('fDistributor').value = selected.dataset.distributor;
+      }
+      if (selected.dataset.totalRko) {
+        document.getElementById('fQty').value = selected.dataset.totalRko;
+      }
+    });
+  }
 
   // ============================================================
   //  FILTER & TABEL
