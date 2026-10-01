@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RKO RSAMP — Menu Utama</title>
+  <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
@@ -11,42 +12,18 @@
     window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   </script>
   <style>
-    :root {
-      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
-      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
-      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; background: var(--bg);
-      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      color: var(--text-dark);
-    }
+    /* ==== CSS khusus index.html ==== */
 
-    header.topbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--green-deep);
-      color: #fff;
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .brand .mark {
-      width: 40px; height: 40px; border-radius: 10px; background: var(--green-bright);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 16px; color: var(--green-deep);
-    }
-    .brand .title { font-weight: 700; font-size: 16px; line-height: 1.2; }
-    .brand .label { font-size: 11.5px; color: rgba(255,255,255,0.65); line-height: 1.2; }
-    .topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+    /* Body & layout menu utama */
+    body { min-height: 100vh; }
+    main { max-width: 1280px; margin: 0 auto; padding: 32px 24px 60px; }
+
+    /* Override topbar index — ukuran lebih besar + shadow */
+    header.topbar { padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    header.topbar .mark { width: 40px; height: 40px; border-radius: 10px; font-size: 16px; }
+    header.topbar .title { font-size: 16px; }
+    header.topbar .label { font-size: 11.5px; }
+
     .btn-logout {
       background: rgba(255,255,255,0.12); color: #fff;
       border: 1px solid rgba(255,255,255,0.25); border-radius: 8px;
@@ -55,8 +32,7 @@
     }
     .btn-logout:hover { background: rgba(255,255,255,0.2); }
 
-    main { max-width: 1280px; margin: 0 auto; padding: 32px 24px 60px; }
-
+    /* Welcome box */
     .welcome {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 16px; padding: 24px 28px; margin-bottom: 28px;
@@ -72,6 +48,7 @@
       text-transform: uppercase; letter-spacing: 0.5px;
     }
 
+    /* Section title */
     .section-title {
       font-size: 12px; font-weight: 700; color: var(--text-muted);
       text-transform: uppercase; letter-spacing: 0.8px;
@@ -79,6 +56,7 @@
     }
     .section-title:first-of-type { margin-top: 0; }
 
+    /* Menu grid */
     .menu-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -98,13 +76,8 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(22,163,74,0.08);
     }
-    .menu-card.disabled {
-      opacity: 0.55; cursor: not-allowed;
-      background: #FAFBFA;
-    }
-    .menu-card.disabled:hover {
-      border-color: var(--border); transform: none; box-shadow: none;
-    }
+    .menu-card.disabled { opacity: 0.55; cursor: not-allowed; background: #FAFBFA; }
+    .menu-card.disabled:hover { border-color: var(--border); transform: none; box-shadow: none; }
 
     .menu-icon {
       width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0;
@@ -128,12 +101,7 @@
       text-transform: uppercase; letter-spacing: 0.4px;
     }
 
-    .loading-screen {
-      text-align: center;
-      padding: 80px 20px;
-      color: var(--text-muted);
-      font-size: 14px;
-    }
+    .loading-screen { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 14px; }
 
     @media (max-width: 640px) {
       main { padding: 20px 16px 60px; }
@@ -500,7 +468,6 @@
   //  SESSION CHECK & INIT
   // ============================================================
   (async function init() {
-    // 1. Cek Supabase Auth
     let session = null;
     try {
       const res = await window.supabase.auth.getSession();
@@ -514,14 +481,12 @@
       return;
     }
 
-    // 2. Ambil profil dari sessionStorage
     let user = null;
     try {
       const stored = sessionStorage.getItem('rko_user');
       if (stored) user = JSON.parse(stored);
     } catch (e) {}
 
-    // Kalau profil hilang, ambil ulang dari DB
     if (!user || !user.role) {
       try {
         const email = session.user.email;
@@ -554,7 +519,6 @@
       }
     }
 
-    // 3. Set user global dan tampilkan UI
     window.currentUser = user;
     const roleLabel = String(user.role).replace(/_/g, ' ');
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + roleLabel;
@@ -562,7 +526,6 @@
     document.getElementById('welcomeSub').textContent = 'Pilih menu di bawah untuk memulai.';
     document.getElementById('roleTag').textContent = roleLabel;
 
-    // 4. Render menu sesuai role
     renderMenu();
   })();
 </script>
