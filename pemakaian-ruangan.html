@@ -733,8 +733,25 @@
   // ============================================================
   //  INPUT MANUAL
   // ============================================================
-  window.openManualModal = function() {
+  window.openManualModal = async function() {
     const rSel = document.getElementById('mRuangan');
+
+    document.getElementById('modalManual').classList.add('show');
+    rSel.innerHTML = '<option value="">Memuat ruangan...</option>';
+
+    // Fallback: fetch ulang kalau ruanganList kosong
+    if (!Array.isArray(ruanganList) || ruanganList.length === 0) {
+      try {
+        ruanganList = await fetchAllRows('master_ruangan', q => q.order('nama_ruangan'));
+      } catch (e) {
+        console.error('[openManualModal] Gagal fetch ruangan:', e);
+        rSel.innerHTML = '<option value="">Gagal memuat ruangan</option>';
+        return;
+      }
+    }
+
+    console.log('[openManualModal] Total ruangan:', ruanganList.length);
+
     const isUserRuangan = window.currentUser.role === 'USER';
     const myRuanganId = window.currentUser.ruangan_id;
 
@@ -744,9 +761,11 @@
       rSel.disabled = true;
       setTimeout(() => { rSel.dispatchEvent(new Event('change')); }, 50);
     } else {
-      rSel.innerHTML = '<option value="">Pilih ruangan...</option>' +
-        ruanganList.filter(r => r.aktif !== false)
-          .map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
+      // Tampilkan SEMUA ruangan (tanpa filter aktif)
+      const optionsHtml = ruanganList
+        .map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan || '(tanpa nama)')}</option>`)
+        .join('');
+      rSel.innerHTML = '<option value="">Pilih ruangan...</option>' + optionsHtml;
       rSel.disabled = false;
       document.getElementById('mBarang').innerHTML = '<option value="">Pilih ruangan dulu...</option>';
     }
@@ -757,7 +776,6 @@
     document.getElementById('mTanggal').value = '';
     document.getElementById('mCatatan').value = '';
     document.getElementById('manualMsg').textContent = '';
-    document.getElementById('modalManual').classList.add('show');
   };
 
   window.closeManualModal = function() {
