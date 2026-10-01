@@ -166,7 +166,7 @@
   // ============================================================
   (async function() {
     const user = await window.auth.requireAuth({
-      allowRoles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KEPALA_INSTALASI_FARMASI']
+      allowRoles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI']
     });
     if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
