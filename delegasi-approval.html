@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Delegasi Approval — RKO RSAMP</title>
+  <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
@@ -12,61 +13,18 @@
   </script>
   <script src="auth.js"></script>
   <style>
-    :root {
-      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
-      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
-      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
-    header.topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: var(--green-deep); color: #fff; padding: 18px 24px;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 12px;
-    }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
-    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
-    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
-    .topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
-    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
-    a.back:hover { color: #fff; }
-
+    /* CSS khusus delegasi-approval.html */
     main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
-
-    .info-box {
-      background: var(--green-soft); color: var(--green-deep);
-      border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;
-      font-size: 13px; line-height: 1.5;
-    }
-    .warn-box {
-      background: #FDF1E0; color: var(--amber);
-      border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;
-      font-size: 13px; line-height: 1.5;
-    }
 
     .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 20px; }
     .panel h2 { font-size: 15px; margin: 0 0 4px; }
     .panel .sub { font-size: 12px; color: var(--text-muted); margin: 0 0 16px; }
 
     .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-    .field { margin-bottom: 12px; }
-    .field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
-    .field input, .field select, .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; font-family: inherit; }
+    @media (max-width: 700px) { .field-row { grid-template-columns: 1fr; } }
     .help-text { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
 
-    .btn { padding: 10px 18px; border: none; border-radius: 9px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
-    .btn-primary { background: var(--green-mid); color: #fff; }
-    .btn-primary:hover { background: #128a3e; }
-    .btn-primary:disabled { background: #A9C9B5; cursor: default; }
-    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
-    .btn-danger { background: var(--coral); color: #fff; }
-    .btn-danger:hover { background: #B84733; }
     .btn-mini { padding: 5px 12px; font-size: 12px; }
-
-    .form-msg { font-size: 12.5px; min-height: 16px; margin-top: 10px; }
 
     .delegasi-card {
       background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -82,13 +40,9 @@
     .delegasi-periode { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
     .delegasi-alasan { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-style: italic; }
 
-    .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
     .badge.aktif { background: var(--green-soft); color: var(--green-mid); }
     .badge.berakhir { background: #F1F1EE; color: var(--text-muted); }
     .badge.dibatalkan { background: #FBEAE7; color: var(--coral); }
-
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
-    .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
   </style>
 </head>
 <body>
@@ -142,7 +96,7 @@
 
     <div class="field">
       <label>Alasan <span style="color:#DC5B45;">*</span></label>
-      <textarea id="fAlasan" rows="2" placeholder="mis. cuti tahunan, dinas luar, sakit"></textarea>
+      <textarea id="fAlasan" rows="2" placeholder="mis. cuti tahunan, dinas luar, sakit" style="width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; font-family:inherit;"></textarea>
     </div>
 
     <button class="btn btn-primary" id="btnBuat" onclick="window.submitDelegasi()">Buat Delegasi</button>
