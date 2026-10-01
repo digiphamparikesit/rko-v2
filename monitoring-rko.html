@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Monitoring RKO — RKO RSAMP</title>
+  <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
@@ -12,93 +13,20 @@
   </script>
   <script src="auth.js"></script>
   <style>
-    :root {
-      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
-      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
-      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
-    header.topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: var(--green-deep); color: #fff; padding: 18px 24px;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 12px;
-    }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
-    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
-    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
-    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
-    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
-    a.back:hover { color: #fff; }
-    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
-    select option { color: #14201A; }
-
-    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
-
-    .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
-    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-    .stat-card .num { font-size: 22px; font-weight: 700; line-height: 1.1; }
-    .stat-card .lbl { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.3; }
-    .stat-card.merah { border-color: #F3D0C4; background: #FDF6F3; }
-    .stat-card.kuning { border-color: #FAE5B8; background: #FEFAF0; }
-    .stat-card.hijau { border-color: #C4E8D2; background: #F1FAF4; }
-
-    .layout-split { display: grid; grid-template-columns: 1fr 3.5fr; gap: 16px; align-items: start; }
-    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
-    .side-panel { padding: 18px 20px; }
-    .side-title { font-size: 14px; margin: 0 0 12px; }
-    .info-note { background: var(--green-soft); color: var(--green-deep); padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
-    .field { margin-bottom: 12px; }
-    .field:last-child { margin-bottom: 0; }
-    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
-    .field input, .field select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-
-    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1000px; }
-    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
-    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
-    td.num { text-align: right; }
-
+    /* CSS khusus monitoring-rko.html */
+    .stat-grid { grid-template-columns: repeat(5, 1fr); }
+    @media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    .layout-split { grid-template-columns: 1fr 3.5fr; }
+    .panel { overflow-x: auto; }
+    table { min-width: 1000px; }
     .barang-nama { font-weight: 600; font-size: 13px; }
-    .barang-info { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .satuan-beli { color: var(--amber); font-weight: 600; font-size: 11px; }
-
-    .badge-status { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
     .badge-status.rko { background: #F1F1EE; color: var(--text-muted); }
     .badge-status.po { background: #E9EEFB; color: #3B5BDB; }
     .badge-status.datang { background: #FDF1E0; color: var(--amber); }
     .badge-status.sebagian { background: #FBEAE7; color: var(--coral); }
     .badge-status.selesai { background: var(--green-soft); color: var(--green-mid); }
-
-    .progress-bar { height: 6px; background: #EEF2EE; border-radius: 999px; overflow: hidden; display: inline-block; width: 70px; vertical-align: middle; margin-right: 6px; }
-    .progress-bar .fill { height: 100%; background: var(--green-mid); }
-    .progress-bar .fill.warn { background: var(--amber); }
-    .progress-bar .fill.danger { background: var(--coral); }
-
-    .btn { padding: 6px 12px; border: none; border-radius: 7px; font-weight: 600; font-size: 11.5px; cursor: pointer; text-decoration: none; display: inline-block; }
-    .btn-primary { background: var(--green-mid); color: #fff; }
-    .btn-primary:hover { background: #128a3e; }
-    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
-    .btn-warning { background: var(--amber); color: #fff; }
-    .btn-warning:hover { background: #B45309; }
-
-    .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); }
-    .pager button { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 12.5px; }
-    .pager button:disabled { opacity: 0.4; cursor: default; }
-
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13.5px; }
-    .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 40px 0; }
-
-    @media (max-width: 1100px) {
-      .stat-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 860px) {
-      .layout-split { grid-template-columns: 1fr; }
-      .left-col { position: static; }
-    }
+    .btn-sm { padding: 6px 12px; border: none; border-radius: 7px; font-weight: 600; font-size: 11.5px; cursor: pointer; text-decoration: none; display: inline-block; }
   </style>
 </head>
 <body>
@@ -120,7 +48,7 @@
 </header>
 
 <main>
-  <section class="stat-grid" id="statGrid">
+  <section class="stat-grid">
     <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl">Total barang di-RKO</div></div>
     <div class="stat-card merah"><div class="num" id="statRko">-</div><div class="lbl">Belum ada PO</div></div>
     <div class="stat-card kuning"><div class="num" id="statPo">-</div><div class="lbl">PO sudah dibuat</div></div>
@@ -173,9 +101,7 @@
     <section class="right-col">
       <div class="panel">
         <table>
-          <thead id="tableHead">
-            <!-- Header diisi oleh JS -->
-          </thead>
+          <thead id="tableHead"></thead>
           <tbody id="tableBody">
             <tr><td colspan="8" class="empty-state">Memuat data...</td></tr>
           </tbody>
@@ -552,7 +478,7 @@
     tbody.innerHTML = items.map(r => {
       const badge = statusBadge(r.status);
       const barFill = r.capaian >= 100 ? '' : (r.capaian >= 50 ? 'warn' : 'danger');
-      const tombolRiwayat = `<a class="btn btn-secondary" href="riwayat-barang.html?id=${r.barang_id}">Riwayat</a>`;
+      const tombolRiwayat = `<a class="btn-sm btn-secondary" href="riwayat-barang.html?id=${r.barang_id}">Riwayat</a>`;
 
       if (isUserRuangan()) {
         return `<tr>
@@ -607,21 +533,21 @@
   function aksiTombol(r) {
     let tombolUtama = '';
     if (r.status === 'RKO') {
-      tombolUtama = '<a class="btn btn-primary" href="pembelian.html">Buat PO</a>';
+      tombolUtama = '<a class="btn-sm btn-primary" href="pembelian.html">Buat PO</a>';
     } else if (r.status === 'PO') {
       const adaDikirim = r.pembelian_list.some(p => p.status === 'DIKIRIM' || p.status === 'DITERIMA_SEBAGIAN');
       if (adaDikirim) {
-        tombolUtama = '<a class="btn btn-warning" href="penerimaan.html">Terima</a>';
+        tombolUtama = '<a class="btn-sm btn-warning" href="penerimaan.html">Terima</a>';
       } else {
-        tombolUtama = '<a class="btn btn-secondary" href="pembelian.html">Lihat PO</a>';
+        tombolUtama = '<a class="btn-sm btn-secondary" href="pembelian.html">Lihat PO</a>';
       }
     } else if (r.status === 'DATANG' || r.status === 'SEBAGIAN') {
-      tombolUtama = '<a class="btn btn-primary" href="mutasi-barang.html">Mutasi</a>';
+      tombolUtama = '<a class="btn-sm btn-primary" href="mutasi-barang.html">Mutasi</a>';
     } else {
       tombolUtama = '<span style="color:var(--text-muted); font-size:11px;">—</span>';
     }
 
-    const tombolRiwayat = `<a class="btn btn-secondary" style="margin-left:6px;" href="riwayat-barang.html?id=${r.barang_id}">Riwayat</a>`;
+    const tombolRiwayat = `<a class="btn-sm btn-secondary" style="margin-left:6px;" href="riwayat-barang.html?id=${r.barang_id}">Riwayat</a>`;
 
     return tombolUtama + tombolRiwayat;
   }
