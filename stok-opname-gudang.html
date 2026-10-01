@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
@@ -63,6 +64,7 @@
           <input type="text" id="gudangInfo" readonly>
         </div>
         <button class="btn btn-upload" style="width:100%;" onclick="window.openUploadModal()">&#8593; Upload CSV Opname</button>
+        <button class="btn btn-secondary" style="width:100%; margin-top:8px;" onclick="window.exportExcel()">&#8681; Download Excel</button>
       </div>
       <div class="panel side-panel">
         <h2 class="side-title">Keterangan</h2>
@@ -636,6 +638,75 @@
       msg.style.color = 'var(--coral)';
       btn.disabled = false;
     }
+  };
+  // ============================================================
+  //  EXPORT EXCEL
+  // ============================================================
+  window.exportExcel = function() {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum siap. Coba refresh halaman.');
+      return;
+    }
+    if (!allStok || allStok.length === 0) {
+      alert('Tidak ada data opname gudang untuk di-export.');
+      return;
+    }
+
+    const bulanSel = document.getElementById('bulanSelect');
+    const bulanTeks = bulanSel.options[bulanSel.selectedIndex].textContent;
+    const tahun = document.getElementById('tahunSelect').value;
+    const gudang = (document.getElementById('gudangInfo').value || '').trim() || '-';
+    const namaUser = window.currentUser ? window.currentUser.nama : '-';
+    const tglCetak = new Date().toLocaleString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const rows = [
+      ['RS AM PARIKESIT — RKO RSAMP'],
+      ['Laporan Stok Opname Gudang (' + gudang + ')'],
+      ['Periode: ' + bulanTeks + ' ' + tahun],
+      ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
+      [],
+      ['No', 'ID Barang', 'Nama Barang', 'Stok Sistem',
+       'Stok Fisik', 'Selisih', 'Keterangan', 'Status']
+    ];
+
+    allStok.forEach((s, idx) => {
+      const status = s.saved
+        ? (s.selisih === 0 ? 'Sesuai' : 'Selisih')
+        : 'Belum diisi';
+      rows.push([
+        idx + 1,
+        s.barang_id || '',
+        s.nama_barang || '-',
+        Number(s.stok_sistem) || 0,
+        s.fisik !== null && s.fisik !== undefined ? Number(s.fisik) : '',
+        s.selisih !== null && s.selisih !== undefined ? Number(s.selisih) : '',
+        s.keterangan || '',
+        status
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 7 } }
+    ];
+
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 10 }, { wch: 42 }, { wch: 14 },
+      { wch: 14 }, { wch: 12 }, { wch: 26 }, { wch: 14 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Opname Gudang');
+
+    const namaFile = 'Opname-Gudang_' + bulanTeks + '-' + tahun + '.xlsx';
+    XLSX.writeFile(wb, namaFile);
   };
 </script>
 </body>
