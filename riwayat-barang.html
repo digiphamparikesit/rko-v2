@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Riwayat Barang — RKO RSAMP</title>
+  <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
@@ -12,28 +13,7 @@
   </script>
   <script src="auth.js"></script>
   <style>
-    :root {
-      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
-      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
-      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
-    header.topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: var(--green-deep); color: #fff; padding: 18px 24px;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 12px;
-    }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
-    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
-    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
-    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
-    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
-    a.back:hover { color: #fff; }
-
+    /* CSS khusus riwayat-barang.html */
     main { max-width: 1400px; margin: 0 auto; padding: 24px 20px 60px; }
 
     .card-info {
@@ -57,17 +37,15 @@
     .filter-bar .info-satuan {
       margin-left: auto; font-size: 12px; color: var(--text-muted);
     }
+    @media (max-width: 860px) {
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .filter-bar .info-satuan { margin-left: 0; }
+    }
 
-    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
-    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; }
-    .stat-card .num { font-size: 20px; font-weight: 700; line-height: 1.2; }
-    .stat-card .lbl { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+    .stat-grid { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 860px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
 
-    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-    th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
-    td.num { text-align: right; }
+    .panel { overflow-x: auto; }
 
     tr.row-bulan { cursor: pointer; transition: background 0.1s; }
     tr.row-bulan:hover { background: #FAFBFA; }
@@ -109,35 +87,14 @@
     .detail-table th { background: #FAFBFA; font-size: 10.5px; text-transform: uppercase; color: var(--text-muted); }
     .detail-table tr:last-child td { border-bottom: none; }
 
-    .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
-    .badge.ok { background: var(--green-soft); color: var(--green-mid); }
     .badge.kurang { background: #FBEAE7; color: var(--coral); }
-    .badge.netral { background: #F1F1EE; color: var(--text-muted); }
-    .badge.lebih { background: #FDF1E0; color: var(--amber); }
     .badge.nuha { background: #E9EEFB; color: #3B5BDB; }
     .badge.manual { background: var(--green-soft); color: var(--green-mid); }
-
-    .progress-bar { height: 6px; background: #EEF2EE; border-radius: 999px; overflow: hidden; display: inline-block; width: 60px; vertical-align: middle; margin-right: 6px; }
-    .progress-bar .fill { height: 100%; background: var(--green-mid); }
-    .progress-bar .fill.warn { background: var(--amber); }
-    .progress-bar .fill.danger { background: var(--coral); }
-
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13.5px; }
-    .loading-spinner { text-align: center; padding: 40px; color: var(--text-muted); }
-
-    .satuan-jual { color: var(--green-deep); font-weight: 600; font-size: 11.5px; }
-    .satuan-beli { color: var(--amber); font-weight: 600; font-size: 11.5px; }
 
     .back-link { display: inline-block; margin-bottom: 16px; color: var(--green-mid); text-decoration: none; font-size: 13px; font-weight: 600; }
     .back-link:hover { text-decoration: underline; }
 
     .hint { font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px; }
-
-    @media (max-width: 860px) {
-      .stat-grid { grid-template-columns: repeat(2, 1fr); }
-      .filter-bar { flex-direction: column; align-items: stretch; }
-      .filter-bar .info-satuan { margin-left: 0; }
-    }
   </style>
 </head>
 <body>
@@ -160,7 +117,7 @@
   <a class="back-link" href="monitoring-rko.html">&#8592; Kembali ke Monitoring RKO</a>
 
   <div id="infoContainer">
-    <div class="loading-spinner">Memuat data barang...</div>
+    <div class="loading-note">Memuat data barang...</div>
   </div>
 
   <div id="filterContainer" style="display:none;">
@@ -306,7 +263,6 @@
   let allPenerimaan = [];
   let allPembelian = [];
   let allPemakaian = [];
-  let allOpname = [];
   let userMap = {};
   let ruanganMap = {};
 
@@ -449,9 +405,6 @@
       if (activeRuanganId) qStok = q => qStok(q).eq('ruangan_id', activeRuanganId);
       allStok = await fetchAllRows('stok_ruangan', qStok);
 
-      // Opname (dari stok_ruangan yang punya stok_fisik)
-      // (sudah termasuk di allStok)
-
       // Mutasi header
       const qMutasi = q => q.eq('barang_id', barangId).eq('tahun', tahun).eq('status', 'AKTIF');
       allMutasi = await fetchAllRows('mutasi_ruangan', qMutasi);
@@ -550,7 +503,6 @@
       }
     });
 
-    // Filter bulan kalau dipilih
     const bulanFilter = activeBulan;
 
     const rows = [];
@@ -644,10 +596,8 @@
     // === 1. Penerimaan (mutasi masuk) ===
     const mutasiBulan = allMutasi.filter(m => Number(m.bulan) === bulan);
     const mutasiIdsBulan = new Set(mutasiBulan.map(m => m.id));
-
     const detailBulanIni = allMutasiDetail.filter(d => mutasiIdsBulan.has(d.mutasi_id));
 
-    // Grouping per mutasi
     const perMutasi = {};
     mutasiBulan.forEach(m => {
       perMutasi[m.id] = {
