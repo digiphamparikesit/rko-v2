@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pemakaian Ruangan — RKO RSAMP</title>
+  <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
@@ -13,82 +14,11 @@
   </script>
   <script src="auth.js"></script>
   <style>
-    :root {
-      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
-      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
-      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
-    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
-    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
-    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
-    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
-    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
-    a.back:hover { color: #fff; }
-    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
-    select option { color: #14201A; }
-    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
-
-    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
-    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
-    .stat-card .num { font-size: 20px; font-weight: 700; }
-    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-
-    .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
-    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
-    .side-panel { padding: 18px 20px; }
-    .side-title { font-size: 14px; margin: 0 0 12px; }
-    .info-note { background: var(--green-soft); color: var(--green-deep); padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
-    .field { margin-bottom: 12px; }
-    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
-    .field input, .field select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-
-    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 800px; }
-    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
-    td.num { text-align: right; }
-    .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); }
-    .pager button { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 12.5px; }
-    .pager button:disabled { opacity: 0.4; cursor: default; }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
-
-    .btn { padding: 10px 16px; border: none; border-radius: 9px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
-    .btn-primary { background: var(--green-mid); color: #fff; }
-    .btn-primary:hover { background: #128a3e; }
-    .btn-primary:disabled { background: #A9C9B5; cursor: default; }
-    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
-    .btn-upload { background: #6B7A72; color: #fff; }
-    .btn-upload:hover { background: #5A6A62; }
-
-    #modalUpload, #modalManual { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
-    #modalUpload.show, #modalManual.show { display: flex; }
-    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 1100px; max-height: 90vh; overflow-y: auto; padding: 26px; }
+    /* CSS khusus pemakaian-ruangan.html */
     .modal-narrow { max-width: 520px; }
-    .modal h2 { font-size: 16px; margin: 0 0 8px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
-    .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 8px; }
-
     .progress-wrap { background: #EEF2EE; border-radius: 999px; height: 10px; overflow: hidden; margin: 10px 0; }
     .progress-bar { background: var(--green-mid); height: 100%; width: 0%; transition: width 0.2s; }
-
-    .badge-status { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
-    .id-display { font-family: "Courier New", monospace; font-weight: 700; color: var(--green-deep); }
-
-    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
-    .preview-table th, .preview-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
-    .preview-table th { background: #FAFBFA; font-size: 11px; text-transform: uppercase; color: var(--text-muted); }
-    .preview-table th:first-child, .preview-table td:first-child { width: 90px; min-width: 90px; white-space: nowrap; }
-    .preview-table th:nth-child(2), .preview-table td:nth-child(2) { min-width: 240px; }
-    .preview-table td.num { text-align: right; }
-
-    .satuan-jual { color: var(--green-deep); font-weight: 600; font-size: 11.5px; }
-    .satuan-beli { color: var(--amber); font-weight: 600; font-size: 11.5px; }
-    .barang-info { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .panel { overflow-x: auto; }
   </style>
 </head>
 <body>
@@ -163,7 +93,7 @@
 
 <!-- MODAL UPLOAD CSV -->
 <div id="modalUpload">
-  <div class="modal">
+  <div class="modal modal-wide">
     <h2 style="font-size:16px; margin:0 0 4px;">Upload Pemakaian dari NUHA</h2>
     <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px; line-height:1.5;">
       Kolom yang dibutuhkan:<br>
@@ -320,91 +250,85 @@
   //  SINKRONISASI STOK RUANGAN (dalam satuan jual)
   // ============================================================
   window.sinkronStokRuangan = async function(ruanganId, barangId, bulan, tahun) {
-  try {
-    // Ambil stok_ruangan yang ada
-    const { data: stokRows, error: e1 } = await window.supabase
-      .from('stok_ruangan').select('*')
-      .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
-      .eq('bulan', bulan).eq('tahun', tahun).limit(1);
-    if (e1) throw e1;
-
-    // Total pemakaian bulan ini
-    const { data: pemakaianRows, error: e2 } = await window.supabase
-      .from('pemakaian_ruangan').select('qty_pakai')
-      .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
-      .eq('bulan', bulan).eq('tahun', tahun);
-    if (e2) throw e2;
-    const totalPakai = (pemakaianRows || []).reduce((s, p) => s + Number(p.qty_pakai || 0), 0);
-
-    // Total terima dari mutasi (konversi box → tablet)
-    const { data: mutasiRows, error: e3 } = await window.supabase
-      .from('mutasi_ruangan').select('id')
-      .eq('barang_id', barangId).eq('bulan', bulan).eq('tahun', tahun).eq('status', 'AKTIF');
-    if (e3) throw e3;
-
-    const mutasiIds = (mutasiRows || []).map(m => m.id);
-    let totalTerima = 0;
-    if (mutasiIds.length > 0) {
-      const { data: detailRows, error: e4 } = await window.supabase
-        .from('mutasi_ruangan_detail').select('qty_dialokasikan')
-        .eq('ruangan_id', ruanganId).in('mutasi_id', mutasiIds);
-      if (e4) throw e4;
-      const { data: barangData } = await window.supabase
-        .from('master_barang').select('content').eq('id', barangId).limit(1);
-      const content = Number((barangData && barangData[0] && barangData[0].content) || 1);
-      totalTerima = (detailRows || []).reduce((s, d) => s + Number(d.qty_dialokasikan || 0), 0) * content;
-    }
-
-    // Stok awal — carry-over dari bulan lalu
-    let stokAwal = 0;
-    let stokRow = (stokRows && stokRows.length > 0) ? stokRows[0] : null;
-
-    if (stokRow) {
-      // Kalau baris sudah ada, stok_awal tidak diubah (sudah di-set saat insert pertama)
-      stokAwal = Number(stokRow.stok_awal || 0);
-    } else {
-      // Baris belum ada — hitung carry-over dari bulan lalu
-      const bulanLalu = bulan === 1 ? 12 : bulan - 1;
-      const tahunLalu = bulan === 1 ? tahun - 1 : tahun;
-      const { data: lastRows } = await window.supabase
-        .from('stok_ruangan').select('stok_fisik, stok_sisa')
+    try {
+      const { data: stokRows, error: e1 } = await window.supabase
+        .from('stok_ruangan').select('*')
         .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
-        .eq('bulan', bulanLalu).eq('tahun', tahunLalu).limit(1);
-      if (lastRows && lastRows.length > 0) {
-        const last = lastRows[0];
-        stokAwal = last.stok_fisik !== null && last.stok_fisik !== undefined
-          ? Number(last.stok_fisik)
-          : Number(last.stok_sisa || 0);
+        .eq('bulan', bulan).eq('tahun', tahun).limit(1);
+      if (e1) throw e1;
+
+      const { data: pemakaianRows, error: e2 } = await window.supabase
+        .from('pemakaian_ruangan').select('qty_pakai')
+        .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
+        .eq('bulan', bulan).eq('tahun', tahun);
+      if (e2) throw e2;
+      const totalPakai = (pemakaianRows || []).reduce((s, p) => s + Number(p.qty_pakai || 0), 0);
+
+      const { data: mutasiRows, error: e3 } = await window.supabase
+        .from('mutasi_ruangan').select('id')
+        .eq('barang_id', barangId).eq('bulan', bulan).eq('tahun', tahun).eq('status', 'AKTIF');
+      if (e3) throw e3;
+
+      const mutasiIds = (mutasiRows || []).map(m => m.id);
+      let totalTerima = 0;
+      if (mutasiIds.length > 0) {
+        const { data: detailRows, error: e4 } = await window.supabase
+          .from('mutasi_ruangan_detail').select('qty_dialokasikan')
+          .eq('ruangan_id', ruanganId).in('mutasi_id', mutasiIds);
+        if (e4) throw e4;
+        const { data: barangData } = await window.supabase
+          .from('master_barang').select('content').eq('id', barangId).limit(1);
+        const content = Number((barangData && barangData[0] && barangData[0].content) || 1);
+        totalTerima = (detailRows || []).reduce((s, d) => s + Number(d.qty_dialokasikan || 0), 0) * content;
       }
-    }
 
-    const stokSisa = stokAwal + totalTerima - totalPakai;
+      let stokAwal = 0;
+      let stokRow = (stokRows && stokRows.length > 0) ? stokRows[0] : null;
 
-    if (stokRow) {
-      const { error } = await window.supabase.from('stok_ruangan')
-        .update({
+      if (stokRow) {
+        stokAwal = Number(stokRow.stok_awal || 0);
+      } else {
+        const bulanLalu = bulan === 1 ? 12 : bulan - 1;
+        const tahunLalu = bulan === 1 ? tahun - 1 : tahun;
+        const { data: lastRows } = await window.supabase
+          .from('stok_ruangan').select('stok_fisik, stok_sisa')
+          .eq('ruangan_id', ruanganId).eq('barang_id', barangId)
+          .eq('bulan', bulanLalu).eq('tahun', tahunLalu).limit(1);
+        if (lastRows && lastRows.length > 0) {
+          const last = lastRows[0];
+          stokAwal = last.stok_fisik !== null && last.stok_fisik !== undefined
+            ? Number(last.stok_fisik)
+            : Number(last.stok_sisa || 0);
+        }
+      }
+
+      const stokSisa = stokAwal + totalTerima - totalPakai;
+
+      if (stokRow) {
+        const { error } = await window.supabase.from('stok_ruangan')
+          .update({
+            total_terima: totalTerima,
+            total_pakai: totalPakai,
+            stok_sisa: stokSisa,
+            terakhir_diperbarui: new Date().toISOString()
+          }).eq('id', stokRow.id);
+        if (error) throw error;
+      } else {
+        const { error } = await window.supabase.from('stok_ruangan').insert({
+          ruangan_id: ruanganId, barang_id: barangId, bulan, tahun,
+          stok_awal: stokAwal,
           total_terima: totalTerima,
           total_pakai: totalPakai,
           stok_sisa: stokSisa,
           terakhir_diperbarui: new Date().toISOString()
-        }).eq('id', stokRow.id);
-      if (error) throw error;
-    } else {
-      const { error } = await window.supabase.from('stok_ruangan').insert({
-        ruangan_id: ruanganId, barang_id: barangId, bulan, tahun,
-        stok_awal: stokAwal,
-        total_terima: totalTerima,
-        total_pakai: totalPakai,
-        stok_sisa: stokSisa,
-        terakhir_diperbarui: new Date().toISOString()
-      });
-      if (error) throw error;
+        });
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.warn('Sinkron stok gagal:', err);
+      throw err;
     }
-  } catch (err) {
-    console.warn('Sinkron stok gagal:', err);
-    throw err;
-  }
-};
+  };
 
   // ============================================================
   //  VARIABEL
@@ -460,20 +384,20 @@
     document.getElementById('tableBody').innerHTML = '<tr><td colspan="5" class="empty-state">Memuat data...</td></tr>';
 
     try {
-  const isUserRuangan = window.currentUser.role === 'USER';
-  const myRuanganId = window.currentUser.ruangan_id;
+      const isUserRuangan = window.currentUser.role === 'USER';
+      const myRuanganId = window.currentUser.ruangan_id;
 
-  const [barangData, ruanganData, pemakaianData] = await Promise.all([
-    fetchAllRows('master_barang'),
-    fetchAllRows('master_ruangan'),
-    fetchAllRows('pemakaian_ruangan', q => {
-      let query = q.eq('bulan', bulan).eq('tahun', tahun).order('id', { ascending: false });
-      if (isUserRuangan && myRuanganId) {
-        query = query.eq('ruangan_id', myRuanganId);
-      }
-      return query;
-    })
-  ]);
+      const [barangData, ruanganData, pemakaianData] = await Promise.all([
+        fetchAllRows('master_barang'),
+        fetchAllRows('master_ruangan'),
+        fetchAllRows('pemakaian_ruangan', q => {
+          let query = q.eq('bulan', bulan).eq('tahun', tahun).order('id', { ascending: false });
+          if (isUserRuangan && myRuanganId) {
+            query = query.eq('ruangan_id', myRuanganId);
+          }
+          return query;
+        })
+      ]);
 
       barangMap = {};
       barangByName = {};
@@ -810,31 +734,31 @@
   //  INPUT MANUAL
   // ============================================================
   window.openManualModal = function() {
-  const rSel = document.getElementById('mRuangan');
-  const isUserRuangan = window.currentUser.role === 'USER';
-  const myRuanganId = window.currentUser.ruangan_id;
+    const rSel = document.getElementById('mRuangan');
+    const isUserRuangan = window.currentUser.role === 'USER';
+    const myRuanganId = window.currentUser.ruangan_id;
 
-  if (isUserRuangan && myRuanganId) {
-    const r = ruanganList.find(x => String(x.id) === String(myRuanganId));
-    rSel.innerHTML = r ? `<option value="${r.id}" selected>${escapeHtml(r.nama_ruangan)}</option>` : '<option value="">(ruangan tidak ditemukan)</option>';
-    rSel.disabled = true;
-    setTimeout(() => { rSel.dispatchEvent(new Event('change')); }, 50);
-  } else {
-    rSel.innerHTML = '<option value="">Pilih ruangan...</option>' +
-      ruanganList.filter(r => r.aktif !== false)
-        .map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
-    rSel.disabled = false;
-    document.getElementById('mBarang').innerHTML = '<option value="">Pilih ruangan dulu...</option>';
-  }
+    if (isUserRuangan && myRuanganId) {
+      const r = ruanganList.find(x => String(x.id) === String(myRuanganId));
+      rSel.innerHTML = r ? `<option value="${r.id}" selected>${escapeHtml(r.nama_ruangan)}</option>` : '<option value="">(ruangan tidak ditemukan)</option>';
+      rSel.disabled = true;
+      setTimeout(() => { rSel.dispatchEvent(new Event('change')); }, 50);
+    } else {
+      rSel.innerHTML = '<option value="">Pilih ruangan...</option>' +
+        ruanganList.filter(r => r.aktif !== false)
+          .map(r => `<option value="${r.id}">${escapeHtml(r.nama_ruangan)}</option>`).join('');
+      rSel.disabled = false;
+      document.getElementById('mBarang').innerHTML = '<option value="">Pilih ruangan dulu...</option>';
+    }
 
-  document.getElementById('mInfoBarang').textContent = '';
-  document.getElementById('mSatuanInfo').textContent = '';
-  document.getElementById('mQty').value = '';
-  document.getElementById('mTanggal').value = '';
-  document.getElementById('mCatatan').value = '';
-  document.getElementById('manualMsg').textContent = '';
-  document.getElementById('modalManual').classList.add('show');
-};
+    document.getElementById('mInfoBarang').textContent = '';
+    document.getElementById('mSatuanInfo').textContent = '';
+    document.getElementById('mQty').value = '';
+    document.getElementById('mTanggal').value = '';
+    document.getElementById('mCatatan').value = '';
+    document.getElementById('manualMsg').textContent = '';
+    document.getElementById('modalManual').classList.add('show');
+  };
 
   window.closeManualModal = function() {
     document.getElementById('modalManual').classList.remove('show');
