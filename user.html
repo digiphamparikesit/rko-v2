@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
@@ -86,6 +87,7 @@
         </select>
         <button class="btn btn-primary" onclick="window.openTambahBarangModal()">+ Tambah Barang</button>
         <button class="btn btn-upload" onclick="window.openUploadBarangModal()">&#8593; Upload CSV Barang</button>
+        <button class="btn btn-secondary" onclick="window.exportExcel()">&#8681; Download Excel</button>
       </div>
 
       <div class="panel">
@@ -667,6 +669,85 @@
       msg.textContent = '❌ Gagal: ' + e.message;
       document.getElementById('btnConfirmUploadBarang').disabled = false;
     }
+  };
+  // ============================================================
+  //  EXPORT EXCEL
+  // ============================================================
+  window.exportExcel = function() {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum siap. Coba refresh halaman.');
+      return;
+    }
+    if (!allBarang || allBarang.length === 0) {
+      alert('Tidak ada data barang di ruangan ini untuk di-export.');
+      return;
+    }
+
+    const bulanSel = document.getElementById('bulanSelect');
+    const bulanTeks = bulanSel.options[bulanSel.selectedIndex].textContent;
+    const tahun = document.getElementById('tahunSelect').value;
+    const namaRuangan = (document.getElementById('unitLabel').textContent || '').replace('Unit: ', '').trim() || 'RUANGAN';
+    const namaUser = window.currentUser ? window.currentUser.nama : '-';
+    const tglCetak = new Date().toLocaleString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    // Baris header resmi
+    const rows = [
+      ['RS AM PARIKESIT — RKO RSAMP'],
+      ['Laporan RKO Unit: ' + namaRuangan],
+      ['Periode: ' + bulanTeks + ' ' + tahun],
+      ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
+      [],
+      ['No', 'Nama Barang', 'Satuan Beli', 'Satuan Jual', 'Konversi',
+       'Sisa Stok (Satuan Jual)', 'Kebutuhan (Satuan Beli)', 'Estimasi Nilai (Rp)']
+    ];
+
+    // Data (semua barang aktif di ruangan, meski stok nol)
+    allBarang.forEach((b, idx) => {
+      const existing = existingKebutuhan[b.id] || {};
+      const hpp = Number(b.hpp_beli) || 0;
+      const kebutuhan = Number(existing.kebutuhan) || 0;
+      const estimasi = kebutuhan * hpp;
+      const content = Number(b.content) || 1;
+      const sb = b.satuan_beli || 'Box';
+      const sj = b.satuan_jual || 'PCS';
+      const konversi = content > 1 ? ('1 ' + sb + ' = ' + content + ' ' + sj) : (sb + ' = ' + sj);
+      rows.push([
+        idx + 1,
+        b.nama_barang || '-',
+        sb,
+        sj,
+        konversi,
+        Number(existing.sisa) || 0,
+        kebutuhan,
+        Math.round(estimasi)
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Merge header (4 baris atas jadi 1 kolom spanning A:H)
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 7 } }
+    ];
+
+    // Lebar kolom
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 42 }, { wch: 10 }, { wch: 10 },
+      { wch: 26 }, { wch: 20 }, { wch: 22 }, { wch: 18 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'RKO');
+
+    const slugRuangan = namaRuangan.toUpperCase().replace(/\s+/g, '-');
+    const namaFile = 'RKO_' + slugRuangan + '_' + bulanTeks + '-' + tahun + '.xlsx';
+    XLSX.writeFile(wb, namaFile);
   };
 </script>
 </body>
