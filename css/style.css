@@ -185,7 +185,8 @@ tr.inactive td { color: var(--text-muted); opacity: 0.6; }
 
 /* ==== 9. MODALS ==== */
 #modalOverlay, #modalUpload, #modalSelisih,
-#modalDetail, .modal-overlay {
+#modalDetail, #modalManual, #modalTambahBarang,
+#modalUploadBarang, .modal-overlay {
   display: none; position: fixed; inset: 0;
   background: rgba(15,61,46,0.45);
   align-items: center; justify-content: center;
