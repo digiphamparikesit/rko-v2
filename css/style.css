@@ -193,7 +193,8 @@ tr.inactive td { color: var(--text-muted); opacity: 0.6; }
   z-index: 40; padding: 20px;
 }
 #modalOverlay.show, #modalUpload.show, #modalSelisih.show,
-#modalDetail.show, .modal-overlay.show { display: flex; }
+#modalDetail.show, #modalManual.show, #modalTambahBarang.show,
+#modalUploadBarang.show, .modal-overlay.show { display: flex; }
 .modal {
   background: #fff; border-radius: 16px;
   width: 100%; max-width: 520px;
