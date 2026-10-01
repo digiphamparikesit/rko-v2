@@ -6,6 +6,7 @@
   <title>Monitoring RKO — RKO RSAMP</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
@@ -83,11 +84,12 @@
             <option value="">Semua status</option>
             <option value="RKO">Belum ada PO</option>
             <option value="PO">PO sudah dibuat</option>
-            <option value="DATANG">Barang datang, belum mutasi</option>
+            <option value="DATANG">Barang datang, belum dimutasi</option>
             <option value="SEBAGIAN">Sebagian dimutasi</option>
             <option value="SELESAI">Sudah dilayani penuh</option>
           </select>
         </div>
+        <button class="btn btn-secondary" style="width:100%; margin-top:12px;" onclick="window.exportExcel()">&#8681; Download Excel</button>
       </div>
 
       <div class="panel side-panel" id="panelInfoUser" style="display:none;">
@@ -560,6 +562,80 @@
   }
 
   window.changePage = function(delta) { page += delta; renderTable(); };
+  // ============================================================
+  //  EXPORT EXCEL
+  // ============================================================
+  window.exportExcel = function() {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum siap. Coba refresh halaman.');
+      return;
+    }
+    if (!allRows || allRows.length === 0) {
+      alert('Tidak ada data RKO untuk di-export.');
+      return;
+    }
+
+    const bulanSel = document.getElementById('bulanSelect');
+    const bulanTeks = bulanSel.options[bulanSel.selectedIndex].textContent;
+    const tahun = document.getElementById('tahunSelect').value;
+    const namaUser = window.currentUser ? window.currentUser.nama : '-';
+    const tglCetak = new Date().toLocaleString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const labelStatus = {
+      RKO: 'Belum ada PO',
+      PO: 'PO sudah dibuat',
+      DATANG: 'Barang datang, belum mutasi',
+      SEBAGIAN: 'Sebagian dimutasi',
+      SELESAI: 'Sudah dilayani penuh'
+    };
+
+    const rows = [
+      ['RS AM PARIKESIT — RKO RSAMP'],
+      ['Laporan Monitoring RKO'],
+      ['Periode: ' + bulanTeks + ' ' + tahun],
+      ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
+      [],
+      ['No', 'Nama Barang', 'Satuan Beli', 'Jumlah Ruangan',
+       'Total RKO (Box)', 'Dimutasi (Box)', 'Sisa (Box)', 'Capaian (%)', 'Status']
+    ];
+
+    allRows.forEach((r, idx) => {
+      rows.push([
+        idx + 1,
+        r.nama_barang || '-',
+        r.satuan_beli || 'Box',
+        r.jumlah_ruangan || 0,
+        Number(r.total_rko) || 0,
+        Number(r.total_dimutasi) || 0,
+        Number(r.sisa) || 0,
+        Number(r.capaian) || 0,
+        labelStatus[r.status] || r.status
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 8 } }
+    ];
+
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 42 }, { wch: 10 }, { wch: 14 },
+      { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 26 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Monitoring RKO');
+
+    const namaFile = 'Monitoring-RKO_' + bulanTeks + '-' + tahun + '.xlsx';
+    XLSX.writeFile(wb, namaFile);
+  };
 </script>
 </body>
 </html>
