@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pembelian — RKO RSAMP</title>
+  <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
@@ -13,86 +14,18 @@
   </script>
   <script src="auth.js"></script>
   <style>
-    :root { --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72; --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5; }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
-    header.topbar { position: sticky; top: 0; z-index: 100; background: var(--green-deep); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--green-deep); }
-    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
-    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
-    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
-    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
-    a.back:hover { color: #fff; }
-    .topbar select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
-    select option { color: #14201A; }
-    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
-
-    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
-    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
-    .stat-card .num { font-size: 20px; font-weight: 700; line-height: 1.2; }
-    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-    .stat-card.biru { border-color: #D7DEEF; background: #F3F6FC; }
-    .stat-card.kuning { border-color: #FAE5B8; background: #FEFAF0; }
-    .stat-card.hijau { border-color: #C4E8D2; background: #F1FAF4; }
-    @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 520px) { .stat-grid { grid-template-columns: 1fr; } }
-
-    .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
-    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
-    .side-panel { padding: 18px 20px; }
-    .side-title { font-size: 14px; margin: 0 0 12px; }
-    .field { margin-bottom: 12px; }
-    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
-    .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-    @media (max-width: 860px) { .layout-split { grid-template-columns: 1fr; } .left-col { position: static; } }
-    .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-    .toolbar input[type="text"] { flex: 1; min-width: 220px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 9px; font-size: 13.5px; }
-    .btn { padding: 10px 16px; border: none; border-radius: 9px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
-    .btn-primary { background: var(--green-mid); color: #fff; }
-    .btn-primary:hover { background: #128a3e; }
-    .btn-secondary { background: #F1F1EE; color: var(--text-dark); }
-    .btn-warning { background: var(--amber); color: #fff; }
-    .btn-warning:hover { background: #B45309; }
-    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; margin-bottom: 16px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 900px; }
-    th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
-    td.num { text-align: right; }
-    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
-    .badge.draft { background: #F1F1EE; color: var(--text-muted); }
-    .badge.dikirim { background: #FDF1E0; color: var(--amber); }
-    .badge.sebagian { background: #FBEAE7; color: var(--coral); }
-    .badge.selesai { background: var(--green-soft); color: var(--green-mid); }
-    select.status-select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
-    #modalOverlay, #modalUpload, #modalSelisih, #modalDetail { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.45); align-items: center; justify-content: center; z-index: 40; padding: 20px; }
-    #modalOverlay.show, #modalUpload.show, #modalSelisih.show, #modalDetail.show { display: flex; }
-    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; padding: 26px; }
-    .modal-wide { max-width: 720px; }
-    .modal h2 { font-size: 16px; margin: 0 0 16px; }
-    .field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
-    .field input, .field select { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
-    .form-msg { font-size: 12.5px; color: var(--coral); min-height: 16px; margin-top: 6px; }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+    /* CSS khusus pembelian.html */
     .selisih-card { background: #FDF6F3; border: 1px solid var(--coral); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .selisih-card .info { font-size: 13px; }
     .selisih-card .info strong { color: var(--coral); }
-    .loading-note { font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 20px 0; }
-
-    /* Search dropdown distributor & barang */
     .dist-item { padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border); }
     .dist-item:last-child { border-bottom: none; }
     .dist-item:hover, .dist-item.active { background: var(--green-soft); color: var(--green-deep); }
     .dist-item .kontak { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-
-    /* Detail PO */
     .detail-info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px dashed var(--border); }
     .detail-info-row:last-child { border-bottom: none; }
     .detail-info-row .label { color: var(--text-muted); }
     .detail-info-row .val { font-weight: 600; text-align: right; }
-
     .log-item { padding: 10px 12px; border-left: 3px solid var(--green-mid); background: #FAFBFA; border-radius: 8px; margin-bottom: 8px; font-size: 12.5px; }
     .log-item .log-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
     .log-item .log-aksi { font-weight: 700; color: var(--green-deep); }
@@ -103,6 +36,7 @@
     .log-item.buat .log-aksi { color: #3B5BDB; }
     .log-item.ubah { border-left-color: var(--amber); }
     .log-item.ubah .log-aksi { color: var(--amber); }
+    select.status-select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -179,8 +113,7 @@
     <h2>Buat PO Baru</h2>
     <div id="formInfo" style="display:none;"></div>
     <div class="field"><label>No. PO</label><input type="text" id="fNoPo" placeholder="Nomor PO dari sistem RS"></div>
-    
-    <!-- MENGUBAH BARANG MENJADI INPUT SEARCHING -->
+
     <div class="field">
       <label>Barang</label>
       <input type="text" id="fBarangInput" placeholder="Ketik nama barang..." autocomplete="off">
@@ -302,7 +235,7 @@
   let pembelianList = [];
   let filteredList = [];
   let uploadRows = [];
-  let barangRkoList = []; // Untuk menyimpan data barang yang akan ditampilkan di dropdown pencarian
+  let barangRkoList = [];
   window._selisihData = null;
 
   // ============================================================
@@ -396,7 +329,7 @@
   }
 
   // ============================================================
-  //  FORM OPTIONS (barang + distributor pencarian)
+  //  FORM OPTIONS
   // ============================================================
   async function fillFormOptions() {
     const bulan = document.getElementById('bulanSelect').value;
@@ -418,7 +351,6 @@
       totalRKOPerBarang[k.barang_id] = (totalRKOPerBarang[k.barang_id] || 0) + Number(k.kebutuhan);
     });
 
-    // Hitung berapa yang sudah di-PO untuk barang tersebut di bulan & tahun yang sama
     const orderedQtyPerBarang = {};
     pembelianList.forEach(p => {
       orderedQtyPerBarang[p.barang_id] = (orderedQtyPerBarang[p.barang_id] || 0) + Number(p.qty_pesan || 0);
@@ -427,7 +359,6 @@
     const rencanaByBarang = {};
     rencanaList.forEach(r => { rencanaByBarang[r.barang_id] = r; });
 
-    // Bangun data untuk dropdown pencarian barang
     barangRkoList = [];
     barangIds.forEach(id => {
       const barang = barangMap[id];
@@ -435,9 +366,8 @@
       const rencana = rencanaByBarang[id];
       const totalRKO = totalRKOPerBarang[id] || 0;
       const orderedQty = orderedQtyPerBarang[id] || 0;
-      const sisaRKO = Math.max(0, totalRKO - orderedQty); // Sisa RKO yang belum di-PO
-      
-      // Hanya masukkan ke list jika masih ada sisa RKO yang perlu dibeli
+      const sisaRKO = Math.max(0, totalRKO - orderedQty);
+
       if (sisaRKO > 0) {
         barangRkoList.push({
           id: id,
@@ -449,13 +379,10 @@
       }
     });
 
-    // ============================================================
-    //  SETUP PENCARIAN BARANG
-    // ============================================================
+    // SETUP PENCARIAN BARANG
     const bInput = document.getElementById('fBarangInput');
     const bDropdown = document.getElementById('barangDropdown');
-    
-    // Hapus listener lama (clone node trick)
+
     const newBInput = bInput.cloneNode(true);
     bInput.parentNode.replaceChild(newBInput, bInput);
     const bInputFresh = document.getElementById('fBarangInput');
@@ -468,7 +395,7 @@
           String(b.nama_barang || '').toLowerCase().includes(q)
         );
       }
-      hasil = hasil.slice(0, 50); // Batasi 50 hasil agar tidak berat
+      hasil = hasil.slice(0, 50);
 
       if (hasil.length === 0) {
         bDropdown.innerHTML = '<div style="padding:10px 12px; font-size:12.5px; color:var(--text-muted);">Tidak ditemukan.</div>';
@@ -489,7 +416,6 @@
           document.getElementById('fBarang').value = el.dataset.id;
           bDropdown.style.display = 'none';
 
-          // Auto-pilih distributor
           if (el.dataset.dist) {
             const dId = Number(el.dataset.dist);
             const dist = distributorList.find(x => Number(x.id) === dId);
@@ -498,7 +424,6 @@
               document.getElementById('fDistributorId').value = dist.id;
             }
           }
-          // Auto-isi Qty dengan Sisa RKO
           if (el.dataset.rko) {
             document.getElementById('fQty').value = el.dataset.rko;
           }
@@ -510,10 +435,7 @@
       document.getElementById('fBarang').value = '';
       renderBarangOptions(bInputFresh.value);
     });
-
-    bInputFresh.addEventListener('focus', () => {
-      renderBarangOptions(bInputFresh.value);
-    });
+    bInputFresh.addEventListener('focus', () => { renderBarangOptions(bInputFresh.value); });
 
     document.addEventListener('click', (e) => {
       if (!bInputFresh.contains(e.target) && !bDropdown.contains(e.target)) {
@@ -521,12 +443,10 @@
       }
     });
 
-    // ============================================================
-    //  SETUP PENCARIAN DISTRIBUTOR
-    // ============================================================
+    // SETUP PENCARIAN DISTRIBUTOR
     const distInput = document.getElementById('fDistributor');
     const distDropdown = document.getElementById('distDropdown');
-    
+
     const newInput = distInput.cloneNode(true);
     distInput.parentNode.replaceChild(newInput, distInput);
     const distInputFresh = document.getElementById('fDistributor');
@@ -567,10 +487,7 @@
       document.getElementById('fDistributorId').value = '';
       renderDistOptions(distInputFresh.value);
     });
-
-    distInputFresh.addEventListener('focus', () => {
-      renderDistOptions(distInputFresh.value);
-    });
+    distInputFresh.addEventListener('focus', () => { renderDistOptions(distInputFresh.value); });
 
     document.addEventListener('click', (e) => {
       if (!distInputFresh.contains(e.target) && !distDropdown.contains(e.target)) {
@@ -654,8 +571,7 @@
     document.getElementById('formMsg').textContent = '';
     document.getElementById('fNoPo').value = '';
     document.getElementById('fNoPo').readOnly = false;
-    
-    // Reset input barang searching
+
     document.getElementById('fBarangInput').value = '';
     document.getElementById('fBarangInput').disabled = false;
     document.getElementById('fBarang').value = '';
@@ -678,8 +594,7 @@
   window.closeForm = function() {
     document.getElementById('fNoPo').readOnly = false;
     document.getElementById('fNoPo').placeholder = 'Nomor PO dari sistem RS';
-    
-    // Reset input barang searching
+
     document.getElementById('fBarangInput').disabled = false;
     document.getElementById('fBarangInput').value = '';
     document.getElementById('fBarang').value = '';
@@ -930,8 +845,7 @@
     document.getElementById('fNoPo').value = '';
     document.getElementById('fNoPo').placeholder = 'Otomatis: PO-RE-...';
     document.getElementById('fNoPo').readOnly = true;
-    
-    // Set input barang searching
+
     document.getElementById('fBarangInput').value = namaBarang;
     document.getElementById('fBarangInput').disabled = true;
     document.getElementById('fBarang').value = barangId;
