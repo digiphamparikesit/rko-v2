@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usulan Pembelian — RKO RSAMP</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
+  <style>
+    /* CSS khusus usulan-pembelian.html */
+    .panel { overflow-x: auto; }
+    table { min-width: 1100px; }
+
+    .badge.draft       { background: #F1F1EE; color: var(--text-muted); }
+    .badge.diusulkan   { background: #E9EEFB; color: #3B5BDB; }
+    .badge.disetujui   { background: var(--green-soft); color: var(--green-mid); }
+    .badge.ditolak     { background: #FBEAE7; color: var(--coral); }
+    .badge.dibuat_po   { background: #FDF1E0; color: var(--amber); }
+
+    .badge.stok-cukup   { background: var(--green-soft); color: var(--green-mid); }
+    .badge.cek-ruangan  { background: #FDF1E0; color: var(--amber); }
+
+    .qty-input {
+      width: 90px; padding: 6px 8px;
+      border: 1px solid var(--border); border-radius: 7px;
+      font-size: 12.5px; text-align: right;
+    }
+    .qty-input:focus { outline: none; border-color: var(--green-mid); }
+
+    .toolbar-bulk {
+      display: flex; gap: 8px; align-items: center;
+      flex-wrap: wrap; padding: 12px 16px;
+      background: #FAFBFA; border-bottom: 1px solid var(--border);
+    }
+    .toolbar-bulk .info-terpilih {
+      font-size: 12.5px; color: var(--text-muted);
+      margin-right: auto;
+    }
+
+    .btn-mini { padding: 5px 10px; font-size: 11.5px; }
+
+    .stat-grid { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Usulan pembelian — dari RKO ke approval</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="bulanSelect"></select>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div id="errorContainer" style="display:none;" class="error-box"></div>
+
+  <section class="stat-grid">
+    <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl">Total barang</div></div>
+    <div class="stat-card"><div class="num" id="statDraft">-</div><div class="lbl">Draft (belum diajukan)</div></div>
+    <div class="stat-card biru"><div class="num" id="statDiusulkan">-</div><div class="lbl">Menunggu approval</div></div>
+    <div class="stat-card hijau"><div class="num" id="statDisetujui">-</div><div class="lbl">Disetujui</div></div>
+  </section>
+
+  <div class="panel">
+    <div class="toolbar-bulk">
+      <span class="info-terpilih" id="infoTerpilih">Pilih baris untuk aksi bulk</span>
+      <button class="btn btn-secondary btn-mini" onclick="window.generateUsulan()" id="btnGenerate">&#8635; Generate / Generate Ulang</button>
+      <button class="btn btn-secondary btn-mini" onclick="window.exportExcel()">&#8681; Download Excel</button>
+      <button class="btn btn-primary btn-mini" onclick="window.ajukanTerpilih()" id="btnAjukanBulk" disabled>Ajukan Terpilih</button>
+      <button class="btn btn-primary btn-mini" onclick="window.setujuiTerpilih()" id="btnSetujuiBulk" disabled>&#10003; Setujui Terpilih</button>
+      <button class="btn btn-danger btn-mini" onclick="window.tolakTerpilih()" id="btnTolakBulk" disabled>&#10007; Tolak Terpilih</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px;"><input type="checkbox" id="checkAll" onchange="window.toggleAll(this.checked)"></th>
+          <th>Nama Barang</th>
+          <th class="num">RKO (Box)</th>
+          <th class="num">Sisa Ruangan</th>
+          <th class="num">Sisa Gudang (Box)</th>
+          <th class="num">Usulan Beli (Box)</th>
+          <th>Status</th>
+          <th>Keterangan</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="9" class="empty-state">Memuat data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- MODAL TOLAK -->
+<div id="modalOverlay">
+  <div class="modal">
+    <h2>Tolak Usulan Pembelian</h2>
+    <div class="sub" id="tolakSub"></div>
+    <div class="field">
+      <label>Alasan penolakan <span style="color:var(--coral);">*</span></label>
+      <input type="text" id="fAlasanTolak" placeholder="mis. angka tidak sesuai, cek ulang RKO">
+    </div>
+    <div class="form-msg" id="tolakMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeTolak()">Batal</button>
+      <button class="btn btn-danger" id="btnSubmitTolak" onclick="window.submitTolak()">Tolak</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI']
+    });
+    if (!user) return;
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+    initData();
+  })();
+
+  // ============================================================
+  //  HAK AKSES
+  // ============================================================
+  function bisaGenerate() {
+    return ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI'].includes(window.currentUser.role);
+  }
+  function bisaApprove() {
+    return ['KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI', 'SUPER_ADMIN'].includes(window.currentUser.role);
+  }
+
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  function formatDT(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
+  let barangMap = {};
+  let ruanganMap = {};
+  let userMap = {};
+  let listUsulan = [];
+  let selectedIds = new Set();
+  let window_tolakAktif = null;
+
+  const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+  // ============================================================
+  //  PERIODE
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bSel = document.getElementById('bulanSelect');
+    const tSel = document.getElementById('tahunSelect');
+    NAMA_BULAN.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1; opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bSel.appendChild(opt);
+    });
+    for (let y = curTahun - 2; y <= curTahun + 2; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    loadAllData();
+  }
+
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
+  async function loadAllData() {
+    const bulan = Number(document.getElementById('bulanSelect').value);
+    const tahun = Number(document.getElementById('tahunSelect').value);
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty-state">Memuat data...</td></tr>';
+    selectedIds.clear();
+    updateBulkButtons();
+
+    try {
+      const [barangData, ruanganData, userData, usulanData] = await Promise.all([
+        fetchAllRows('master_barang'),
+        fetchAllRows('master_ruangan'),
+        fetchAllRows('users'),
+        fetchAllRows('usulan_pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun))
+      ]);
+
+      barangMap = {};
+      barangData.forEach(b => { barangMap[b.id] = b; });
+      ruanganMap = {};
+      ruanganData.forEach(r => { ruanganMap[r.id] = r; });
+      userMap = {};
+      userData.forEach(u => { userMap[u.id] = u; });
+
+      listUsulan = usulanData.sort((a, b) => {
+        const na = barangMap[a.barang_id]?.nama_barang || '';
+        const nb = barangMap[b.barang_id]?.nama_barang || '';
+        return na.localeCompare(nb);
+      });
+
+      renderTable();
+      updateStats();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('tableBody').innerHTML =
+        '<tr><td colspan="9" class="empty-state">Gagal memuat: ' + escapeHtml(err.message) + '</td></tr>';
+    }
+  }
+
+  function updateStats() {
+    const total = listUsulan.length;
+    const draft = listUsulan.filter(u => u.status === 'DRAFT').length;
+    const diusulkan = listUsulan.filter(u => u.status === 'DIUSULKAN').length;
+    const disetujui = listUsulan.filter(u => u.status === 'DISETUJUI').length;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statDraft').textContent = draft;
+    document.getElementById('statDiusulkan').textContent = diusulkan;
+    document.getElementById('statDisetujui').textContent = disetujui;
+  }
+
+  // ============================================================
+  //  RENDER TABLE
+  // ============================================================
+  function statusBadge(status) {
+    const map = {
+      DRAFT:     '<span class="badge draft">Draft</span>',
+      DIUSULKAN: '<span class="badge diusulkan">Menunggu approval</span>',
+      DISETUJUI: '<span class="badge disetujui">Disetujui</span>',
+      DITOLAK:   '<span class="badge ditolak">Ditolak</span>',
+      DIBUAT_PO: '<span class="badge dibuat_po">Sudah dibuat PO</span>'
+    };
+    return map[status] || status;
+  }
+
+  function keteranganBadge(u) {
+    const barang = barangMap[u.barang_id] || {};
+    const content = Number(u.content_saat_dibuat) || 1;
+    const sisaRuangBox = content > 0 ? Number(u.total_sisa_ruangan_tab) / content : 0;
+    
+    if (sisaRuangBox >= Number(u.qty_rko_box) && Number(u.qty_rko_box) > 0) {
+      return '<span class="badge cek-ruangan">⚠ Cek stok ruangan</span>';
+    }
+    if (Number(u.sisa_gudang_box) >= Number(u.qty_rko_box) && Number(u.qty_rko_box) > 0) {
+      return '<span class="badge stok-cukup">✓ Stok gudang cukup</span>';
+    }
+    return '-';
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    if (listUsulan.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Belum ada usulan untuk periode ini. Klik "Generate Usulan" untuk membuat.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = listUsulan.map(u => {
+      const barang = barangMap[u.barang_id] || {};
+      const content = Number(u.content_saat_dibuat) || 1;
+      const satuanBeli = barang.satuan_beli || 'Box';
+      const satuanJual = barang.satuan_jual || 'PCS';
+      const isChecked = selectedIds.has(u.id);
+      const bisaPilih = (u.status === 'DRAFT' || u.status === 'DIUSULKAN' || u.status === 'DISETUJUI');
+
+      // Aksi per baris
+      let aksi = '';
+      if (u.status === 'DRAFT') {
+        aksi = `<button class="btn btn-primary btn-mini" onclick="window.ajukanBaris(${u.id})">Ajukan</button>`;
+      } else if (u.status === 'DIUSULKAN') {
+        if (bisaApprove()) {
+          aksi = `
+            <button class="btn btn-primary btn-mini" onclick="window.setujuiBaris(${u.id})">Setujui</button>
+            <button class="btn btn-danger btn-mini" style="margin-left:4px;" onclick="window.openTolak(${u.id})">Tolak</button>`;
+        } else {
+          aksi = '<span style="font-size:11.5px; color:var(--text-muted);">Menunggu Koor</span>';
+        }
+      } else if (u.status === 'DISETUJUI') {
+        aksi = `<button class="btn btn-warning btn-mini" onclick="window.buatPO(${u.id})">Buat PO</button>`;
+      } else if (u.status === 'DITOLAK') {
+        aksi = `<button class="btn btn-secondary btn-mini" onclick="window.ajukanBaris(${u.id})">Ajukan Ulang</button>`;
+      } else if (u.status === 'DIBUAT_PO') {
+        aksi = '<span style="font-size:11.5px; color:var(--green-mid); font-weight:600;">✓ Selesai</span>';
+      }
+
+      const catatanShow = u.catatan_approval 
+        ? `<div style="font-size:11px; color:var(--coral); margin-top:3px;">Alasan tolak: ${escapeHtml(u.catatan_approval)}</div>` 
+        : '';
+
+      return `<tr data-id="${u.id}">
+        <td>${bisaPilih ? `<input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.toggleSelect(${u.id}, this.checked)">` : ''}</td>
+        <td>
+          <div style="font-weight:600;">${escapeHtml(barang.nama_barang || '-')}</div>
+          <div style="font-size:11px; color:var(--text-muted);">1 ${escapeHtml(satuanBeli)} = ${content} ${escapeHtml(satuanJual)}</div>
+        </td>
+        <td class="num">${Number(u.qty_rko_box).toLocaleString('id-ID')}</td>
+        <td class="num">${Number(u.total_sisa_ruangan_tab).toLocaleString('id-ID')} ${escapeHtml(satuanJual)}</td>
+        <td class="num">${Number(u.sisa_gudang_box).toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</td>
+        <td class="num"><strong>${Number(u.qty_usulan_box).toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</strong></td>
+        <td>${statusBadge(u.status)}</td>
+        <td>${keteranganBadge(u)}${catatanShow}</td>
+        <td>${aksi}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ============================================================
+  //  CHECKBOX
+  // ============================================================
+  window.toggleAll = function(checked) {
+    selectedIds.clear();
+    if (checked) {
+      listUsulan.forEach(u => {
+        if (u.status === 'DRAFT' || u.status === 'DIUSULKAN' || u.status === 'DISETUJUI') {
+          selectedIds.add(u.id);
+        }
+      });
+    }
+    renderTable();
+    updateBulkButtons();
+  };
+
+  window.toggleSelect = function(id, checked) {
+    if (checked) selectedIds.add(id);
+    else selectedIds.delete(id);
+    updateBulkButtons();
+  };
+
+  function updateBulkButtons() {
+    const count = selectedIds.size;
+    document.getElementById('infoTerpilih').textContent = count > 0
+      ? count + ' baris terpilih'
+      : 'Pilih baris untuk aksi bulk';
+
+    const selected = listUsulan.filter(u => selectedIds.has(u.id));
+    const adaDraft = selected.some(u => u.status === 'DRAFT' || u.status === 'DITOLAK');
+    const adaDiusulkan = selected.some(u => u.status === 'DIUSULKAN');
+
+    document.getElementById('btnAjukanBulk').disabled = !adaDraft;
+    document.getElementById('btnSetujuiBulk').disabled = !(adaDiusulkan && bisaApprove());
+    document.getElementById('btnTolakBulk').disabled = !(adaDiusulkan && bisaApprove());
+  }
+
+  // ============================================================
+  //  GENERATE USULAN
+  // ============================================================
+  window.generateUsulan = async function() {
+    const bulan = Number(document.getElementById('bulanSelect').value);
+    const tahun = Number(document.getElementById('tahunSelect').value);
+
+    if (!confirm(
+      `Generate usulan untuk ${NAMA_BULAN[bulan-1]} ${tahun}?\n\n` +
+      `Data usulan lama pada periode ini akan DITIMPA.\n` +
+      `Usulan yang sudah disetujui/DIBUAT_PO tidak akan ditimpa.\n\n` +
+      `Lanjutkan?`
+    )) return;
+
+    const btn = document.getElementById('btnGenerate');
+    btn.disabled = true; btn.textContent = 'Memproses...';
+
+    try {
+      // Ambil data kebutuhan (RKO) untuk periode ini
+      const kebutuhanData = await fetchAllRows('kebutuhan', q =>
+        q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)
+      );
+
+      // Agregasi per barang
+      const perBarang = {};
+      kebutuhanData.forEach(k => {
+        if (!perBarang[k.barang_id]) {
+          perBarang[k.barang_id] = {
+            qty_rko_box: 0,
+            total_sisa_ruangan_tab: 0
+          };
+        }
+        perBarang[k.barang_id].qty_rko_box += Number(k.kebutuhan) || 0;
+        perBarang[k.barang_id].total_sisa_ruangan_tab += Number(k.sisa_stok_ruangan) || 0;
+      });
+
+      const barangIds = Object.keys(perBarang).map(Number);
+      if (barangIds.length === 0) {
+        alert('Tidak ada RKO untuk periode ini.');
+        btn.disabled = false; btn.textContent = '⟳ Generate / Generate Ulang';
+        return;
+      }
+
+      // Ambil sisa stok gudang (penerimaan BAIK yang belum dimutasi, all-time per barang)
+      const penerimaanData = await fetchAllRows('penerimaan', q =>
+        q.eq('kondisi', 'BAIK').eq('sudah_dimutasi', false).in('barang_id', barangIds)
+      );
+
+      const sisaGudangPerBarang = {};
+      penerimaanData.forEach(p => {
+        sisaGudangPerBarang[p.barang_id] = (sisaGudangPerBarang[p.barang_id] || 0) + Number(p.qty_diterima || 0);
+      });
+
+      // Ambil master barang untuk content
+      const barangData = await fetchAllRows('master_barang');
+      const bMap = {};
+      barangData.forEach(b => { bMap[b.id] = b; });
+
+      // Ambil usulan existing untuk periode ini
+      const usulanExisting = await fetchAllRows('usulan_pembelian', q =>
+        q.eq('bulan', bulan).eq('tahun', tahun)
+      );
+      const existingMap = {};
+      usulanExisting.forEach(u => { existingMap[u.barang_id] = u; });
+
+      // Hitung usulan baru
+      const itemsBaru = [];
+      const itemsUpdate = [];
+
+      barangIds.forEach(bid => {
+        const agg = perBarang[bid];
+        const barang = bMap[bid] || {};
+        const content = Number(barang.content) || 1;
+        const sisaGudang = sisaGudangPerBarang[bid] || 0;
+
+        // Rumus: raw = RKO - (sisa ruangan / content) - sisa gudang
+        const sisaRuangBox = agg.total_sisa_ruangan_tab / content;
+        const raw = agg.qty_rko_box - sisaRuangBox - sisaGudang;
+        const usulanBox = Math.max(0, Math.ceil(raw));
+
+        const payload = {
+          barang_id: bid,
+          bulan, tahun,
+          qty_rko_box: agg.qty_rko_box,
+          total_sisa_ruangan_tab: agg.total_sisa_ruangan_tab,
+          sisa_gudang_box: sisaGudang,
+          content_saat_dibuat: content,
+          qty_usulan_box: usulanBox,
+          status: 'DRAFT',
+          catatan: null,
+          catatan_approval: null,
+          diusulkan_oleh: window.currentUser.id || null,
+          diusulkan_pada: new Date().toISOString(),
+          disetujui_oleh: null,
+          disetujui_pada: null
+        };
+
+        const existing = existingMap[bid];
+        if (existing) {
+          // Skip kalau sudah DISETUJUI / DIBUAT_PO
+          if (existing.status === 'DISETUJUI' || existing.status === 'DIBUAT_PO') return;
+          itemsUpdate.push({ id: existing.id, ...payload });
+        } else {
+          itemsBaru.push(payload);
+        }
+      });
+
+      // Batch insert
+      if (itemsBaru.length > 0) {
+        const { error } = await window.supabase.from('usulan_pembelian').insert(itemsBaru);
+        if (error) throw error;
+      }
+
+      // Batch update (satu-satu karena Supabase tidak support bulk update by array)
+      for (const item of itemsUpdate) {
+        const { id, ...payload } = item;
+        const { error } = await window.supabase.from('usulan_pembelian').update(payload).eq('id', id);
+        if (error) throw error;
+      }
+
+      alert(`✅ Berhasil generate ${itemsBaru.length + itemsUpdate.length} usulan.\n\n` +
+            `• ${itemsBaru.length} baru\n• ${itemsUpdate.length} di-update`);
+      await loadAllData();
+    } catch (err) {
+      console.error(err);
+      alert('Gagal generate: ' + err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = '⟳ Generate / Generate Ulang';
+    }
+  };
+
+  // ============================================================
+  //  AJUKAN (per baris atau bulk)
+  // ============================================================
+  window.ajukanBaris = async function(id) {
+    if (!confirm('Ajukan usulan ini ke Koordinator Logistik Farmasi?')) return;
+    try {
+      const { error } = await window.supabase.from('usulan_pembelian').update({
+        status: 'DIUSULKAN',
+        diusulkan_oleh: window.currentUser.id || null,
+        diusulkan_pada: new Date().toISOString()
+      }).eq('id', id);
+      if (error) throw error;
+      await loadAllData();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    }
+  };
+
+  window.ajukanTerpilih = async function() {
+    const ids = listUsulan
+      .filter(u => selectedIds.has(u.id) && (u.status === 'DRAFT' || u.status === 'DITOLAK'))
+      .map(u => u.id);
+    if (ids.length === 0) return;
+    if (!confirm(`Ajukan ${ids.length} usulan ke Koordinator Logistik Farmasi?`)) return;
+
+    try {
+      const { error } = await window.supabase.from('usulan_pembelian').update({
+        status: 'DIUSULKAN',
+        diusulkan_oleh: window.currentUser.id || null,
+        diusulkan_pada: new Date().toISOString()
+      }).in('id', ids);
+      if (error) throw error;
+      alert(`✅ ${ids.length} usulan diajukan.`);
+      await loadAllData();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    }
+  };
+
+  // ============================================================
+  //  SETUJUI (per baris atau bulk)
+  // ============================================================
+  window.setujuiBaris = async function(id) {
+    if (!confirm('Setujui usulan ini? Setelah disetujui, tim pembelian bisa langsung buat PO.')) return;
+    try {
+      const { error } = await window.supabase.from('usulan_pembelian').update({
+        status: 'DISETUJUI',
+        disetujui_oleh: window.currentUser.id || null,
+        disetujui_pada: new Date().toISOString()
+      }).eq('id', id);
+      if (error) throw error;
+      await loadAllData();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    }
+  };
+
+  window.setujuiTerpilih = async function() {
+    const ids = listUsulan
+      .filter(u => selectedIds.has(u.id) && u.status === 'DIUSULKAN')
+      .map(u => u.id);
+    if (ids.length === 0) return;
+    if (!confirm(`Setujui ${ids.length} usulan?`)) return;
+
+    try {
+      const { error } = await window.supabase.from('usulan_pembelian').update({
+        status: 'DISETUJUI',
+        disetujui_oleh: window.currentUser.id || null,
+        disetujui_pada: new Date().toISOString()
+      }).in('id', ids);
+      if (error) throw error;
+      alert(`✅ ${ids.length} usulan disetujui.`);
+      await loadAllData();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    }
+  };
+
+  // ============================================================
+  //  TOLAK (per baris atau bulk)
+  // ============================================================
+  window.openTolak = function(id) {
+    window_tolakAktif = { type: 'single', ids: [id] };
+    const u = listUsulan.find(x => x.id === id);
+    const barang = u ? barangMap[u.barang_id] : null;
+    document.getElementById('tolakSub').textContent = 'Barang: ' + (barang ? barang.nama_barang : '-');
+    document.getElementById('fAlasanTolak').value = '';
+    document.getElementById('tolakMsg').textContent = '';
+    document.getElementById('modalOverlay').classList.add('show');
+  };
+
+  window.tolakTerpilih = function() {
+    const ids = listUsulan
+      .filter(u => selectedIds.has(u.id) && u.status === 'DIUSULKAN')
+      .map(u => u.id);
+    if (ids.length === 0) return;
+    window_tolakAktif = { type: 'bulk', ids };
+    document.getElementById('tolakSub').textContent = ids.length + ' usulan akan ditolak';
+    document.getElementById('fAlasanTolak').value = '';
+    document.getElementById('tolakMsg').textContent = '';
+    document.getElementById('modalOverlay').classList.add('show');
+  };
+
+  window.closeTolak = function() {
+    document.getElementById('modalOverlay').classList.remove('show');
+    window_tolakAktif = null;
+  };
+
+  window.submitTolak = async function() {
+    if (!window_tolakAktif) return;
+    const alasan = document.getElementById('fAlasanTolak').value.trim();
+    const msg = document.getElementById('tolakMsg');
+    const btn = document.getElementById('btnSubmitTolak');
+
+    if (!alasan) { msg.textContent = 'Alasan wajib diisi.'; return; }
+
+    btn.disabled = true; msg.textContent = 'Memproses...';
+
+    try {
+      const { error } = await window.supabase.from('usulan_pembelian').update({
+        status: 'DITOLAK',
+        disetujui_oleh: window.currentUser.id || null,
+        disetujui_pada: new Date().toISOString(),
+        catatan_approval: alasan
+      }).in('id', window_tolakAktif.ids);
+      if (error) throw error;
+
+      closeTolak();
+      await loadAllData();
+    } catch (err) {
+      msg.textContent = 'Gagal: ' + err.message;
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
+  //  BUAT PO — redirect ke pembelian.html dengan prefill
+  // ============================================================
+  window.buatPO = function(id) {
+    const u = listUsulan.find(x => x.id === id);
+    if (!u) return;
+    const barang = barangMap[u.barang_id];
+    if (!barang) return;
+
+    // Update status usulan ke DIBUAT_PO (async, tidak blocking redirect)
+    window.supabase.from('usulan_pembelian').update({ status: 'DIBUAT_PO' }).eq('id', id);
+
+    // Redirect dengan parameter URL
+    const params = new URLSearchParams({
+      from_usulan: '1',
+      barang_id: u.barang_id,
+      qty: u.qty_usulan_box,
+      bulan: u.bulan,
+      tahun: u.tahun
+    });
+    window.location.href = 'pembelian.html?' + params.toString();
+  };
+
+  // ============================================================
+  //  EXPORT EXCEL
+  // ============================================================
+  window.exportExcel = function() {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum siap. Coba refresh halaman.');
+      return;
+    }
+    if (listUsulan.length === 0) {
+      alert('Tidak ada data usulan untuk di-export.');
+      return;
+    }
+
+    const bulanSel = document.getElementById('bulanSelect');
+    const bulanTeks = bulanSel.options[bulanSel.selectedIndex].textContent;
+    const tahun = document.getElementById('tahunSelect').value;
+    const namaUser = window.currentUser ? window.currentUser.nama : '-';
+    const tglCetak = new Date().toLocaleString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const labelStatus = {
+      DRAFT: 'Draft', DIUSULKAN: 'Menunggu approval', DISETUJUI: 'Disetujui',
+      DITOLAK: 'Ditolak', DIBUAT_PO: 'Sudah dibuat PO'
+    };
+
+    const rows = [
+      ['RS AM PARIKESIT — RKO RSAMP'],
+      ['Laporan Usulan Pembelian'],
+      ['Periode: ' + bulanTeks + ' ' + tahun],
+      ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
+      [],
+      ['No', 'Nama Barang', 'Satuan Beli', 'RKO (Box)', 'Sisa Ruangan',
+       'Sisa Gudang (Box)', 'Usulan Beli (Box)', 'Status', 'Keterangan']
+    ];
+
+    listUsulan.forEach((u, idx) => {
+      const barang = barangMap[u.barang_id] || {};
+      const content = Number(u.content_saat_dibuat) || 1;
+      const sisaRuangBox = content > 0 ? (Number(u.total_sisa_ruangan_tab) / content).toFixed(2) : '0';
+
+      let ket = '-';
+      if (sisaRuangBox >= Number(u.qty_rko_box) && Number(u.qty_rko_box) > 0) ket = 'Cek stok ruangan';
+      else if (Number(u.sisa_gudang_box) >= Number(u.qty_rko_box) && Number(u.qty_rko_box) > 0) ket = 'Stok gudang cukup';
+      if (u.catatan_approval) ket += ' | Tolak: ' + u.catatan_approval;
+
+      rows.push([
+        idx + 1,
+        barang.nama_barang || '-',
+        barang.satuan_beli || 'Box',
+        Number(u.qty_rko_box),
+        Number(u.total_sisa_ruangan_tab) + ' ' + (barang.satuan_jual || ''),
+        Number(u.sisa_gudang_box),
+        Number(u.qty_usulan_box),
+        labelStatus[u.status] || u.status,
+        ket
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 8 } }
+    ];
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 42 }, { wch: 10 }, { wch: 10 }, { wch: 14 },
+      { wch: 16 }, { wch: 16 }, { wch: 20 }, { wch: 30 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Usulan Pembelian');
+    const namaFile = 'Usulan-Pembelian_' + bulanTeks + '-' + tahun + '.xlsx';
+    XLSX.writeFile(wb, namaFile);
+  };
+</script>
+</body>
+</html>
