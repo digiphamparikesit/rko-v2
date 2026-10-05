@@ -19,6 +19,18 @@
     .unit-display { font-size: 13px; font-weight: 600; color: var(--green-deep); padding: 8px 0 0; }
     .periode-display { font-size: 12px; color: var(--text-muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
     input.qty { width: 90px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; }
+    /* ↓↓↓ CSS BARU DISISIPKAN DI SINI ↓↓↓ */
+    .periode-banner {
+      border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;
+      font-size: 13px; line-height: 1.5;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .periode-banner.tutup { background: #FBEAE7; color: var(--coral); border-left: 4px solid var(--coral); }
+    .periode-banner.belum { background: #FDF1E0; color: var(--amber); border-left: 4px solid var(--amber); }
+    .periode-banner strong { font-weight: 700; }
+    input.qty:disabled { background: #F1F1EE; color: var(--text-muted); cursor: not-allowed; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    /* ↑↑↑ SAMPAI SINI ↑↑↑ */
   </style>
 </head>
 <body>
@@ -38,7 +50,8 @@
 </header>
 
 <main>
-  <div id="errorContainer" style="display:none;" class="error-box"></div>
+   <div id="errorContainer" style="display:none;" class="error-box"></div>
+  <div id="periodeBanner" style="display:none;"></div>
 
   <div class="layout-split">
     <aside class="left-col">
@@ -219,6 +232,7 @@
   const PAGE_SIZE = 15;
   let uploadBarangRows = [];
   let masterBarangLoaded = false;
+  let periodeStatus = { status: 'TERBUKA', alasan: 'default' };   ← BARU
 
   // ============================================================
   //  PERIODE
@@ -251,6 +265,67 @@
   }
 
   // ============================================================
+  //  CEK PERIODE RKO (buka/tutup)
+  // ============================================================
+  async function cekPeriodeRKO(bulan, tahun) {
+    try {
+      const { data, error } = await window.supabase
+        .from('periode_rko')
+        .select('*')
+        .eq('bulan', Number(bulan))
+        .eq('tahun', Number(tahun))
+        .limit(1);
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return { status: 'TERBUKA', alasan: 'belum-diatur' };
+      }
+
+      const p = data[0];
+
+      if (p.status_manual === 'DIPAKSA_TUTUP') {
+        return { status: 'TUTUP', alasan: 'manual', periode: p };
+      }
+
+      const today = new Date(); today.setHours(0,0,0,0);
+      const buka = new Date(p.tanggal_buka + 'T00:00:00');
+      const tutup = new Date(p.tanggal_tutup + 'T23:59:59');
+
+      if (today < buka) return { status: 'BELUM_BUKA', alasan: 'otomatis', periode: p };
+      if (today > tutup) return { status: 'TUTUP', alasan: 'otomatis', periode: p };
+      return { status: 'TERBUKA', alasan: 'otomatis', periode: p };
+    } catch (err) {
+      console.error('Gagal cek periode:', err);
+      return { status: 'TERBUKA', alasan: 'error' };
+    }
+  }
+
+  function tampilkanBannerPeriode(p) {
+    const el = document.getElementById('periodeBanner');
+    if (!el) return;
+    if (p.status === 'TERBUKA') { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.style.display = 'block';
+
+    const fmt = d => new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    if (p.status === 'BELUM_BUKA') {
+      const tglBuka = p.periode ? fmt(p.periode.tanggal_buka) : '-';
+      el.innerHTML = `<div class="periode-banner belum">
+        ⏳ <div><strong>Periode input RKO belum dibuka.</strong><br>
+        Dibuka pada <strong>${tglBuka}</strong>. Silakan coba lagi setelah tanggal tersebut.</div>
+      </div>`;
+    } else if (p.status === 'TUTUP') {
+      const tglTutup = p.periode ? fmt(p.periode.tanggal_tutup) : '-';
+      const alasanTxt = p.alasan === 'manual' ? 'ditutup lebih awal oleh Admin' : 'sudah melewati batas waktu';
+      el.innerHTML = `<div class="periode-banner tutup">
+        🔒 <div><strong>Periode input RKO sudah ditutup.</strong><br>
+        Periode ditutup pada <strong>${tglTutup}</strong> (${alasanTxt}).<br>
+        Data lama tetap dapat dilihat, tapi tidak bisa diubah. Hubungi Admin jika perlu perubahan.</div>
+      </div>`;
+    }
+  }
+  
+  // ============================================================
   //  LOAD MASTER BARANG
   // ============================================================
   async function loadFullMasterBarang() {
@@ -262,10 +337,14 @@
   // ============================================================
   //  LOAD BARANG RUANGAN + KEBUTUHAN + KUNJUNGAN
   // ============================================================
-  async function loadBarangDanKebutuhan() {
+    async function loadBarangDanKebutuhan() {
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
     document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="empty-state">Memuat data...</td></tr>';
+
+    // Cek periode RKO dulu
+    periodeStatus = await cekPeriodeRKO(bulan, tahun);
+    tampilkanBannerPeriode(periodeStatus);
 
     if (!activeRuanganId) {
       document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="empty-state">Silakan pilih ruangan terlebih dahulu.</td></tr>';
@@ -407,24 +486,27 @@
           ? `${satuanJual} · 1 ${satuanBeli} = ${content} ${satuanJual}`
           : satuanJual;
 
+        const terkunci = periodeStatus.status !== 'TERBUKA';
+        const dis = terkunci ? 'disabled' : '';
+
         return `<tr data-id="${b.id}" data-hpp="${hpp}" data-content="${content}">
           <td>
             <div>${escapeHtml(b.nama_barang)}</div>
             <div class="barang-info">${escapeHtml(infoKonversi)}</div>
           </td>
           <td>
-            <input type="number" class="qty" data-field="sisa" value="${existing.sisa}" onchange="window.markUnsaved(${b.id})" />
+            <input type="number" class="qty" data-field="sisa" value="${existing.sisa}" onchange="window.markUnsaved(${b.id})" ${dis} />
             <span class="satuan-jual">${escapeHtml(satuanJual)}</span>
           </td>
           <td>
-            <input type="number" class="qty" data-field="kebutuhan" value="${existing.kebutuhan}" onchange="window.markUnsaved(${b.id}); window.hitungEstimasi(${b.id});" oninput="window.hitungEstimasi(${b.id})" />
+            <input type="number" class="qty" data-field="kebutuhan" value="${existing.kebutuhan}" onchange="window.markUnsaved(${b.id}); window.hitungEstimasi(${b.id});" oninput="window.hitungEstimasi(${b.id})" ${dis} />
             <span class="satuan-beli">${escapeHtml(satuanBeli)}</span>
           </td>
           <td><span id="estimasi-${b.id}" style="color:var(--text-muted);">Rp ${window.formatRp(estimasiAwal)}</span></td>
           <td><span class="status-tag ${existing.saved ? 'saved' : 'unsaved'}" id="status-${b.id}">${existing.saved ? 'Tersimpan' : 'Belum diisi'}</span></td>
           <td><div style="display:flex; gap:6px;">
-            <button class="btn btn-primary" onclick="window.saveRow(${b.id})">Simpan</button>
-            <button class="btn btn-secondary" onclick="window.removeFromRuangan(${b.id})">&times;</button>
+            <button class="btn btn-primary" onclick="window.saveRow(${b.id})" ${dis}>Simpan</button>
+            <button class="btn btn-secondary" onclick="window.removeFromRuangan(${b.id})" ${dis}>&times;</button>
           </div></td>
         </tr>`;
       }).join('');
@@ -447,6 +529,10 @@
   };
 
   window.saveRow = async function(id) {
+    if (periodeStatus.status !== 'TERBUKA') {
+      alert('Periode input RKO sudah ditutup. Hubungi Admin untuk perubahan.');
+      return;
+    }
     const row = document.querySelector(`tr[data-id="${id}"]`);
     const sisa = row.querySelector('[data-field="sisa"]').value;
     const keb = row.querySelector('[data-field="kebutuhan"]').value;
@@ -467,6 +553,10 @@
   };
 
   window.saveKunjungan = async function() {
+    if (periodeStatus.status !== 'TERBUKA') {
+      alert('Periode input RKO sudah ditutup. Kunjungan tidak bisa diubah.');
+      return;
+    }
     const jml = Number(document.getElementById('kunjunganInput').value) || 0;
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
@@ -494,7 +584,11 @@
   // ============================================================
   //  MODAL TAMBAH BARANG
   // ============================================================
-  window.openTambahBarangModal = async function() {
+ window.openTambahBarangModal = async function() {
+    if (periodeStatus.status !== 'TERBUKA') {
+      alert('Periode input RKO sudah ditutup. Tidak bisa menambah barang.');
+      return;
+    }
     document.getElementById('tambahBarangSearch').value = '';
     document.getElementById('tambahBarangResults').innerHTML = '<div class="loading-note">Memuat master barang...</div>';
     document.getElementById('modalTambahBarang').classList.add('show');
@@ -554,7 +648,11 @@
   // ============================================================
   //  UPLOAD CSV BARANG RUANGAN
   // ============================================================
-  window.openUploadBarangModal = function() {
+ window.openUploadBarangModal = function() {
+    if (periodeStatus.status !== 'TERBUKA') {
+      alert('Periode input RKO sudah ditutup. Tidak bisa upload barang.');
+      return;
+    }
     document.getElementById('uploadBarangFile').value = '';
     document.getElementById('uploadBarangSummary').style.display = 'none';
     document.getElementById('uploadBarangPreviewWrap').style.display = 'none';
