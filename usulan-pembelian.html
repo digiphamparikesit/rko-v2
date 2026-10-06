@@ -413,7 +413,8 @@
           aksi = '<span style="font-size:11.5px; color:var(--text-muted);">Menunggu Koor</span>';
         }
       } else if (u.status === 'DISETUJUI') {
-        aksi = `<button class="btn btn-warning btn-mini" onclick="window.buatPO(${u.id})">Buat PO</button>`;
+        aksi = `<button class="btn btn-warning btn-mini" onclick="window.buatPO(${u.id})">Buat PO</button>
+                <button class="btn btn-secondary btn-mini" style="margin-left:4px;" onclick="window.batalkanApproval(${u.id})">Batalkan</button>`;
       } else if (u.status === 'DITOLAK') {
         aksi = `<button class="btn btn-secondary btn-mini" onclick="window.ajukanBaris(${u.id})">Ajukan Ulang</button>`;
       } else if (u.status === 'DIBUAT_PO') {
@@ -668,6 +669,51 @@
     window.openDistributorModal(ids);
   };
 
+  // ============================================================
+  //  BATALKAN PERSETUJUAN — kembalikan ke DRAFT
+  // ============================================================
+  window.batalkanApproval = async function(id) {
+    const u = listUsulan.find(x => x.id === id);
+    if (!u) return;
+
+    if (u.status === 'DIBUAT_PO') {
+      alert('Usulan ini sudah dibuat PO. Batalkan PO di halaman Pembelian terlebih dahulu.');
+      return;
+    }
+
+    const barang = barangMap[u.barang_id] || {};
+    const dist = u.distributor_id ? distributorMap[u.distributor_id] : null;
+    const satuanBeli = barang.satuan_beli || 'Box';
+
+    const konfirmasi =
+      `Batalkan persetujuan untuk:\n\n` +
+      `📦 ${barang.nama_barang || '-'}\n` +
+      `Distributor: ${dist ? dist.nama_distributor : '-'}\n` +
+      `Qty: ${Number(u.qty_usulan_box).toLocaleString('id-ID')} ${satuanBeli}\n\n` +
+      `Setelah dibatalkan:\n` +
+      `• Status kembali ke DRAFT\n` +
+      `• Distributor di-reset (harus pilih ulang saat approve)\n` +
+      `• Anda bisa generate ulang RKO, lalu approve ulang\n\n` +
+      `Lanjutkan?`;
+
+    if (!confirm(konfirmasi)) return;
+
+    try {
+      const { error } = await window.supabase.from('usulan_pembelian').update({
+        status: 'DRAFT',
+        distributor_id: null,
+        distributor_dipilih_oleh: null,
+        distributor_dipilih_pada: null,
+        disetujui_oleh: null,
+        disetujui_pada: null
+      }).eq('id', id);
+      if (error) throw error;
+      await loadAllData();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    }
+  };
+  
   // ============================================================
   //  MODAL PILIH DISTRIBUTOR
   // ============================================================
