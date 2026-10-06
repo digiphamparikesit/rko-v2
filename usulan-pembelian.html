@@ -16,7 +16,7 @@
   <style>
     /* CSS khusus usulan-pembelian.html */
     .panel { overflow-x: auto; }
-    table { min-width: 1100px; }
+    table { min-width: 1250px; }
 
     .badge.draft       { background: #F1F1EE; color: var(--text-muted); }
     .badge.diusulkan   { background: #E9EEFB; color: #3B5BDB; }
@@ -26,6 +26,7 @@
 
     .badge.stok-cukup   { background: var(--green-soft); color: var(--green-mid); }
     .badge.cek-ruangan  { background: #FDF1E0; color: var(--amber); }
+    .badge.belum-dist   { background: #F1F1EE; color: var(--text-muted); }
 
     .qty-input {
       width: 90px; padding: 6px 8px;
@@ -48,6 +49,39 @@
 
     .stat-grid { grid-template-columns: repeat(4, 1fr); }
     @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Modal distributor */
+    .dist-row {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dist-row:last-child { border-bottom: none; }
+    .dist-row .barang-info {
+      font-size: 12.5px; font-weight: 600; line-height: 1.4;
+    }
+    .dist-row .barang-sub {
+      font-size: 11px; color: var(--text-muted); margin-top: 2px;
+    }
+    .dist-row select {
+      width: 100%; padding: 7px 9px;
+      border: 1px solid var(--border); border-radius: 7px;
+      font-size: 12.5px;
+    }
+    .bulk-bar {
+      display: flex; gap: 8px; align-items: end;
+      background: #E7F5EC; padding: 12px;
+      border-radius: 10px; margin-bottom: 12px;
+    }
+    .bulk-bar .field { margin: 0; flex: 1; }
+    .dist-list-wrap {
+      max-height: 400px; overflow-y: auto;
+      border: 1px solid var(--border); border-radius: 10px;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -97,13 +131,14 @@
           <th class="num">Sisa Ruangan</th>
           <th class="num">Sisa Gudang (Box)</th>
           <th class="num">Usulan Beli (Box)</th>
+          <th>Distributor</th>
           <th>Status</th>
           <th>Keterangan</th>
           <th>Aksi</th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr><td colspan="9" class="empty-state">Memuat data...</td></tr>
+        <tr><td colspan="10" class="empty-state">Memuat data...</td></tr>
       </tbody>
     </table>
   </div>
@@ -122,6 +157,34 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="window.closeTolak()">Batal</button>
       <button class="btn btn-danger" id="btnSubmitTolak" onclick="window.submitTolak()">Tolak</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PILIH DISTRIBUTOR -->
+<div id="modalDistributor" class="modal-overlay">
+  <div class="modal modal-wide">
+    <h2>Pilih Distributor</h2>
+    <div class="sub" id="modalDistSub">Pilih distributor untuk setiap barang sebelum menyetujui.</div>
+
+    <div class="bulk-bar">
+      <div class="field">
+        <label style="font-size:12px; font-weight:600; color:var(--text-dark); margin-bottom:5px;">Set semua ke distributor</label>
+        <select id="fBulkDistributor">
+          <option value="">-- Pilih distributor --</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary" style="height:fit-content;" onclick="window.applyBulkDistributor()">Terapkan ke Semua</button>
+    </div>
+
+    <div class="dist-list-wrap" id="distListWrap">
+      <!-- Baris-baris distributor akan di-render di sini -->
+    </div>
+
+    <div class="form-msg" id="distMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeDistributorModal()">Batal</button>
+      <button class="btn btn-primary" id="btnSubmitDist" onclick="window.submitDistributor()">Simpan &amp; Setujui</button>
     </div>
   </div>
 </div>
@@ -188,9 +251,12 @@
   let barangMap = {};
   let ruanganMap = {};
   let userMap = {};
+  let distributorList = [];
+  let distributorMap = {};
   let listUsulan = [];
   let selectedIds = new Set();
   let window_tolakAktif = null;
+  let window_distModal = null; // { mode: 'single'|'bulk', ids: [] }
 
   const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
@@ -231,15 +297,16 @@
   async function loadAllData() {
     const bulan = Number(document.getElementById('bulanSelect').value);
     const tahun = Number(document.getElementById('tahunSelect').value);
-    document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty-state">Memuat data...</td></tr>';
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" class="empty-state">Memuat data...</td></tr>';
     selectedIds.clear();
     updateBulkButtons();
 
     try {
-      const [barangData, ruanganData, userData, usulanData] = await Promise.all([
+      const [barangData, ruanganData, userData, distData, usulanData] = await Promise.all([
         fetchAllRows('master_barang'),
         fetchAllRows('master_ruangan'),
         fetchAllRows('users'),
+        fetchAllRows('master_distributor', q => q.order('nama_distributor')),
         fetchAllRows('usulan_pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun))
       ]);
 
@@ -249,6 +316,10 @@
       ruanganData.forEach(r => { ruanganMap[r.id] = r; });
       userMap = {};
       userData.forEach(u => { userMap[u.id] = u; });
+
+      distributorList = distData;
+      distributorMap = {};
+      distData.forEach(d => { distributorMap[d.id] = d; });
 
       listUsulan = usulanData.sort((a, b) => {
         const na = barangMap[a.barang_id]?.nama_barang || '';
@@ -261,7 +332,7 @@
     } catch (err) {
       console.error(err);
       document.getElementById('tableBody').innerHTML =
-        '<tr><td colspan="9" class="empty-state">Gagal memuat: ' + escapeHtml(err.message) + '</td></tr>';
+        '<tr><td colspan="10" class="empty-state">Gagal memuat: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -290,6 +361,17 @@
     return map[status] || status;
   }
 
+  function distributorCell(u) {
+    if (!u.distributor_id) {
+      if (u.status === 'DISETUJUI' || u.status === 'DIBUAT_PO') {
+        return '<span class="badge belum-dist">⚠ Belum dipilih</span>';
+      }
+      return '<span style="color:var(--text-muted); font-size:11.5px;">—</span>';
+    }
+    const dist = distributorMap[u.distributor_id];
+    return `<div style="font-weight:600; font-size:12px;">${escapeHtml(dist ? dist.nama_distributor : 'ID ' + u.distributor_id)}</div>`;
+  }
+
   function keteranganBadge(u) {
     const barang = barangMap[u.barang_id] || {};
     const content = Number(u.content_saat_dibuat) || 1;
@@ -307,7 +389,7 @@
   function renderTable() {
     const tbody = document.getElementById('tableBody');
     if (listUsulan.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Belum ada usulan untuk periode ini. Klik "Generate Usulan" untuk membuat.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Belum ada usulan untuk periode ini. Klik "Generate Usulan" untuk membuat.</td></tr>';
       return;
     }
 
@@ -319,7 +401,6 @@
       const isChecked = selectedIds.has(u.id);
       const bisaPilih = (u.status === 'DRAFT' || u.status === 'DIUSULKAN' || u.status === 'DISETUJUI');
 
-      // Aksi per baris
       let aksi = '';
       if (u.status === 'DRAFT') {
         aksi = `<button class="btn btn-primary btn-mini" onclick="window.ajukanBaris(${u.id})">Ajukan</button>`;
@@ -353,6 +434,7 @@
         <td class="num">${Number(u.total_sisa_ruangan_tab).toLocaleString('id-ID')} ${escapeHtml(satuanJual)}</td>
         <td class="num">${Number(u.sisa_gudang_box).toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</td>
         <td class="num"><strong>${Number(u.qty_usulan_box).toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</strong></td>
+        <td>${distributorCell(u)}</td>
         <td>${statusBadge(u.status)}</td>
         <td>${keteranganBadge(u)}${catatanShow}</td>
         <td>${aksi}</td>
@@ -415,19 +497,14 @@
     btn.disabled = true; btn.textContent = 'Memproses...';
 
     try {
-      // Ambil data kebutuhan (RKO) untuk periode ini
       const kebutuhanData = await fetchAllRows('kebutuhan', q =>
         q.eq('bulan', bulan).eq('tahun', tahun).gt('kebutuhan', 0)
       );
 
-      // Agregasi per barang
       const perBarang = {};
       kebutuhanData.forEach(k => {
         if (!perBarang[k.barang_id]) {
-          perBarang[k.barang_id] = {
-            qty_rko_box: 0,
-            total_sisa_ruangan_tab: 0
-          };
+          perBarang[k.barang_id] = { qty_rko_box: 0, total_sisa_ruangan_tab: 0 };
         }
         perBarang[k.barang_id].qty_rko_box += Number(k.kebutuhan) || 0;
         perBarang[k.barang_id].total_sisa_ruangan_tab += Number(k.sisa_stok_ruangan) || 0;
@@ -440,7 +517,6 @@
         return;
       }
 
-      // Ambil sisa stok gudang (penerimaan BAIK yang belum dimutasi, all-time per barang)
       const penerimaanData = await fetchAllRows('penerimaan', q =>
         q.eq('kondisi', 'BAIK').eq('sudah_dimutasi', false).in('barang_id', barangIds)
       );
@@ -450,19 +526,16 @@
         sisaGudangPerBarang[p.barang_id] = (sisaGudangPerBarang[p.barang_id] || 0) + Number(p.qty_diterima || 0);
       });
 
-      // Ambil master barang untuk content
       const barangData = await fetchAllRows('master_barang');
       const bMap = {};
       barangData.forEach(b => { bMap[b.id] = b; });
 
-      // Ambil usulan existing untuk periode ini
       const usulanExisting = await fetchAllRows('usulan_pembelian', q =>
         q.eq('bulan', bulan).eq('tahun', tahun)
       );
       const existingMap = {};
       usulanExisting.forEach(u => { existingMap[u.barang_id] = u; });
 
-      // Hitung usulan baru
       const itemsBaru = [];
       const itemsUpdate = [];
 
@@ -472,7 +545,6 @@
         const content = Number(barang.content) || 1;
         const sisaGudang = sisaGudangPerBarang[bid] || 0;
 
-        // Rumus: raw = RKO - (sisa ruangan / content) - sisa gudang
         const sisaRuangBox = agg.total_sisa_ruangan_tab / content;
         const raw = agg.qty_rko_box - sisaRuangBox - sisaGudang;
         const usulanBox = Math.max(0, Math.ceil(raw));
@@ -496,7 +568,6 @@
 
         const existing = existingMap[bid];
         if (existing) {
-          // Skip kalau sudah DISETUJUI / DIBUAT_PO
           if (existing.status === 'DISETUJUI' || existing.status === 'DIBUAT_PO') return;
           itemsUpdate.push({ id: existing.id, ...payload });
         } else {
@@ -504,13 +575,11 @@
         }
       });
 
-      // Batch insert
       if (itemsBaru.length > 0) {
         const { error } = await window.supabase.from('usulan_pembelian').insert(itemsBaru);
         if (error) throw error;
       }
 
-      // Batch update (satu-satu karena Supabase tidak support bulk update by array)
       for (const item of itemsUpdate) {
         const { id, ...payload } = item;
         const { error } = await window.supabase.from('usulan_pembelian').update(payload).eq('id', id);
@@ -533,22 +602,21 @@
   // ============================================================
   window.ajukanBaris = async function(id) {
     const autoApprove = bisaApprove();
-    const teksKonfirmasi = autoApprove
-      ? 'Setujui usulan ini langsung? Karena role Anda (' + window.currentUser.role + '), usulan akan langsung berstatus DISETUJUI.'
-      : 'Ajukan usulan ini ke Koordinator Logistik Farmasi?';
-    if (!confirm(teksKonfirmasi)) return;
+
+    if (autoApprove) {
+      // Buka modal pilih distributor
+      window.openDistributorModal([id]);
+      return;
+    }
+
+    if (!confirm('Ajukan usulan ini ke Koordinator Logistik Farmasi?')) return;
 
     try {
-      const payload = {
-        status: autoApprove ? 'DISETUJUI' : 'DIUSULKAN',
+      const { error } = await window.supabase.from('usulan_pembelian').update({
+        status: 'DIUSULKAN',
         diusulkan_oleh: window.currentUser.id || null,
         diusulkan_pada: new Date().toISOString()
-      };
-      if (autoApprove) {
-        payload.disetujui_oleh = window.currentUser.id || null;
-        payload.disetujui_pada = new Date().toISOString();
-      }
-      const { error } = await window.supabase.from('usulan_pembelian').update(payload).eq('id', id);
+      }).eq('id', id);
       if (error) throw error;
       await loadAllData();
     } catch (err) {
@@ -563,66 +631,159 @@
     if (ids.length === 0) return;
 
     const autoApprove = bisaApprove();
-    const teksKonfirmasi = autoApprove
-      ? `Setujui langsung ${ids.length} usulan? Karena role Anda (${window.currentUser.role}), semua akan berstatus DISETUJUI.`
-      : `Ajukan ${ids.length} usulan ke Koordinator Logistik Farmasi?`;
-    if (!confirm(teksKonfirmasi)) return;
 
-    try {
-      const payload = {
-        status: autoApprove ? 'DISETUJUI' : 'DIUSULKAN',
-        diusulkan_oleh: window.currentUser.id || null,
-        diusulkan_pada: new Date().toISOString()
-      };
-      if (autoApprove) {
-        payload.disetujui_oleh = window.currentUser.id || null;
-        payload.disetujui_pada = new Date().toISOString();
-      }
-      const { error } = await window.supabase.from('usulan_pembelian').update(payload).in('id', ids);
-      if (error) throw error;
-      alert(`✅ ${ids.length} usulan ${autoApprove ? 'disetujui' : 'diajukan'}.`);
-      await loadAllData();
-    } catch (err) {
-      alert('Gagal: ' + err.message);
+    if (autoApprove) {
+      window.openDistributorModal(ids);
+      return;
     }
-  };
 
-  // ============================================================
-  //  SETUJUI (per baris atau bulk)
-  // ============================================================
-  window.setujuiBaris = async function(id) {
-    if (!confirm('Setujui usulan ini? Setelah disetujui, tim pembelian bisa langsung buat PO.')) return;
+    if (!confirm(`Ajukan ${ids.length} usulan ke Koordinator Logistik Farmasi?`)) return;
+
     try {
       const { error } = await window.supabase.from('usulan_pembelian').update({
-        status: 'DISETUJUI',
-        disetujui_oleh: window.currentUser.id || null,
-        disetujui_pada: new Date().toISOString()
-      }).eq('id', id);
+        status: 'DIUSULKAN',
+        diusulkan_oleh: window.currentUser.id || null,
+        diusulkan_pada: new Date().toISOString()
+      }).in('id', ids);
       if (error) throw error;
+      alert(`✅ ${ids.length} usulan diajukan.`);
       await loadAllData();
     } catch (err) {
       alert('Gagal: ' + err.message);
     }
   };
 
-  window.setujuiTerpilih = async function() {
+  // ============================================================
+  //  SETUJUI (per baris atau bulk) — lewat modal distributor
+  // ============================================================
+  window.setujuiBaris = function(id) {
+    window.openDistributorModal([id]);
+  };
+
+  window.setujuiTerpilih = function() {
     const ids = listUsulan
       .filter(u => selectedIds.has(u.id) && u.status === 'DIUSULKAN')
       .map(u => u.id);
     if (ids.length === 0) return;
-    if (!confirm(`Setujui ${ids.length} usulan?`)) return;
+    window.openDistributorModal(ids);
+  };
+
+  // ============================================================
+  //  MODAL PILIH DISTRIBUTOR
+  // ============================================================
+  window.openDistributorModal = function(ids) {
+    window_distModal = { ids: ids.slice() };
+
+    // Isi dropdown bulk distributor
+    const bulkSel = document.getElementById('fBulkDistributor');
+    bulkSel.innerHTML = '<option value="">-- Pilih distributor --</option>' +
+      distributorList.map(d => `<option value="${d.id}">${escapeHtml(d.nama_distributor)}</option>`).join('');
+
+    // Isi sub-title
+    document.getElementById('modalDistSub').textContent = ids.length === 1
+      ? 'Pilih distributor untuk barang ini sebelum menyetujui.'
+      : `Pilih distributor untuk ${ids.length} barang sebelum menyetujui.`;
+
+    // Render baris per barang
+    renderDistRows();
+
+    document.getElementById('distMsg').textContent = '';
+    document.getElementById('btnSubmitDist').disabled = false;
+    document.getElementById('modalDistributor').classList.add('show');
+  };
+
+  function renderDistRows() {
+    const wrap = document.getElementById('distListWrap');
+    const rows = window_distModal.ids.map(id => {
+      const u = listUsulan.find(x => x.id === id);
+      if (!u) return '';
+      const barang = barangMap[u.barang_id] || {};
+      const satuanBeli = barang.satuan_beli || 'Box';
+      const currentDist = u.distributor_id || '';
+      const opts = distributorList.map(d =>
+        `<option value="${d.id}" ${String(d.id) === String(currentDist) ? 'selected' : ''}>${escapeHtml(d.nama_distributor)}</option>`
+      ).join('');
+      return `<div class="dist-row" data-id="${u.id}">
+        <div>
+          <div class="barang-info">${escapeHtml(barang.nama_barang || '-')}</div>
+          <div class="barang-sub">Usulan: ${Number(u.qty_usulan_box).toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</div>
+        </div>
+        <select class="dist-select" data-id="${u.id}">
+          <option value="">-- Pilih distributor --</option>
+          ${opts}
+        </select>
+      </div>`;
+    }).join('');
+    wrap.innerHTML = rows;
+  }
+
+  window.applyBulkDistributor = function() {
+    const bulkId = document.getElementById('fBulkDistributor').value;
+    if (!bulkId) { alert('Pilih distributor dulu di dropdown bulk.'); return; }
+    document.querySelectorAll('#distListWrap .dist-select').forEach(sel => {
+      sel.value = bulkId;
+    });
+  };
+
+  window.closeDistributorModal = function() {
+    document.getElementById('modalDistributor').classList.remove('show');
+    window_distModal = null;
+  };
+
+  window.submitDistributor = async function() {
+    if (!window_distModal) return;
+    const msg = document.getElementById('distMsg');
+    const btn = document.getElementById('btnSubmitDist');
+
+    // Kumpulkan pilihan distributor
+    const selects = document.querySelectorAll('#distListWrap .dist-select');
+    const updates = [];
+    let adaKosong = false;
+
+    selects.forEach(sel => {
+      const id = Number(sel.dataset.id);
+      const distId = sel.value ? Number(sel.value) : null;
+      if (!distId) adaKosong = true;
+      updates.push({ id, distributor_id: distId });
+    });
+
+    if (adaKosong) {
+      msg.textContent = 'Semua barang harus punya distributor sebelum disetujui.';
+      return;
+    }
+
+    btn.disabled = true;
+    msg.textContent = 'Menyimpan...';
+    msg.style.color = 'var(--text-muted)';
 
     try {
-      const { error } = await window.supabase.from('usulan_pembelian').update({
-        status: 'DISETUJUI',
-        disetujui_oleh: window.currentUser.id || null,
-        disetujui_pada: new Date().toISOString()
-      }).in('id', ids);
-      if (error) throw error;
-      alert(`✅ ${ids.length} usulan disetujui.`);
-      await loadAllData();
+      const nowIso = new Date().toISOString();
+      const userId = window.currentUser.id || null;
+
+      for (const upd of updates) {
+        const { error } = await window.supabase.from('usulan_pembelian').update({
+          status: 'DISETUJUI',
+          distributor_id: upd.distributor_id,
+          distributor_dipilih_oleh: userId,
+          distributor_dipilih_pada: nowIso,
+          diusulkan_oleh: userId,
+          diusulkan_pada: nowIso,
+          disetujui_oleh: userId,
+          disetujui_pada: nowIso
+        }).eq('id', upd.id);
+        if (error) throw error;
+      }
+
+      msg.textContent = `✅ ${updates.length} usulan disetujui.`;
+      msg.style.color = 'var(--green-mid)';
+      setTimeout(() => {
+        window.closeDistributorModal();
+        loadAllData();
+      }, 800);
     } catch (err) {
-      alert('Gagal: ' + err.message);
+      msg.textContent = 'Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+      btn.disabled = false;
     }
   };
 
@@ -692,13 +853,20 @@
     const barang = barangMap[u.barang_id];
     if (!barang) return;
 
-    // Update status usulan ke DIBUAT_PO (async, tidak blocking redirect)
+    if (!u.distributor_id) {
+      alert('Distributor belum dipilih. Hubungi Koor Logistik untuk memilih ulang.');
+      return;
+    }
+
+    // Update status usulan ke DIBUAT_PO + simpan usulan_id akan di pembelian
     window.supabase.from('usulan_pembelian').update({ status: 'DIBUAT_PO' }).eq('id', id);
 
     // Redirect dengan parameter URL
     const params = new URLSearchParams({
       from_usulan: '1',
+      usulan_id: u.id,
       barang_id: u.barang_id,
+      distributor_id: u.distributor_id,
       qty: u.qty_usulan_box,
       bulan: u.bulan,
       tahun: u.tahun
@@ -740,13 +908,14 @@
       ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
       [],
       ['No', 'Nama Barang', 'Satuan Beli', 'RKO (Box)', 'Sisa Ruangan',
-       'Sisa Gudang (Box)', 'Usulan Beli (Box)', 'Status', 'Keterangan']
+       'Sisa Gudang (Box)', 'Usulan Beli (Box)', 'Distributor', 'Status', 'Keterangan']
     ];
 
     listUsulan.forEach((u, idx) => {
       const barang = barangMap[u.barang_id] || {};
       const content = Number(u.content_saat_dibuat) || 1;
       const sisaRuangBox = content > 0 ? (Number(u.total_sisa_ruangan_tab) / content).toFixed(2) : '0';
+      const dist = u.distributor_id ? (distributorMap[u.distributor_id] || {}).nama_distributor : '-';
 
       let ket = '-';
       if (sisaRuangBox >= Number(u.qty_rko_box) && Number(u.qty_rko_box) > 0) ket = 'Cek stok ruangan';
@@ -761,6 +930,7 @@
         Number(u.total_sisa_ruangan_tab) + ' ' + (barang.satuan_jual || ''),
         Number(u.sisa_gudang_box),
         Number(u.qty_usulan_box),
+        dist || '-',
         labelStatus[u.status] || u.status,
         ket
       ]);
@@ -768,14 +938,14 @@
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } },
-      { s: { r: 3, c: 0 }, e: { r: 3, c: 8 } }
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 9 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 9 } }
     ];
     ws['!cols'] = [
       { wch: 5 }, { wch: 42 }, { wch: 10 }, { wch: 10 }, { wch: 14 },
-      { wch: 16 }, { wch: 16 }, { wch: 20 }, { wch: 30 }
+      { wch: 16 }, { wch: 16 }, { wch: 26 }, { wch: 20 }, { wch: 30 }
     ];
 
     const wb = XLSX.utils.book_new();
