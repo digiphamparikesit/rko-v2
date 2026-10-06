@@ -268,7 +268,71 @@
     fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
     document.getElementById('bulanSelect').addEventListener('change', loadAllData);
     document.getElementById('tahunSelect').addEventListener('change', loadAllData);
-    loadAllData();
+    await loadAllData();
+
+    // Cek apakah datang dari halaman usulan-pembelian
+    cekPrefillDariUsulan();
+  }
+
+  // ============================================================
+  //  PREFILL DARI USULAN PEMBELIAN
+  // ============================================================
+  function cekPrefillDariUsulan() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('from_usulan') !== '1') return;
+
+    const barangId = params.get('barang_id');
+    const qty = params.get('qty');
+    const bulanParam = params.get('bulan');
+    const tahunParam = params.get('tahun');
+
+    if (!barangId) return;
+
+    // Set periode dropdown jika berbeda
+    const bulanSel = document.getElementById('bulanSelect');
+    const tahunSel = document.getElementById('tahunSelect');
+    if (bulanParam) bulanSel.value = bulanParam;
+    if (tahunParam) tahunSel.value = tahunParam;
+
+    // Reload data kalau periode berubah
+    const periodeBerubah = bulanSel.value !== bulanParam || tahunSel.value !== tahunParam;
+
+    const lanjutPrefill = () => {
+      const barang = barangMap[barangId];
+      if (!barang) {
+        alert('Barang tidak ditemukan di master. Hubungi admin.');
+        return;
+      }
+
+      // Buka form PO baru
+      window.openForm();
+
+      // Isi prefill
+      document.getElementById('fBarangInput').value = barang.nama_barang;
+      document.getElementById('fBarang').value = barang.id;
+      if (qty) document.getElementById('fQty').value = qty;
+      document.getElementById('fStatus').value = 'DIKIRIM';
+
+      // Info banner
+      const infoDiv = document.getElementById('formInfo');
+      infoDiv.style.display = 'block';
+      infoDiv.style.cssText = 'background:#E7F5EC; padding:10px; border-radius:8px; margin-bottom:12px; font-size:13px; line-height:1.5;';
+      infoDiv.innerHTML = `
+        📦 <strong>Dari Usulan Pembelian</strong><br>
+        Barang: <strong>${escapeHtml(barang.nama_barang)}</strong><br>
+        Qty usulan: <strong>${qty || '-'} ${escapeHtml(barang.satuan_beli || 'Box')}</strong><br>
+        <span style="color:var(--text-muted); font-size:11.5px;">Silakan lengkapi No. PO dan Distributor sebelum menyimpan.</span>
+      `;
+
+      // Clean URL biar tidak repeat prefill kalau refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    };
+
+    if (periodeBerubah) {
+      loadAllData().then(lanjutPrefill);
+    } else {
+      setTimeout(lanjutPrefill, 300);
+    }
   }
 
   // ============================================================
