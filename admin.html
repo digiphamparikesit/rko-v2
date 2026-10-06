@@ -96,18 +96,19 @@
       <div class="panel">
         <table>
           <thead>
-            <tr>
+             <tr>
               <th>ID</th>
               <th>Nama barang</th>
               <th>Golongan</th>
               <th>Gudang</th>
               <th class="num">HPP beli</th>
+              <th class="num">LT Override</th>
               <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
+            <tr><td colspan="8" class="empty-state">Memuat data...</td></tr>
           </tbody>
         </table>
         <div class="pager">
@@ -200,6 +201,12 @@
       <select id="fPrinsipal"><option value="">-</option></select>
     </div>
 
+    <div class="field">
+      <label>Lead Time Override (hari)</label>
+      <input type="number" id="fLeadTimeOverride" placeholder="Kosongkan jika pakai default distributor" min="0">
+      <div class="help-text">Isi hanya kalau lead time barang ini <strong>berbeda</strong> dari default distributor. Kosong = pakai default distributor.</div>
+    </div>
+
     <div class="form-msg" id="formMsg"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="window.closeForm()">Batal</button>
@@ -215,7 +222,7 @@
     <p style="font-size:12.5px; color:var(--text-muted); margin:-8px 0 16px;">
       Format CSV wajib memiliki kolom (header): <br>
       <code style="background:#F1F1EE; padding:2px 6px; border-radius:5px; font-size:11.5px;">
-        id_barang, nama_barang, kelas_terapi, golongan, gudang_penyimpanan, satuan_jual, satuan_beli, content, hpp_beli, prinsipal, status_aktif
+        id_barang, nama_barang, kelas_terapi, golongan, gudang_penyimpanan, satuan_jual, satuan_beli, content, hpp_beli, prinsipal, status_aktif, lead_time_override_hari
       </code>
       <br><span style="color:var(--coral);">* Kolom id_barang WAJIB. ID dari NUHA.</span>
       <br><span style="color:var(--amber);">* Kolom prinsipal diisi NAMA (akan dicocokkan dengan master).</span>
@@ -327,7 +334,7 @@
     } catch (err) {
       showError('Gagal memuat data: ' + err.message);
       document.getElementById('tableBody').innerHTML =
-        '<tr><td colspan="7" class="empty-state">Error: ' + escapeHtml(err.message) + '</td></tr>';
+        '<tr><td colspan="8" class="empty-state">Error: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -370,12 +377,16 @@
     const pageItems = filteredBarang.slice(start, start + PAGE_SIZE);
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Tidak ada data yang cocok.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Tidak ada data yang cocok.</td></tr>';
     } else {
       tbody.innerHTML = pageItems.map(b => {
         const isActive = b.status_aktif === true;
         const gudang = b.gudang_penyimpanan || gudangDariGolongan(b.golongan);
         const gudangBadge = gudang === 'OBAT' ? 'obat' : 'bmhp';
+        const ltOverride = b.lead_time_override_hari;
+        const ltTampil = (ltOverride === null || ltOverride === undefined)
+          ? '<span style="color:var(--text-muted); font-size:11.5px;">— (default)</span>'
+          : `<strong style="color:var(--amber);">${ltOverride} hari</strong>`;
         return `
           <tr class="${isActive ? '' : 'inactive'}">
             <td><span class="id-display">${b.id}</span></td>
@@ -383,6 +394,7 @@
             <td><span class="badge gol">${escapeHtml(b.golongan || '-')}</span></td>
             <td><span class="badge ${gudangBadge}">${gudang}</span></td>
             <td class="num">Rp ${window.formatRp(b.hpp_beli)}</td>
+            <td class="num">${ltTampil}</td>
             <td>${isActive ? '<span class="badge obat">Aktif</span>' : '<span class="badge off">Nonaktif</span>'}</td>
             <td>
               <div class="row-actions">
@@ -431,6 +443,10 @@
       document.getElementById('fContent').value = b.content || 1;
       document.getElementById('fHpp').value = b.hpp_beli || 0;
       document.getElementById('fPrinsipal').value = b.prinsipal_id || '';
+      document.getElementById('fLeadTimeOverride').value =
+        (b.lead_time_override_hari === null || b.lead_time_override_hari === undefined)
+          ? ''
+          : b.lead_time_override_hari;
     } else {
       document.getElementById('modalTitle').textContent = 'Tambah Barang';
       document.getElementById('fEditMode').value = 'tambah';
@@ -447,7 +463,8 @@
       document.getElementById('fSatuanBeli').value = '';
       document.getElementById('fContent').value = 1;
       document.getElementById('fHpp').value = 0;
-      document.getElementById('fPrinsipal').value = '';
+      ocument.getElementById('fPrinsipal').value = '';
+      document.getElementById('fLeadTimeOverride').value = '';
     }
     document.getElementById('modalOverlay').classList.add('show');
   };
@@ -486,6 +503,18 @@
       msg.textContent = 'Gudang penyimpanan tidak valid.'; return;
     }
 
+    // Lead time override: kosong → null (pakai default distributor)
+    const leadTimeRaw = document.getElementById('fLeadTimeOverride').value.trim();
+    let leadTimeOverride = null;
+    if (leadTimeRaw !== '') {
+      const ltNum = Number(leadTimeRaw);
+      if (isNaN(ltNum) || ltNum < 0) {
+        msg.textContent = 'Lead time override tidak valid. Isi angka >= 0 atau kosongkan.';
+        return;
+      }
+      leadTimeOverride = ltNum;
+    }
+
     const payload = {
       nama_barang: nama,
       kelas_terapi: document.getElementById('fKelas').value.trim() || null,
@@ -495,7 +524,8 @@
       satuan_beli: document.getElementById('fSatuanBeli').value.trim() || null,
       content: Number(document.getElementById('fContent').value) || 1,
       hpp_beli: Number(document.getElementById('fHpp').value) || 0,
-      prinsipal_id: document.getElementById('fPrinsipal').value || null
+      prinsipal_id: document.getElementById('fPrinsipal').value || null,
+      lead_time_override_hari: leadTimeOverride
     };
 
     msg.textContent = 'Menyimpan...';
@@ -577,6 +607,16 @@
       const statusRaw = String(row.status_aktif || '').toLowerCase();
       const statusAktif = statusRaw === 'true' || statusRaw === '1';
 
+      // Lead time override (opsional)
+      const ltRaw = String(row.lead_time_override_hari || '').trim();
+      let leadTimeOverride = null;
+      if (ltRaw !== '') {
+        const ltNum = Number(ltRaw);
+        if (!isNaN(ltNum) && ltNum >= 0) {
+          leadTimeOverride = ltNum;
+        }
+      }
+
       let gudang = gudangCsv;
       if (!['OBAT', 'BMHP'].includes(gudang)) {
         gudang = gudangDariGolongan(golongan);
@@ -612,6 +652,7 @@
         hpp_beli: hpp,
         prinsipal: prinsipalNama,
         status_aktif: statusAktif,
+        lead_time_override_hari: leadTimeOverride,
         statusBaris,
         alasan
       };
@@ -682,7 +723,8 @@
         content: r.content,
         hpp_beli: r.hpp_beli,
         prinsipal_id: r.prinsipal ? prinsipalMap[r.prinsipal.toUpperCase()] : null,
-        status_aktif: r.status_aktif
+        status_aktif: r.status_aktif,
+        lead_time_override_hari: r.lead_time_override_hari
       }));
 
       const BATCH = 500;
