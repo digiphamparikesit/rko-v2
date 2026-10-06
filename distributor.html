@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Distributor — RKO RSAMP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
@@ -132,11 +133,6 @@
           <select id="bulanSelect"></select>
         </div>
         <div class="field">
-          <label>Tahun</label>
-          <select id="tahunSelect"></select>
-        </div>
-      </div>
-    </aside>
     <section class="right-col">
       <div id="distList"><div class="empty-state">Memuat data...</div></div>
     </section>
@@ -357,6 +353,94 @@
   window.toggleCard = function(id) {
     const el = document.getElementById('card-' + id);
     if (el) el.classList.toggle('open');
+  };
+
+  // ============================================================
+  //  EXPORT EXCEL — Rencana Belanja per Distributor
+  // ============================================================
+  window.exportExcel = function() {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum siap. Coba refresh halaman.');
+      return;
+    }
+    const distIds = Object.keys(grouped);
+    if (distIds.length === 0) {
+      alert('Tidak ada data rencana belanja untuk di-export.');
+      return;
+    }
+
+    const bulanSel = document.getElementById('bulanSelect');
+    const bulanTeks = bulanSel.options[bulanSel.selectedIndex].textContent;
+    const tahun = document.getElementById('tahunSelect').value;
+    const namaUser = window.currentUser ? window.currentUser.nama : '-';
+    const tglCetak = new Date().toLocaleString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const rows = [
+      ['RS AM PARIKESIT — RKO RSAMP'],
+      ['Laporan Rencana Belanja per Distributor'],
+      ['Periode: ' + bulanTeks + ' ' + tahun],
+      ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
+      [],
+      ['No', 'Distributor', 'Nama Barang', 'Qty Rencana', 'Satuan', 'Nilai (Rp)']
+    ];
+
+    let noUrut = 1;
+    let grandTotal = 0;
+
+    // Urutkan distributor by total
+    distIds.sort((a, b) => grouped[b].total - grouped[a].total);
+
+    distIds.forEach(did => {
+      const data = grouped[did];
+      const dist = distributorList.find(d => String(d.id) === String(did));
+      const namaDist = dist ? dist.nama_distributor : 'Distributor #' + did;
+
+      // Subtotal distributor
+      rows.push([
+        noUrut++,
+        namaDist,
+        '',
+        '',
+        '',
+        Math.round(data.total)
+      ]);
+
+      data.items.forEach(it => {
+        rows.push([
+          '',
+          '',
+          it.nama,
+          it.qty,
+          it.satuan,
+          Math.round(it.rp)
+        ]);
+      });
+
+      grandTotal += data.total;
+    });
+
+    rows.push([]);
+    rows.push(['', '', '', '', 'TOTAL', Math.round(grandTotal)]);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 5 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 5 } }
+    ];
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 32 }, { wch: 42 }, { wch: 12 },
+      { wch: 12 }, { wch: 18 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Rencana Distributor');
+    const namaFile = 'Rencana-Distributor_' + bulanTeks + '-' + tahun + '.xlsx';
+    XLSX.writeFile(wb, namaFile);
   };
 </script>
 </body>
