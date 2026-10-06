@@ -57,11 +57,12 @@
             <tr>
               <th>Nama distributor</th>
               <th>Kontak</th>
+              <th class="num">Lead Time (hari)</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="3" class="empty-state">Memuat data...</td></tr>
+            <tr><td colspan="4" class="empty-state">Memuat data...</td></tr>
           </tbody>
         </table>
         <div class="pager">
@@ -86,8 +87,14 @@
       <input type="text" id="fNama" placeholder="mis. PT Kimia Farma Trading">
     </div>
     <div class="field">
+      <div class="field">
       <label>Kontak (opsional)</label>
       <input type="text" id="fKontak" placeholder="mis. 0812-xxxx-xxxx / email">
+    </div>
+    <div class="field">
+      <label>Lead Time Default (hari)</label>
+      <input type="number" id="fLeadTime" placeholder="0" min="0" value="0">
+      <div class="help-text">Rata-rata waktu pengiriman dari distributor ini ke RS (dalam hari). Bisa di-override per barang di Master Barang.</div>
     </div>
     <div class="form-msg" id="formMsg"></div>
     <div class="modal-actions">
@@ -150,7 +157,7 @@
     } catch (err) {
       showError('Gagal memuat data: ' + err.message);
       document.getElementById('tableBody').innerHTML =
-        '<tr><td colspan="3" class="empty-state">Error: ' + escapeHtml(err.message) + '</td></tr>';
+        '<tr><td colspan="4" class="empty-state">Error: ' + escapeHtml(err.message) + '</td></tr>';
     }
   }
 
@@ -175,12 +182,18 @@
     const pageItems = filtered.slice(start, start + PAGE_SIZE);
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Tidak ada data yang cocok.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Tidak ada data yang cocok.</td></tr>';
     } else {
-      tbody.innerHTML = pageItems.map(d => `
+      tbody.innerHTML = pageItems.map(d => {
+        const lt = d.lead_time_default_hari;
+        const ltTampil = (lt === null || lt === undefined || lt === 0)
+          ? '<span style="color:var(--text-muted);">0</span>'
+          : `<strong>${lt}</strong>`;
+        return `
         <tr>
           <td>${escapeHtml(d.nama_distributor)}</td>
           <td>${escapeHtml(d.kontak || '-')}</td>
+          <td class="num">${ltTampil}</td>
           <td>
             <div class="row-actions">
               <button class="icon-btn" onclick="window.openForm(${d.id})">Edit</button>
@@ -188,7 +201,8 @@
             </div>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
     }
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -215,11 +229,13 @@
       document.getElementById('fId').value = d.id;
       document.getElementById('fNama').value = d.nama_distributor || '';
       document.getElementById('fKontak').value = d.kontak || '';
+      document.getElementById('fLeadTime').value = d.lead_time_default_hari || 0;
     } else {
       document.getElementById('modalTitle').textContent = 'Tambah Distributor';
       document.getElementById('fId').value = '';
       document.getElementById('fNama').value = '';
       document.getElementById('fKontak').value = '';
+      document.getElementById('fLeadTime').value = 0;
     }
     document.getElementById('modalOverlay').classList.add('show');
   };
@@ -232,9 +248,11 @@
     const id = document.getElementById('fId').value;
     const nama = document.getElementById('fNama').value.trim();
     const kontak = document.getElementById('fKontak').value.trim();
+    const leadTime = Number(document.getElementById('fLeadTime').value) || 0;
     const msg = document.getElementById('formMsg');
 
     if (!nama) { msg.textContent = 'Nama distributor wajib diisi.'; return; }
+    if (leadTime < 0) { msg.textContent = 'Lead time tidak boleh negatif.'; return; }
 
     const duplikat = allDistributor.find(d =>
       String(d.nama_distributor || '').toLowerCase() === nama.toLowerCase()
@@ -244,7 +262,8 @@
 
     const payload = {
       nama_distributor: nama,
-      kontak: kontak || null
+      kontak: kontak || null,
+      lead_time_default_hari: leadTime
     };
 
     msg.textContent = 'Menyimpan...';
