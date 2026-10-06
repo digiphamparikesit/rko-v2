@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Distributor — RKO RSAMP</title>
+  <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
@@ -13,56 +14,12 @@
   </script>
   <script src="auth.js"></script>
   <style>
-    :root {
-      --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A; --green-soft: #E7F5EC;
-      --bg: #F4F7F4; --card: #FFFFFF; --text-dark: #14201A; --text-muted: #6B7A72;
-      --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      color: var(--text-dark);
-    }
-    header.topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: var(--green-deep); color: #fff; padding: 18px 24px;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 12px;
-    }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand .mark {
-      width: 34px; height: 34px; border-radius: 9px; background: var(--green-bright);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 14px; color: var(--green-deep);
-    }
-    .brand .label { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.2; }
-    .brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
-    .topbar-right { display: flex; align-items: center; gap: 14px; }
-    .who { font-size: 12.5px; color: rgba(255,255,255,0.85); }
-    a.back { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; }
-    a.back:hover { color: #fff; }
-
-    main { max-width: 100%; margin: 0; padding: 24px 20px 60px; }
-    .layout-split { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
-    .left-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 90px; }
-    .side-panel { padding: 18px 20px; }
-    .side-title { font-size: 14px; margin: 0 0 12px; }
-    .field { margin-bottom: 12px; }
-    .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
-    .field select, .field input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-    @media (max-width: 860px) {
-      .layout-split { grid-template-columns: 1fr; }
-      .left-col { position: static; }
-    }
-
+    /* CSS khusus distributor.html (tidak ada di style.css global) */
     .stat-row {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin-bottom: 18px;
     }
-    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
-    .stat-card .num { font-size: 20px; font-weight: 700; }
-    .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    @media (max-width: 700px) { .stat-row { grid-template-columns: 1fr; } }
 
     .dist-card {
       background: var(--card);
@@ -72,11 +29,8 @@
       overflow: hidden;
     }
     .dist-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
-      cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; cursor: pointer; gap: 12px;
     }
     .dist-head:hover { background: #FAFBFA; }
     .dist-name { font-weight: 600; font-size: 14.5px; }
@@ -90,11 +44,15 @@
     .dist-body { display: none; border-top: 1px solid var(--border); }
     .dist-card.open .dist-body { display: block; }
 
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-    th, td { text-align: left; padding: 9px 20px; border-bottom: 1px solid var(--border); }
-    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; background: #FAFBFA; }
-    td.num, th.num { text-align: right; }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+    /* Badge sumber (rencana vs aktual) */
+    .badge.sumber-sesuai   { background: var(--green-soft); color: var(--green-mid); }
+    .badge.sumber-berubah  { background: #FDF1E0; color: var(--amber); }
+    .badge.sumber-tanpa    { background: #F1F1EE; color: var(--text-muted); }
+
+    .alasan-note {
+      font-size: 11px; color: var(--amber);
+      margin-top: 3px; line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -104,7 +62,7 @@
     <div class="mark">RS</div>
     <div>
       <div class="title">RKO RSAMP</div>
-      <div class="label">Distributor — nilai rencana belanja</div>
+      <div class="label">Distributor — riwayat PO per distributor</div>
     </div>
   </div>
   <div class="topbar-right">
@@ -115,9 +73,9 @@
 
 <main>
   <div class="stat-row">
-    <div class="stat-card"><div class="num" id="statTotalDist">-</div><div class="lbl">Distributor dengan rencana belanja</div></div>
-    <div class="stat-card"><div class="num" id="statTotalRp">Rp -</div><div class="lbl">Total rencana belanja periode ini</div></div>
-    <div class="stat-card"><div class="num" id="statTotalItem">-</div><div class="lbl">Total item dipesan</div></div>
+    <div class="stat-card"><div class="num" id="statTotalDist">-</div><div class="lbl">Distributor dengan PO</div></div>
+    <div class="stat-card"><div class="num" id="statTotalRp">Rp -</div><div class="lbl">Total nilai PO periode ini</div></div>
+    <div class="stat-card"><div class="num" id="statTotalItem">-</div><div class="lbl">Total PO</div></div>
   </div>
 
   <div class="layout-split">
@@ -138,6 +96,15 @@
         </div>
         <button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="window.exportExcel()">&#8681; Download Excel</button>
       </div>
+
+      <div class="panel side-panel">
+        <h2 class="side-title">Keterangan Badge</h2>
+        <div class="info-note" style="font-size:11.5px; line-height:1.6;">
+          <span class="badge sumber-sesuai">Sesuai rencana</span> — distributor PO sama dengan yang ditetapkan Koor.<br><br>
+          <span class="badge sumber-berubah">Berubah</span> — PO ke distributor berbeda dari rencana. Klik untuk lihat alasan.<br><br>
+          <span class="badge sumber-tanpa">Tanpa rencana</span> — PO dibuat tanpa lewat usulan (data lama / manual).
+        </div>
+      </div>
     </aside>
     <section class="right-col">
       <div id="distList"><div class="empty-state">Memuat data...</div></div>
@@ -151,7 +118,7 @@
   // ============================================================
   (async function() {
     const user = await window.auth.requireAuth({
-      allowRoles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI', 'DISTRIBUTOR_VIEW']
+      allowRoles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI', 'DISTRIBUTOR_VIEW', 'KEPALA_INSTALASI_FARMASI']
     });
     if (!user) return;
     document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
@@ -190,6 +157,7 @@
   //  VARIABEL
   // ============================================================
   let distributorList = [];
+  let distributorMap = {};
   let barangMap = {};
   let grouped = {};
   let allDataLoaded = false;
@@ -206,16 +174,14 @@
     const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     namaBulan.forEach((nm, i) => {
       const opt = document.createElement('option');
-      opt.value = i + 1;
-      opt.textContent = nm;
+      opt.value = i + 1; opt.textContent = nm;
       if (i + 1 === curBulan) opt.selected = true;
       bulanSel.appendChild(opt);
     });
 
     for (let y = curTahun - 2; y <= curTahun + 2; y++) {
       const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y;
+      opt.value = y; opt.textContent = y;
       if (y === curTahun) opt.selected = true;
       tahunSel.appendChild(opt);
     }
@@ -243,32 +209,78 @@
     document.getElementById('distList').innerHTML = '<div class="empty-state">Memuat data...</div>';
 
     try {
-      const [distData, barangData, rencanaData] = await Promise.all([
+      const [distData, barangData, pembelianData, logData] = await Promise.all([
         fetchAllRows('master_distributor'),
         fetchAllRows('master_barang'),
-        fetchAllRows('rencana_belanja', q => q.eq('bulan', bulan).eq('tahun', tahun))
+        fetchAllRows('pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('log_perubahan_distributor').catch(() => [])
       ]);
 
       distributorList = distData;
+      distributorMap = {};
+      distData.forEach(d => { distributorMap[d.id] = d; });
+
       barangMap = {};
       barangData.forEach(b => { barangMap[b.id] = b; });
 
+      // Map log perubahan per pembelian_id
+      const logMap = {};
+      (logData || []).forEach(l => {
+        if (!logMap[l.pembelian_id]) logMap[l.pembelian_id] = [];
+        logMap[l.pembelian_id].push(l);
+      });
+
+      // Grouping per distributor
       grouped = {};
       let totalItem = 0, totalRp = 0;
 
-      rencanaData.forEach(r => {
-        const distId = r.distributor_id;
+      pembelianData.forEach(p => {
+        const distId = p.distributor_id;
         if (!distId) return;
+
         if (!grouped[distId]) grouped[distId] = { total: 0, items: [] };
-        const barang = barangMap[r.barang_id];
-        const rp = Number(r.rencana_rp) || 0;
+
+        const barang = barangMap[p.barang_id];
+        const hpp = barang ? (Number(barang.hpp_beli) || 0) : 0;
+        const qty = Number(p.qty_pesan) || 0;
+        const rp = qty * hpp;
+
+        // Tentukan badge sumber
+        let sumber = 'tanpa'; // 'sesuai' | 'berubah' | 'tanpa'
+        let alasan = '';
+        if (p.distributor_rencana_id) {
+          if (Number(p.distributor_id) === Number(p.distributor_rencana_id)) {
+            sumber = 'sesuai';
+          } else {
+            sumber = 'berubah';
+            // Ambil alasan dari log
+            const logs = logMap[p.id] || [];
+            if (logs.length > 0) {
+              alasan = logs[0].alasan || '';
+            } else if (p.alasan_ganti_distributor) {
+              alasan = p.alasan_ganti_distributor;
+            }
+          }
+        }
+
         grouped[distId].total += rp;
         grouped[distId].items.push({
+          id: p.id,
+          no_po: p.no_po || '-',
           nama: barang ? barang.nama_barang : 'Barang tidak dikenal',
-          qty: r.rencana_qty_satuan_beli,
+          qty: qty,
           satuan: barang ? barang.satuan_beli : '-',
-          rp: rp
+          rp: rp,
+          tanggal: p.tanggal_po || '-',
+          status: p.status || '-',
+          sumber: sumber,
+          alasan: alasan,
+          distributor_rencana_id: p.distributor_rencana_id,
+          distributor_rencana_nama: p.distributor_rencana_id
+            ? (distributorMap[p.distributor_rencana_id]?.nama_distributor || '-')
+            : null
         });
+
         totalItem++;
         totalRp += rp;
       });
@@ -288,18 +300,33 @@
   // ============================================================
   //  RENDER LIST
   // ============================================================
+  function sumberBadge(item) {
+    if (item.sumber === 'sesuai') {
+      return '<span class="badge sumber-sesuai">✓ Sesuai rencana</span>';
+    }
+    if (item.sumber === 'berubah') {
+      const asal = item.distributor_rencana_nama ? escapeHtml(item.distributor_rencana_nama) : '-';
+      let html = `<span class="badge sumber-berubah">⚠ Berubah dari ${asal}</span>`;
+      if (item.alasan) {
+        html += `<div class="alasan-note">Alasan: ${escapeHtml(item.alasan)}</div>`;
+      }
+      return html;
+    }
+    return '<span class="badge sumber-tanpa">Tanpa rencana</span>';
+  }
+
   function renderList() {
     const q = document.getElementById('searchBox').value.toLowerCase().trim();
     const container = document.getElementById('distList');
 
     const availableDistIds = Object.keys(grouped);
     if (availableDistIds.length === 0) {
-      container.innerHTML = '<div class="empty-state">Belum ada rencana belanja untuk periode ini.</div>';
+      container.innerHTML = '<div class="empty-state">Belum ada PO untuk periode ini.</div>';
       return;
     }
 
     const filteredDistIds = availableDistIds.filter(id => {
-      const dist = distributorList.find(d => String(d.id) === String(id));
+      const dist = distributorMap[id];
       if (!dist) return false;
       const nama = dist.nama_distributor.toLowerCase();
       return !q || nama.includes(q);
@@ -313,14 +340,19 @@
     }
 
     container.innerHTML = filteredDistIds.map(id => {
-      const dist = distributorList.find(d => String(d.id) === String(id));
+      const dist = distributorMap[id];
       if (!dist) return '';
       const data = grouped[id];
+
       const itemsHtml = data.items.map(it => `
         <tr>
+          <td>${escapeHtml(it.no_po)}</td>
           <td>${escapeHtml(it.nama)}</td>
           <td class="num">${Number(it.qty||0).toLocaleString('id-ID')} ${escapeHtml(it.satuan)}</td>
           <td class="num">Rp ${window.formatRp(it.rp)}</td>
+          <td>${escapeHtml(it.tanggal)}</td>
+          <td>${escapeHtml(it.status)}</td>
+          <td>${sumberBadge(it)}</td>
         </tr>
       `).join('');
 
@@ -334,7 +366,7 @@
             <div class="dist-right">
               <div class="dist-total">
                 <div class="rp">Rp ${window.formatRp(data.total)}</div>
-                <div class="cnt">${data.items.length} item</div>
+                <div class="cnt">${data.items.length} PO</div>
               </div>
               <span class="chevron">&#9656;</span>
             </div>
@@ -343,9 +375,13 @@
             <table>
               <thead>
                 <tr>
-                  <th>Nama barang</th>
-                  <th class="num">Qty rencana beli</th>
+                  <th>No. PO</th>
+                  <th>Nama Barang</th>
+                  <th class="num">Qty</th>
                   <th class="num">Nilai (Rp)</th>
+                  <th>Tanggal</th>
+                  <th>Status PO</th>
+                  <th>Sumber</th>
                 </tr>
               </thead>
               <tbody>${itemsHtml}</tbody>
@@ -362,7 +398,7 @@
   };
 
   // ============================================================
-  //  EXPORT EXCEL — Rencana Belanja per Distributor
+  //  EXPORT EXCEL
   // ============================================================
   window.exportExcel = function() {
     if (typeof XLSX === 'undefined') {
@@ -371,7 +407,7 @@
     }
     const distIds = Object.keys(grouped);
     if (distIds.length === 0) {
-      alert('Tidak ada data rencana belanja untuk di-export.');
+      alert('Tidak ada data PO untuk di-export.');
       return;
     }
 
@@ -386,42 +422,57 @@
 
     const rows = [
       ['RS AM PARIKESIT — RKO RSAMP'],
-      ['Laporan Rencana Belanja per Distributor'],
+      ['Laporan PO per Distributor'],
       ['Periode: ' + bulanTeks + ' ' + tahun],
       ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
       [],
-      ['No', 'Distributor', 'Nama Barang', 'Qty Rencana', 'Satuan', 'Nilai (Rp)']
+      ['No', 'Distributor', 'No. PO', 'Nama Barang', 'Qty', 'Satuan', 'Nilai (Rp)', 'Tgl PO', 'Status', 'Sumber Rencana']
     ];
 
     let noUrut = 1;
     let grandTotal = 0;
 
-    // Urutkan distributor by total
     distIds.sort((a, b) => grouped[b].total - grouped[a].total);
 
     distIds.forEach(did => {
       const data = grouped[did];
-      const dist = distributorList.find(d => String(d.id) === String(did));
+      const dist = distributorMap[did];
       const namaDist = dist ? dist.nama_distributor : 'Distributor #' + did;
 
-      // Subtotal distributor
+      // Baris subtotal distributor
       rows.push([
         noUrut++,
         namaDist,
         '',
+        '(subtotal)',
         '',
         '',
-        Math.round(data.total)
+        Math.round(data.total),
+        '',
+        '',
+        ''
       ]);
 
+      // Baris item
       data.items.forEach(it => {
+        let labelSumber = 'Tanpa rencana';
+        if (it.sumber === 'sesuai') labelSumber = 'Sesuai rencana';
+        else if (it.sumber === 'berubah') {
+          labelSumber = 'Berubah dari ' + (it.distributor_rencana_nama || '-');
+          if (it.alasan) labelSumber += ' — ' + it.alasan;
+        }
+
         rows.push([
           '',
           '',
+          it.no_po,
           it.nama,
           it.qty,
           it.satuan,
-          Math.round(it.rp)
+          Math.round(it.rp),
+          it.tanggal,
+          it.status,
+          labelSumber
         ]);
       });
 
@@ -429,23 +480,23 @@
     });
 
     rows.push([]);
-    rows.push(['', '', '', '', 'TOTAL', Math.round(grandTotal)]);
+    rows.push(['', '', '', '', '', '', 'TOTAL', '', '', Math.round(grandTotal)]);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 5 } },
-      { s: { r: 3, c: 0 }, e: { r: 3, c: 5 } }
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 9 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 9 } }
     ];
     ws['!cols'] = [
-      { wch: 5 }, { wch: 32 }, { wch: 42 }, { wch: 12 },
-      { wch: 12 }, { wch: 18 }
+      { wch: 5 }, { wch: 32 }, { wch: 16 }, { wch: 38 }, { wch: 10 },
+      { wch: 10 }, { wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 36 }
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Rencana Distributor');
-    const namaFile = 'Rencana-Distributor_' + bulanTeks + '-' + tahun + '.xlsx';
+    XLSX.utils.book_append_sheet(wb, ws, 'Per Distributor');
+    const namaFile = 'PO-per-Distributor_' + bulanTeks + '-' + tahun + '.xlsx';
     XLSX.writeFile(wb, namaFile);
   };
 </script>
