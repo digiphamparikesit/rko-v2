@@ -239,6 +239,7 @@
   let uploadRows = [];
   let barangRkoList = [];
   window._selisihData = null;
+  let prefillUsulan = null;   // Menyimpan data dari URL usulan (kalau ada)
 
   // ============================================================
   //  PERIODE OPTIONS
@@ -283,12 +284,24 @@
     const params = new URLSearchParams(window.location.search);
     if (params.get('from_usulan') !== '1') return;
 
+    const usulanId = params.get('usulan_id');
     const barangId = params.get('barang_id');
+    const distributorId = params.get('distributor_id');
     const qty = params.get('qty');
     const bulanParam = params.get('bulan');
     const tahunParam = params.get('tahun');
 
     if (!barangId) return;
+
+    // Simpan di variable global untuk dipakai saat submitForm
+    prefillUsulan = {
+      usulan_id: usulanId ? Number(usulanId) : null,
+      barang_id: Number(barangId),
+      distributor_id: distributorId ? Number(distributorId) : null,
+      qty: qty ? Number(qty) : null,
+      bulan: bulanParam ? Number(bulanParam) : null,
+      tahun: tahunParam ? Number(tahunParam) : null
+    };
 
     // Set periode dropdown jika berbeda
     const bulanSel = document.getElementById('bulanSelect');
@@ -296,7 +309,6 @@
     if (bulanParam) bulanSel.value = bulanParam;
     if (tahunParam) tahunSel.value = tahunParam;
 
-    // Reload data kalau periode berubah
     const periodeBerubah = bulanSel.value !== bulanParam || tahunSel.value !== tahunParam;
 
     const lanjutPrefill = () => {
@@ -309,21 +321,34 @@
       // Buka form PO baru
       window.openForm();
 
-      // Isi prefill
+      // Isi barang & qty
       document.getElementById('fBarangInput').value = barang.nama_barang;
       document.getElementById('fBarang').value = barang.id;
       if (qty) document.getElementById('fQty').value = qty;
       document.getElementById('fStatus').value = 'DIKIRIM';
 
+      // Isi distributor kalau ada dari usulan
+      if (distributorId) {
+        const dist = distributorList.find(d => String(d.id) === String(distributorId));
+        if (dist) {
+          document.getElementById('fDistributor').value = dist.nama_distributor;
+          document.getElementById('fDistributorId').value = dist.id;
+        }
+      }
+
       // Info banner
       const infoDiv = document.getElementById('formInfo');
       infoDiv.style.display = 'block';
       infoDiv.style.cssText = 'background:#E7F5EC; padding:10px; border-radius:8px; margin-bottom:12px; font-size:13px; line-height:1.5;';
+      const distText = distributorId
+        ? `Distributor rencana: <strong>${escapeHtml((distributorList.find(d => String(d.id) === String(distributorId)) || {}).nama_distributor || '-')}</strong>`
+        : '<span style="color:var(--coral);">Distributor belum ditentukan di usulan — silakan pilih manual.</span>';
       infoDiv.innerHTML = `
         📦 <strong>Dari Usulan Pembelian</strong><br>
         Barang: <strong>${escapeHtml(barang.nama_barang)}</strong><br>
         Qty usulan: <strong>${qty || '-'} ${escapeHtml(barang.satuan_beli || 'Box')}</strong><br>
-        <span style="color:var(--text-muted); font-size:11.5px;">Silakan lengkapi No. PO dan Distributor sebelum menyimpan.</span>
+        ${distText}<br>
+        <span style="color:var(--text-muted); font-size:11.5px;">Kalau distributor diubah, alasan wajib diisi.</span>
       `;
 
       // Clean URL biar tidak repeat prefill kalau refresh
@@ -688,10 +713,28 @@
     if (!distId) { msg.textContent = 'Pilih distributor dari daftar pencarian.'; return; }
     if (qty <= 0) { msg.textContent = 'Qty > 0.'; return; }
 
+    // Kalau dari usulan dan distributor BERBEDA dari rencana → wajib isi alasan
+    let alasanGanti = '';
+    if (prefillUsulan && prefillUsulan.usulan_id && prefillUsulan.distributor_id) {
+      if (Number(distId) !== Number(prefillUsulan.distributor_id)) {
+        alasanGanti = prompt(
+          'Anda mengubah distributor dari rencana usulan.\n\n' +
+          'Alasan perubahan (wajib):',
+          ''
+        );
+        if (alasanGanti === null) return; // user klik Cancel
+        if (!alasanGanti.trim()) {
+          msg.textContent = 'Alasan perubahan distributor wajib diisi.';
+          return;
+        }
+      }
+    }
+
     msg.textContent = 'Menyimpan...';
     try {
       const statusAwal = document.getElementById('fStatus').value;
-      const { data: inserted, error } = await window.supabase.from('pembelian').insert({
+
+      const insertPayload = {
         no_po: noPo,
         barang_id: barangId,
         distributor_id: distId,
@@ -700,23 +743,55 @@
         qty_pesan: qty,
         tanggal_po: document.getElementById('fTanggal').value || null,
         status: statusAwal
-      }).select('id');
+      };
+
+      // Kalau dari usulan, tambahkan link + rencana
+      if (prefillUsulan && prefillUsulan.usulan_id) {
+        insertPayload.usulan_id = prefillUsulan.usulan_id;
+        insertPayload.distributor_rencana_id = prefillUsulan.distributor_id || null;
+        if (alasanGanti.trim()) {
+          insertPayload.alasan_ganti_distributor = alasanGanti.trim();
+        }
+      }
+
+      const { data: inserted, error } = await window.supabase.from('pembelian')
+        .insert(insertPayload)
+        .select('id');
 
       if (error) throw error;
 
-      if (inserted && inserted[0]) {
-        await window.supabase.from('pembelian_log').insert({
-          pembelian_id: inserted[0].id,
-          aksi: 'BUAT',
-          nilai_baru: 'Status awal: ' + statusAwal,
-          catatan: 'Qty pesan: ' + qty,
+      const newId = inserted && inserted[0] ? inserted[0].id : null;
+
+      // Log perubahan distributor kalau ganti
+      if (newId && alasanGanti.trim() && prefillUsulan && prefillUsulan.distributor_id) {
+        await window.supabase.from('log_perubahan_distributor').insert({
+          pembelian_id: newId,
+          distributor_lama: prefillUsulan.distributor_id,
+          distributor_baru: Number(distId),
+          alasan: alasanGanti.trim(),
           diubah_oleh: window.currentUser.id || null
         });
       }
 
+      // Log pembuatan PO
+      if (newId) {
+        await window.supabase.from('pembelian_log').insert({
+          pembelian_id: newId,
+          aksi: 'BUAT',
+          nilai_baru: 'Status awal: ' + statusAwal,
+          catatan: 'Qty pesan: ' + qty + (prefillUsulan && prefillUsulan.usulan_id ? ' (dari usulan)' : ''),
+          diubah_oleh: window.currentUser.id || null
+        });
+      }
+
+      // Reset prefillUsulan
+      prefillUsulan = null;
+
       closeForm();
       await loadAllData();
-    } catch (err) { msg.textContent = 'Gagal: ' + err.message; }
+    } catch (err) {
+      msg.textContent = 'Gagal: ' + err.message;
+    }
   };
 
   // ============================================================
