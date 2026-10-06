@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
@@ -84,6 +85,7 @@
         <button class="btn btn-primary" style="width:100%;" onclick="window.openForm()">+ Buat PO Baru</button>
         <button class="btn" style="width:100%; margin-top:8px; background:#F1F1EE; color:var(--text-dark);" onclick="window.openUploadModal()">&#8593; Upload Data dari SIM RS (CSV)</button>
         <button class="btn btn-warning" style="width:100%; margin-top:8px;" onclick="window.openSelisihModal()">&#9888; Buat PO Ulang dari Selisih</button>
+        <button class="btn btn-secondary" style="width:100%; margin-top:8px;" onclick="window.exportExcel()">&#8681; Download Excel</button>
       </div>
     </aside>
     <section class="right-col">
@@ -1100,6 +1102,130 @@
 
   window.closeDetail = function() {
     document.getElementById('modalDetail').classList.remove('show');
+  };
+
+  // ============================================================
+  //  EXPORT EXCEL — Riwayat Penerimaan
+  // ============================================================
+  window.exportExcel = function() {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum siap. Coba refresh halaman.');
+      return;
+    }
+    if (!penerimaanList || penerimaanList.length === 0) {
+      alert('Tidak ada data penerimaan untuk di-export.');
+      return;
+    }
+
+    // Replikasi grouping yang dipakai di tabel riwayat
+    const groups = {};
+    penerimaanList.forEach(r => {
+      const gid = r.group_id || ('LEGACY-' + r.id);
+      if (!groups[gid]) {
+        groups[gid] = {
+          group_id: gid,
+          pembelian_id: r.pembelian_id,
+          barang_id: r.barang_id,
+          tanggal_terima: r.tanggal_terima,
+          no_batch: r.no_batch,
+          tanggal_kadaluarsa: r.tanggal_kadaluarsa,
+          selisih: r.selisih,
+          qty_baik: 0,
+          qty_rusak: 0,
+          status_rusak: null,
+          sudah_dimutasi: false
+        };
+      }
+      if (r.kondisi === 'BAIK') {
+        groups[gid].qty_baik += Number(r.qty_diterima || 0);
+        groups[gid].sudah_dimutasi = groups[gid].sudah_dimutasi || r.sudah_dimutasi === true;
+      } else if (r.kondisi === 'RUSAK') {
+        groups[gid].qty_rusak += Number(r.qty_diterima || 0);
+        if (!groups[gid].status_rusak) groups[gid].status_rusak = r.status_rusak || 'MENUNGGU_RETUR';
+      }
+    });
+
+    const list = Object.values(groups)
+      .filter(g => {
+        const barang = barangMap[g.barang_id];
+        const po = pembelianList.find(p => p.id === g.pembelian_id);
+        const golFilter = document.getElementById('filterGolongan').value;
+        const q = (document.getElementById('searchBox').value || '').toLowerCase();
+        const nama = barang ? barang.nama_barang : '';
+        const matchQ = !q || nama.toLowerCase().includes(q) || String(po ? po.no_po : '').toLowerCase().includes(q);
+        const matchG = !golFilter || (barang && barang.golongan === golFilter);
+        return matchQ && matchG;
+      })
+      .sort((a, b) => String(b.group_id).localeCompare(String(a.group_id)));
+
+    if (list.length === 0) {
+      alert('Tidak ada data penerimaan yang cocok dengan filter.');
+      return;
+    }
+
+    const namaUser = window.currentUser ? window.currentUser.nama : '-';
+    const tglCetak = new Date().toLocaleString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const labelRusak = {
+      MENUNGGU_RETUR: 'Rusak · Menunggu retur',
+      SUDAH_RETUR: 'Rusak · Sudah retur',
+      DIMUSNAHKAN: 'Rusak · Dimusnahkan'
+    };
+
+    const rows = [
+      ['RS AM PARIKESIT — RKO RSAMP'],
+      ['Laporan Riwayat Penerimaan Barang'],
+      ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
+      [],
+      ['No', 'No. PO', 'Nama Barang', 'Datang', 'Baik', 'Rusak',
+       'Selisih', 'No. Batch', 'Kadaluarsa', 'Tgl Terima', 'Status Barang', 'Status PO']
+    ];
+
+    list.forEach((g, idx) => {
+      const barang = barangMap[g.barang_id] || {};
+      const po = pembelianList.find(p => p.id === g.pembelian_id);
+      const totalDatang = g.qty_baik + g.qty_rusak;
+      const selisih = Number(g.selisih) || 0;
+
+      let statusBarang = 'Semua baik';
+      if (g.qty_rusak > 0) {
+        statusBarang = labelRusak[g.status_rusak] || 'Rusak';
+      }
+
+      rows.push([
+        idx + 1,
+        po ? po.no_po : '-',
+        barang.nama_barang || 'Tidak dikenal',
+        totalDatang,
+        g.qty_baik,
+        g.qty_rusak,
+        selisih,
+        g.no_batch || '-',
+        g.tanggal_kadaluarsa || '-',
+        g.tanggal_terima || '-',
+        statusBarang,
+        po ? po.status : '-'
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 11 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 11 } }
+    ];
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 18 }, { wch: 42 }, { wch: 10 }, { wch: 8 }, { wch: 8 },
+      { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 26 }, { wch: 20 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Riwayat Penerimaan');
+    const namaFile = 'Riwayat-Penerimaan_' + tglCetak.replace(/[\/\s:]/g, '-') + '.xlsx';
+    XLSX.writeFile(wb, namaFile);
   };
 </script>
 </body>
