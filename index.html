@@ -12,134 +12,316 @@
     window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   </script>
   <style>
-    /* ==== CSS khusus index.html ==== */
+    /* ==== CSS khusus index.html — layout sidebar ==== */
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); }
 
-    /* Body & layout menu utama */
-    body { min-height: 100vh; }
-    main { max-width: 1280px; margin: 0 auto; padding: 32px 24px 60px; }
+    .app-layout { display: flex; min-height: 100vh; }
 
-    /* Override topbar index — ukuran lebih besar + shadow */
-    header.topbar { padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-    header.topbar .mark { width: 40px; height: 40px; border-radius: 10px; font-size: 16px; }
-    header.topbar .title { font-size: 16px; }
-    header.topbar .label { font-size: 11.5px; }
-
-    .btn-logout {
-      background: rgba(255,255,255,0.12); color: #fff;
-      border: 1px solid rgba(255,255,255,0.25); border-radius: 8px;
-      padding: 7px 14px; font-size: 12.5px; font-weight: 600;
-      cursor: pointer; font-family: inherit;
+    /* ============ SIDEBAR ============ */
+    .sidebar {
+      width: 260px;
+      background: var(--green-deep);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 50;
+      transition: transform 0.25s ease;
     }
-    .btn-logout:hover { background: rgba(255,255,255,0.2); }
 
-    /* Welcome box */
-    .welcome {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 16px; padding: 24px 28px; margin-bottom: 28px;
+    .sidebar-brand {
+      padding: 20px 20px 18px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .sidebar-brand .mark {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: var(--green-bright);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px; color: var(--green-deep);
+      flex-shrink: 0;
+    }
+    .sidebar-brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+    .sidebar-brand .sub { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.2; margin-top: 2px; }
+
+    .sidebar-menu {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0 20px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.15) transparent;
+    }
+    .sidebar-menu::-webkit-scrollbar { width: 6px; }
+    .sidebar-menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+    .sidebar-section { margin-bottom: 2px; }
+
+    .sidebar-section-header {
       display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 16px;
+      padding: 11px 20px;
+      font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.9px;
+      color: rgba(255,255,255,0.45);
+      background: none; border: none; width: 100%;
+      cursor: pointer; font-family: inherit; text-align: left;
+      transition: color 0.15s;
     }
-    .welcome h1 { font-size: 22px; margin: 0 0 4px; }
-    .welcome p { margin: 0; color: var(--text-muted); font-size: 13.5px; }
-    .welcome .role-tag {
-      display: inline-block; padding: 4px 12px; border-radius: 999px;
-      background: var(--green-soft); color: var(--green-mid);
-      font-size: 11.5px; font-weight: 700; margin-top: 8px;
-      text-transform: uppercase; letter-spacing: 0.5px;
+    .sidebar-section-header:hover { color: rgba(255,255,255,0.85); }
+    .sidebar-section-header .chev {
+      font-size: 9px;
+      transition: transform 0.2s;
+      color: rgba(255,255,255,0.4);
+    }
+    .sidebar-section.collapsed .sidebar-section-header .chev { transform: rotate(-90deg); }
+    .sidebar-section.collapsed .sidebar-items { display: none; }
+
+    .sidebar-items {
+      display: flex; flex-direction: column;
+      padding: 2px 0 6px;
     }
 
-    /* Section title */
-    .section-title {
+    .sidebar-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 20px 9px 22px;
+      color: rgba(255,255,255,0.82);
+      text-decoration: none;
+      font-size: 13.5px;
+      line-height: 1.3;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .sidebar-item:hover {
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      border-left-color: rgba(255,255,255,0.2);
+    }
+    .sidebar-item.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .sidebar-item.disabled:hover {
+      background: transparent;
+      border-left-color: transparent;
+      color: rgba(255,255,255,0.82);
+    }
+
+    .sidebar-item .icon {
+      width: 20px;
+      font-size: 15px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .sidebar-item .label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sidebar-footer {
+      padding: 14px 16px 16px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .btn-logout {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.16); }
+
+    /* ============ MAIN CONTENT ============ */
+    .main-content {
+      flex: 1;
+      margin-left: 260px;
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .content-header {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px; flex-wrap: wrap;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .content-header h1 {
+      font-size: 20px; margin: 0 0 3px; font-weight: 700;
+    }
+    .content-header p { margin: 0; color: var(--text-muted); font-size: 13px; }
+
+    .user-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 12px;
+      background: var(--green-soft);
+      color: var(--green-deep);
+      border-radius: 999px;
+      font-size: 12.5px; font-weight: 600;
+    }
+    .user-badge .role-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--green-mid);
+      color: #fff;
+      font-size: 9.5px; font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .content-body {
+      flex: 1;
+      padding: 28px 32px 60px;
+    }
+
+    /* Welcome card */
+    .welcome-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+    }
+    .welcome-card h2 { font-size: 20px; margin: 0 0 6px; }
+    .welcome-card p { margin: 0; color: var(--text-muted); font-size: 13.5px; line-height: 1.5; }
+
+    /* Quick links */
+    .section-heading {
       font-size: 12px; font-weight: 700; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.8px;
-      margin: 28px 0 12px;
+      text-transform: uppercase; letter-spacing: 0.7px;
+      margin: 0 0 12px;
     }
-    .section-title:first-of-type { margin-top: 0; }
-
-    /* Menu grid */
-    .menu-grid {
+    .quick-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 14px;
+      margin-bottom: 28px;
     }
-
-    .menu-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 18px 20px;
-      display: flex; align-items: center; gap: 14px;
+    .quick-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 12px;
       text-decoration: none; color: var(--text-dark);
-      transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
-      position: relative;
+      transition: all 0.15s ease;
     }
-    .menu-card:hover {
+    .quick-card:hover {
       border-color: var(--green-mid);
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(22,163,74,0.08);
     }
-    .menu-card.disabled { opacity: 0.55; cursor: not-allowed; background: #FAFBFA; }
-    .menu-card.disabled:hover { border-color: var(--border); transform: none; box-shadow: none; }
-
-    .menu-icon {
-      width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0;
-      background: var(--green-soft); color: var(--green-mid);
+    .quick-card .q-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: var(--green-soft);
+      color: var(--green-mid);
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 700;
+      font-size: 18px;
+      flex-shrink: 0;
     }
-    .menu-card.orange .menu-icon { background: #FDF1E0; color: var(--amber); }
-    .menu-card.blue .menu-icon { background: #E9EEFB; color: #3B5BDB; }
-    .menu-card.red .menu-icon { background: #FBEAE7; color: var(--coral); }
-    .menu-card.grey .menu-icon { background: #F1F1EE; color: var(--text-muted); }
+    .quick-card.blue .q-icon { background: #E9EEFB; color: #3B5BDB; }
+    .quick-card.orange .q-icon { background: #FDF1E0; color: var(--amber); }
+    .quick-card.red .q-icon { background: #FBEAE7; color: var(--coral); }
+    .quick-card .q-text { flex: 1; min-width: 0; }
+    .quick-card .q-name { font-weight: 600; font-size: 13.5px; line-height: 1.3; }
+    .quick-card .q-desc { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
 
-    .menu-text { flex: 1; min-width: 0; }
-    .menu-text .name { font-weight: 600; font-size: 14px; line-height: 1.3; }
-    .menu-text .desc { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
-
-    .menu-badge {
-      position: absolute; top: 10px; right: 12px;
-      font-size: 9.5px; font-weight: 700; padding: 2px 8px;
-      border-radius: 999px; background: #F1F1EE; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.4px;
+    /* Mobile toggle & backdrop */
+    .btn-toggle-sidebar {
+      display: none;
+      position: fixed;
+      top: 16px; left: 16px;
+      z-index: 60;
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      background: var(--green-deep);
+      color: #fff;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .sidebar-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(15,61,46,0.5);
+      z-index: 45;
     }
 
-    .loading-screen { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 14px; }
-
-    @media (max-width: 640px) {
-      main { padding: 20px 16px 60px; }
-      .welcome { padding: 20px; }
-      .welcome h1 { font-size: 18px; }
-      .menu-grid { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-backdrop.show { display: block; }
+      .btn-toggle-sidebar { display: flex; }
+      .main-content { margin-left: 0; }
+      .content-header { padding-left: 74px; }
+      .content-body { padding: 20px 16px 60px; }
     }
   </style>
 </head>
 <body>
 
-<header class="topbar">
-  <div class="brand">
-    <div class="mark">RS</div>
-    <div>
-      <div class="title">RKO RSAMP</div>
-      <div class="label">Efisiensi TujuanKU</div>
-    </div>
-  </div>
-  <div class="topbar-right">
-    <span class="who" id="whoLabel">Memuat...</span>
-    <button class="btn-logout" onclick="window.logout()">Keluar</button>
-  </div>
-</header>
+<button class="btn-toggle-sidebar" onclick="window.toggleSidebar()">☰</button>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="window.toggleSidebar()"></div>
 
-<main>
-  <div class="welcome">
-    <div>
-      <h1 id="greeting">Memuat...</h1>
-      <p id="welcomeSub">Mohon tunggu, sedang memverifikasi sesi.</p>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="mark">RS</div>
+      <div>
+        <div class="title">RKO RSAMP</div>
+        <div class="sub">Efisiensi TujuanKU</div>
+      </div>
     </div>
-    <div class="role-tag" id="roleTag"></div>
-  </div>
 
-  <div id="menuContainer">
-    <div class="loading-screen">Memuat menu...</div>
-  </div>
-</main>
+    <nav class="sidebar-menu" id="sidebarMenu">
+      <div style="padding:20px; text-align:center; color:rgba(255,255,255,0.5); font-size:12.5px;">Memuat menu...</div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="window.logout()">Keluar</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="content-header">
+      <div>
+        <h1 id="greeting">Memuat...</h1>
+        <p id="welcomeSub">Mohon tunggu, sedang memverifikasi sesi.</p>
+      </div>
+      <div class="user-badge">
+        <span id="userName">-</span>
+        <span class="role-pill" id="roleTag">-</span>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <div class="welcome-card">
+        <h2>Selamat datang di RKO RSAMP</h2>
+        <p>Sistem Rencana Kebutuhan Obat &amp; BMHP. Gunakan menu di sidebar kiri untuk mengakses modul yang Anda butuhkan.</p>
+      </div>
+
+      <h3 class="section-heading">Aksi Cepat</h3>
+      <div class="quick-grid" id="quickGrid"></div>
+    </div>
+  </main>
+</div>
 
 <script>
   // ============================================================
@@ -149,264 +331,101 @@
     {
       title: 'Ringkasan',
       items: [
-        {
-          name: 'Dashboard RKO',
-          desc: 'Ringkasan rencana, realisasi, dan efisiensi',
-          icon: '📊',
-          color: 'blue',
-          url: 'dashboard.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'TIM_PENERIMAAN', 'TIM_PEMBELIAN', 'KEUANGAN', 'DISTRIBUTOR_VIEW']
-        }
+        { name: 'Dashboard RKO', desc: 'Ringkasan rencana, realisasi, dan efisiensi', icon: '📊', color: 'blue', url: 'dashboard.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'TIM_PENERIMAAN', 'TIM_PEMBELIAN', 'KEUANGAN', 'DISTRIBUTOR_VIEW'] }
       ]
     },
     {
       title: 'Transaksi Harian',
       items: [
-        {
-          name: 'Input RKO Unit',
-          desc: 'RKO & kunjungan per ruangan',
-          icon: '📝',
-          url: 'user.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'USER']
-        },
-        {
-          name: 'Pembelian (PO)',
-          desc: 'Buat & kelola PO ke distributor',
-          icon: '🛒',
-          url: 'pembelian.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'TIM_PEMBELIAN']
-        },
-        {
-          name: 'Penerimaan Barang',
-          desc: 'Cocokkan barang datang vs PO',
-          icon: '📦',
-          url: 'penerimaan.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'TIM_PENERIMAAN']
-        },
-        {
-          name: 'Mutasi ke Ruangan',
-          desc: 'Bagi barang ke ruangan proporsional RKO',
-          icon: '🚚',
-          url: 'mutasi-barang.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'KOORDINATOR_LOGISTIK_FARMASI']
-        },
-        {
-          name: 'Riwayat Mutasi',
-          desc: 'Log & koreksi mutasi ke ruangan',
-          icon: '📋',
-          url: 'riwayat-mutasi.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI']
-        },
-        {
-          name: 'Pemakaian Ruangan',
-          desc: 'Input manual atau upload dari NUHA',
-          icon: '💉',
-          url: 'pemakaian-ruangan.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'USER', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI']
-        },
-        {
-          name: 'Monitoring RKO',
-          desc: 'Status pelayanan RKO per barang',
-          icon: '🔎',
-          color: 'blue',
-          url: 'monitoring-rko.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'USER']
-        }
+        { name: 'Input RKO Unit', desc: 'RKO & kunjungan per ruangan', icon: '📝', url: 'user.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'USER'] },
+        { name: 'Pembelian (PO)', desc: 'Buat & kelola PO ke distributor', icon: '🛒', url: 'pembelian.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'TIM_PEMBELIAN'] },
+        { name: 'Penerimaan Barang', desc: 'Cocokkan barang datang vs PO', icon: '📦', url: 'penerimaan.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'TIM_PENERIMAAN'] },
+        { name: 'Mutasi ke Ruangan', desc: 'Bagi barang ke ruangan proporsional RKO', icon: '🚚', url: 'mutasi-barang.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'KOORDINATOR_LOGISTIK_FARMASI'] },
+        { name: 'Riwayat Mutasi', desc: 'Log & koreksi mutasi ke ruangan', icon: '📋', url: 'riwayat-mutasi.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI'] },
+        { name: 'Pemakaian Ruangan', desc: 'Input manual atau upload dari NUHA', icon: '💉', url: 'pemakaian-ruangan.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'USER', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI'] },
+        { name: 'Monitoring RKO', desc: 'Status pelayanan RKO per barang', icon: '🔎', color: 'blue', url: 'monitoring-rko.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'USER'] }
       ]
     },
-
     {
       title: 'Pengadaan',
       items: [
-        {
-          name: 'Usulan Pembelian',
-          desc: 'Generate usulan dari RKO + stok, alur approval',
-          icon: '📝',
-          color: 'blue',
-          url: 'usulan-pembelian.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI']
-        }
+        { name: 'Usulan Pembelian', desc: 'Generate usulan dari RKO + stok, alur approval', icon: '📝', color: 'blue', url: 'usulan-pembelian.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI'] }
       ]
     },
     {
       title: 'Persetujuan',
       items: [
-        {
-          name: 'Approval Edit Penerimaan',
-          desc: 'Setujui koreksi data penerimaan',
-          icon: '✅',
-          color: 'orange',
-          url: 'approval.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI']
-        },
-        {
-          name: 'Delegasi Approval',
-          desc: 'Alihkan hak approval sementara',
-          icon: '🔑',
-          color: 'orange',
-          url: 'delegasi-approval.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'KEPALA_INSTALASI_FARMASI']
-        }
+        { name: 'Approval Edit Penerimaan', desc: 'Setujui koreksi data penerimaan', icon: '✅', color: 'orange', url: 'approval.html', ready: true,
+          roles: ['SUPER_ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI'] },
+        { name: 'Delegasi Approval', desc: 'Alihkan hak approval sementara', icon: '🔑', color: 'orange', url: 'delegasi-approval.html', ready: true,
+          roles: ['SUPER_ADMIN', 'KEPALA_INSTALASI_FARMASI'] }
       ]
     },
     {
       title: 'Master Data',
       items: [
-        {
-          name: 'Master Barang',
-          desc: 'Obat, BMHP, BHP, dan lainnya',
-          icon: '💊',
-          url: 'admin.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN']
-        },
-        {
-          name: 'Master Ruangan',
-          desc: 'Unit, instalasi, dan jenisnya',
-          icon: '🏥',
-          url: 'master-ruangan.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN']
-        },
-        {
-          name: 'Master Distributor',
-          desc: 'Daftar pemasok barang',
-          icon: '🚛',
-          url: 'master-distributor.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN']
-        },
-        {
-          name: 'Master Prinsipal',
-          desc: 'Produsen & pemilik merek',
-          icon: '🏭',
-          url: 'master-prinsipal.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN']
-        },
-        {
-          name: 'Manajemen User',
-          desc: 'Akun & hak akses',
-          icon: '👥',
-          url: 'manajemen-user.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN']
-        }
+        { name: 'Master Barang', desc: 'Obat, BMHP, BHP, dan lainnya', icon: '💊', url: 'admin.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { name: 'Master Ruangan', desc: 'Unit, instalasi, dan jenisnya', icon: '🏥', url: 'master-ruangan.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { name: 'Master Distributor', desc: 'Daftar pemasok barang', icon: '🚛', url: 'master-distributor.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { name: 'Master Prinsipal', desc: 'Produsen & pemilik merek', icon: '🏭', url: 'master-prinsipal.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { name: 'Manajemen User', desc: 'Akun & hak akses', icon: '👥', url: 'manajemen-user.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN'] }
       ]
     },
     {
       title: 'Stok',
       items: [
-        {
-          name: 'Stok Opname Gudang',
-          desc: 'Penyesuaian stok fisik gudang',
-          icon: '📥',
-          color: 'grey',
-          url: 'stok-opname-gudang.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP']
-        },
-        {
-          name: 'Stok Opname Ruangan',
-          desc: 'Penyesuaian stok fisik ruangan',
-          icon: '📤',
-          color: 'grey',
-          url: 'stok-opname-ruangan.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'USER']
-        }
+        { name: 'Stok Opname Gudang', desc: 'Penyesuaian stok fisik gudang', icon: '📥', color: 'grey', url: 'stok-opname-gudang.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP'] },
+        { name: 'Stok Opname Ruangan', desc: 'Penyesuaian stok fisik ruangan', icon: '📤', color: 'grey', url: 'stok-opname-ruangan.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'USER'] }
       ]
     },
     {
       title: 'Keuangan & Penjualan',
       items: [
-        {
-          name: 'Keuangan',
-          desc: 'Anggaran & realisasi pembayaran',
-          icon: '💰',
-          url: 'keuangan.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN']
-        },
-        {
-          name: 'Penjualan Farmasi',
-          desc: 'Data penjualan obat dari NUHA',
-          icon: '💵',
-          url: 'penjualan.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN']
-        }
+        { name: 'Keuangan', desc: 'Anggaran & realisasi pembayaran', icon: '💰', url: 'keuangan.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN'] },
+        { name: 'Penjualan Farmasi', desc: 'Data penjualan obat dari NUHA', icon: '💵', url: 'penjualan.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN'] }
       ]
     },
     {
       title: 'Laporan',
       items: [
-        {
-          name: 'Laporan RKO',
-          desc: 'Rencana vs realisasi tahunan',
-          icon: '📈',
-          color: 'blue',
-          url: 'laporan.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI']
-        },
-        {
-          name: 'Laporan Audit',
-          desc: 'Log mutasi, penerimaan, dan approval',
-          icon: '🔍',
-          color: 'red',
-          url: 'laporan-audit.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI']
-        },
-        {
-          name: 'Rencana per Distributor',
-          desc: 'Nilai rencana belanja per distributor',
-          icon: '📑',
-          url: 'distributor.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI', 'DISTRIBUTOR_VIEW']
-        }
+        { name: 'Laporan RKO', desc: 'Rencana vs realisasi tahunan', icon: '📈', color: 'blue', url: 'laporan.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI'] },
+        { name: 'Laporan Audit', desc: 'Log mutasi, penerimaan, dan approval', icon: '🔍', color: 'red', url: 'laporan-audit.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI'] },
+        { name: 'Rencana per Distributor', desc: 'Nilai rencana belanja per distributor', icon: '📑', url: 'distributor.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN', 'KOORDINATOR_LOGISTIK_FARMASI', 'DISTRIBUTOR_VIEW'] }
       ]
     },
-    
     {
       title: 'Pengaturan',
       items: [
-        {
-          name: 'Pengaturan Periode RKO',
-          desc: 'Atur jadwal buka/tutup input RKO unit',
-          icon: '🔐',
-          color: 'red',
-          url: 'pengaturan-rko.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN']
-        }
+        { name: 'Pengaturan Periode RKO', desc: 'Atur jadwal buka/tutup input RKO unit', icon: '🔐', color: 'red', url: 'pengaturan-rko.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN'] }
       ]
     },
-    
     {
       title: 'Akun',
       items: [
-        {
-          name: 'Ubah Password',
-          desc: 'Ganti password akun Anda',
-          icon: '🔒',
-          url: 'ubah-password.html',
-          ready: true,
-          roles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'TIM_PENERIMAAN', 'TIM_PEMBELIAN', 'KEUANGAN', 'USER', 'DISTRIBUTOR_VIEW']
-        }
+        { name: 'Ubah Password', desc: 'Ganti password akun Anda', icon: '🔒', url: 'ubah-password.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI', 'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'TIM_PENERIMAAN', 'TIM_PEMBELIAN', 'KEUANGAN', 'USER', 'DISTRIBUTOR_VIEW'] }
       ]
     }
   ];
@@ -422,64 +441,132 @@
   }
 
   // ============================================================
-  //  RENDER MENU
+  //  TOGGLE SIDEBAR (MOBILE)
   // ============================================================
-  function renderMenu() {
-    const role = window.currentUser.role;
-    const container = document.getElementById('menuContainer');
-    let html = '';
-    let totalDitampilkan = 0;
+  window.toggleSidebar = function() {
+    const sb = document.getElementById('sidebar');
+    const bd = document.getElementById('sidebarBackdrop');
+    sb.classList.toggle('open');
+    bd.classList.toggle('show');
+  };
 
-    MENU_GROUPS.forEach(group => {
+  // ============================================================
+  //  RENDER SIDEBAR MENU
+  // ============================================================
+  function renderSidebarMenu() {
+    const role = window.currentUser.role;
+    const container = document.getElementById('sidebarMenu');
+    let html = '';
+    let totalItems = 0;
+
+    // Section terbuka secara default: hanya yang paling atas
+    let firstOpened = false;
+
+    MENU_GROUPS.forEach((group, groupIdx) => {
       const items = group.items.filter(it => it.roles.includes(role));
       if (items.length === 0) return;
 
-      html += `<div class="section-title">${group.title}</div><div class="menu-grid">`;
-      items.forEach(it => {
-        totalDitampilkan++;
-        const disabled = !it.ready;
-        const cls = [
-          'menu-card',
-          it.color || '',
-          disabled ? 'disabled' : ''
-        ].filter(Boolean).join(' ');
+      const openByDefault = !firstOpened;
+      if (!firstOpened) firstOpened = true;
 
-        const badge = disabled ? '<span class="menu-badge">Segera</span>' : '';
+      const sectionCls = 'sidebar-section' + (openByDefault ? '' : ' collapsed');
+
+      html += `<div class="${sectionCls}" data-section="${groupIdx}">`;
+      html += `<button class="sidebar-section-header" onclick="window.toggleSection(${groupIdx})">`;
+      html += `<span>${escapeHtml(group.title)}</span>`;
+      html += `<span class="chev">▼</span>`;
+      html += `</button>`;
+      html += `<div class="sidebar-items">`;
+
+      items.forEach(it => {
+        totalItems++;
+        const disabled = !it.ready;
+        const cls = 'sidebar-item' + (disabled ? ' disabled' : '');
+        const title = escapeHtml(it.desc || '');
 
         if (disabled) {
-          html += `
-            <div class="${cls}" onclick="window.klikBelumTersedia('${escapeHtml(it.name)}')">
-              ${badge}
-              <div class="menu-icon">${it.icon}</div>
-              <div class="menu-text">
-                <div class="name">${escapeHtml(it.name)}</div>
-                <div class="desc">${escapeHtml(it.desc)}</div>
-              </div>
-            </div>`;
+          html += `<div class="${cls}" title="${title}" onclick="window.klikBelumTersedia('${escapeHtml(it.name)}')">
+            <span class="icon">${it.icon}</span>
+            <span class="label">${escapeHtml(it.name)}</span>
+          </div>`;
         } else {
-          html += `
-            <a class="${cls}" href="${it.url}">
-              <div class="menu-icon">${it.icon}</div>
-              <div class="menu-text">
-                <div class="name">${escapeHtml(it.name)}</div>
-                <div class="desc">${escapeHtml(it.desc)}</div>
-              </div>
-            </a>`;
+          html += `<a class="${cls}" href="${it.url}" title="${title}">
+            <span class="icon">${it.icon}</span>
+            <span class="label">${escapeHtml(it.name)}</span>
+          </a>`;
         }
       });
-      html += '</div>';
+
+      html += `</div></div>`;
     });
 
-    if (totalDitampilkan === 0) {
-      container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">Role Anda tidak memiliki akses ke menu apa pun. Hubungi admin.</div>';
+    if (totalItems === 0) {
+      container.innerHTML = '<div style="padding:20px; text-align:center; color:rgba(255,255,255,0.6); font-size:12.5px;">Role Anda tidak memiliki akses ke menu apa pun.</div>';
     } else {
       container.innerHTML = html;
     }
   }
 
+  window.toggleSection = function(groupIdx) {
+    const el = document.querySelector(`.sidebar-section[data-section="${groupIdx}"]`);
+    if (el) el.classList.toggle('collapsed');
+  };
+
   window.klikBelumTersedia = function(nama) {
     alert('Menu "' + nama + '" sedang dalam pengembangan.');
   };
+
+  // ============================================================
+  //  RENDER AKSI CEPAT
+  // ============================================================
+  function renderQuickActions() {
+    const role = window.currentUser.role;
+    const grid = document.getElementById('quickGrid');
+
+    // Menu yang dianggap "sering dipakai"
+    const quickPriority = [
+      'dashboard.html', 'usulan-pembelian.html', 'monitoring-rko.html',
+      'user.html', 'pembelian.html', 'penerimaan.html',
+      'mutasi-barang.html', 'laporan.html'
+    ];
+
+    // Ambil semua item yang role-nya cocok
+    let allItems = [];
+    MENU_GROUPS.forEach(group => {
+      group.items.forEach(it => {
+        if (it.roles.includes(role) && it.ready) allItems.push(it);
+      });
+    });
+
+    // Urutkan sesuai prioritas
+    allItems.sort((a, b) => {
+      const ia = quickPriority.indexOf(a.url);
+      const ib = quickPriority.indexOf(b.url);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+
+    // Ambil maksimum 6
+    const top = allItems.slice(0, 6);
+
+    if (top.length === 0) {
+      grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px;">Tidak ada aksi cepat untuk role Anda.</div>';
+      return;
+    }
+
+    grid.innerHTML = top.map(it => {
+      const colorCls = it.color || '';
+      return `<a class="quick-card ${colorCls}" href="${it.url}">
+        <div class="q-icon">${it.icon}</div>
+        <div class="q-text">
+          <div class="q-name">${escapeHtml(it.name)}</div>
+          <div class="q-desc">${escapeHtml(it.desc || '')}</div>
+        </div>
+      </a>`;
+    }).join('');
+  }
 
   // ============================================================
   //  LOGOUT
@@ -552,12 +639,13 @@
 
     window.currentUser = user;
     const roleLabel = String(user.role).replace(/_/g, ' ');
-    document.getElementById('whoLabel').textContent = user.nama + ' · ' + roleLabel;
     document.getElementById('greeting').textContent = 'Selamat datang, ' + user.nama;
-    document.getElementById('welcomeSub').textContent = 'Pilih menu di bawah untuk memulai.';
+    document.getElementById('welcomeSub').textContent = 'Pilih menu di sidebar kiri atau aksi cepat di bawah.';
+    document.getElementById('userName').textContent = user.nama;
     document.getElementById('roleTag').textContent = roleLabel;
 
-    renderMenu();
+    renderSidebarMenu();
+    renderQuickActions();
   })();
 </script>
 </body>
