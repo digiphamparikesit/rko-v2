@@ -256,7 +256,7 @@
   let listUsulan = [];
   let selectedIds = new Set();
   let window_tolakAktif = null;
-  let window_distModal = null; // { mode: 'single'|'bulk', ids: [] }
+  let window_distModal = null; // { ids: [], mode: 'approve' | 'pre-po' }
 
   const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
@@ -671,24 +671,39 @@
   // ============================================================
   //  MODAL PILIH DISTRIBUTOR
   // ============================================================
-  window.openDistributorModal = function(ids) {
-    window_distModal = { ids: ids.slice() };
+  window.openDistributorModal = function(ids, mode) {
+    mode = mode || 'approve';
+    window_distModal = { ids: ids.slice(), mode };
 
     // Isi dropdown bulk distributor
     const bulkSel = document.getElementById('fBulkDistributor');
     bulkSel.innerHTML = '<option value="">-- Pilih distributor --</option>' +
       distributorList.map(d => `<option value="${d.id}">${escapeHtml(d.nama_distributor)}</option>`).join('');
+    bulkSel.value = '';
 
-    // Isi sub-title
-    document.getElementById('modalDistSub').textContent = ids.length === 1
-      ? 'Pilih distributor untuk barang ini sebelum menyetujui.'
-      : `Pilih distributor untuk ${ids.length} barang sebelum menyetujui.`;
+    // Update judul & sub-title sesuai mode
+    const modalTitle = document.querySelector('#modalDistributor h2');
+    const submitBtn = document.getElementById('btnSubmitDist');
+
+    if (mode === 'pre-po') {
+      modalTitle.textContent = 'Pilih Distributor sebelum Buat PO';
+      document.getElementById('modalDistSub').textContent = ids.length === 1
+        ? 'Barang ini belum punya distributor. Pilih dulu sebelum membuat PO.'
+        : `${ids.length} barang belum punya distributor. Pilih dulu sebelum membuat PO.`;
+      submitBtn.textContent = 'Simpan & Buat PO';
+    } else {
+      modalTitle.textContent = 'Pilih Distributor';
+      document.getElementById('modalDistSub').textContent = ids.length === 1
+        ? 'Pilih distributor untuk barang ini sebelum menyetujui.'
+        : `Pilih distributor untuk ${ids.length} barang sebelum menyetujui.`;
+      submitBtn.textContent = 'Simpan & Setujui';
+    }
 
     // Render baris per barang
     renderDistRows();
 
     document.getElementById('distMsg').textContent = '';
-    document.getElementById('btnSubmitDist').disabled = false;
+    submitBtn.disabled = false;
     document.getElementById('modalDistributor').classList.add('show');
   };
 
@@ -732,6 +747,7 @@
 
   window.submitDistributor = async function() {
     if (!window_distModal) return;
+    const mode = window_distModal.mode;
     const msg = document.getElementById('distMsg');
     const btn = document.getElementById('btnSubmitDist');
 
@@ -748,7 +764,7 @@
     });
 
     if (adaKosong) {
-      msg.textContent = 'Semua barang harus punya distributor sebelum disetujui.';
+      msg.textContent = 'Semua barang harus punya distributor.';
       return;
     }
 
@@ -761,25 +777,44 @@
       const userId = window.currentUser.id || null;
 
       for (const upd of updates) {
-        const { error } = await window.supabase.from('usulan_pembelian').update({
-          status: 'DISETUJUI',
+        const payload = {
           distributor_id: upd.distributor_id,
           distributor_dipilih_oleh: userId,
-          distributor_dipilih_pada: nowIso,
-          diusulkan_oleh: userId,
-          diusulkan_pada: nowIso,
-          disetujui_oleh: userId,
-          disetujui_pada: nowIso
-        }).eq('id', upd.id);
+          distributor_dipilih_pada: nowIso
+        };
+
+        // Kalau mode approve, sekalian set status + approval
+        if (mode === 'approve') {
+          payload.status = 'DISETUJUI';
+          payload.diusulkan_oleh = userId;
+          payload.diusulkan_pada = nowIso;
+          payload.disetujui_oleh = userId;
+          payload.disetujui_pada = nowIso;
+        }
+        // Kalau mode pre-po, status tetap apa adanya (DISETUJUI)
+
+        const { error } = await window.supabase.from('usulan_pembelian').update(payload).eq('id', upd.id);
         if (error) throw error;
       }
 
-      msg.textContent = `✅ ${updates.length} usulan disetujui.`;
-      msg.style.color = 'var(--green-mid)';
-      setTimeout(() => {
-        window.closeDistributorModal();
-        loadAllData();
-      }, 800);
+      if (mode === 'pre-po') {
+        // Setelah simpan, langsung buat PO untuk item pertama
+        msg.textContent = '✅ Distributor disimpan. Membuat PO...';
+        msg.style.color = 'var(--green-mid)';
+        const firstId = updates[0].id;
+        setTimeout(() => {
+          window.closeDistributorModal();
+          window.buatPO(firstId);
+        }, 600);
+      } else {
+        // Mode approve: biasa
+        msg.textContent = `✅ ${updates.length} usulan disetujui.`;
+        msg.style.color = 'var(--green-mid)';
+        setTimeout(() => {
+          window.closeDistributorModal();
+          loadAllData();
+        }, 800);
+      }
     } catch (err) {
       msg.textContent = 'Gagal: ' + err.message;
       msg.style.color = 'var(--coral)';
@@ -853,12 +888,13 @@
     const barang = barangMap[u.barang_id];
     if (!barang) return;
 
+    // Kalau distributor belum ada, buka modal pilih distributor dulu
     if (!u.distributor_id) {
-      alert('Distributor belum dipilih. Hubungi Koor Logistik untuk memilih ulang.');
+      window.openDistributorModal([id], 'pre-po');
       return;
     }
 
-    // Update status usulan ke DIBUAT_PO + simpan usulan_id akan di pembelian
+    // Update status usulan ke DIBUAT_PO
     window.supabase.from('usulan_pembelian').update({ status: 'DIBUAT_PO' }).eq('id', id);
 
     // Redirect dengan parameter URL
