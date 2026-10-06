@@ -218,16 +218,35 @@
     document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" class="empty-state">Memuat data...</td></tr>';
 
     try {
-      const [barangData, distData, rencanaData, realisasiData] = await Promise.all([
+      const [barangData, distData, usulanData, realisasiData] = await Promise.all([
         fetchAllRows('master_barang'),
         fetchAllRows('master_distributor'),
-        fetchAllRows('rencana_belanja', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        // Ambil dari usulan_pembelian yang sudah disetujui/dibuat PO
+        fetchAllRows('usulan_pembelian', q =>
+          q.eq('bulan', bulan).eq('tahun', tahun)
+           .in('status', ['DISETUJUI', 'DIBUAT_PO'])
+        ),
         fetchAllRows('realisasi', q => q.eq('bulan', bulan).eq('tahun', tahun))
       ]);
 
       barangMap = {}; barangData.forEach(b => { barangMap[b.id] = b; });
       distributorMap = {}; distData.forEach(d => { distributorMap[d.id] = d; });
-      rencanaList = rencanaData;
+
+      // Transform usulan_pembelian → format kompatibel dengan renderTable
+      rencanaList = usulanData
+        .filter(u => u.distributor_id)   // hanya yang sudah punya distributor
+        .map(u => {
+          const barang = barangMap[u.barang_id] || {};
+          const hpp = Number(barang.hpp_beli) || 0;
+          const qty = Number(u.qty_usulan_box) || 0;
+          return {
+            barang_id: u.barang_id,
+            distributor_id: u.distributor_id,
+            rencana_qty_satuan_beli: qty,
+            rencana_rp: qty * hpp
+          };
+        });
+
       realisasiMap = {};
       realisasiData.forEach(r => {
         realisasiMap[r.barang_id] = {
