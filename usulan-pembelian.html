@@ -532,13 +532,23 @@
   //  AJUKAN (per baris atau bulk)
   // ============================================================
   window.ajukanBaris = async function(id) {
-    if (!confirm('Ajukan usulan ini ke Koordinator Logistik Farmasi?')) return;
+    const autoApprove = bisaApprove();
+    const teksKonfirmasi = autoApprove
+      ? 'Setujui usulan ini langsung? Karena role Anda (' + window.currentUser.role + '), usulan akan langsung berstatus DISETUJUI.'
+      : 'Ajukan usulan ini ke Koordinator Logistik Farmasi?';
+    if (!confirm(teksKonfirmasi)) return;
+
     try {
-      const { error } = await window.supabase.from('usulan_pembelian').update({
-        status: 'DIUSULKAN',
+      const payload = {
+        status: autoApprove ? 'DISETUJUI' : 'DIUSULKAN',
         diusulkan_oleh: window.currentUser.id || null,
         diusulkan_pada: new Date().toISOString()
-      }).eq('id', id);
+      };
+      if (autoApprove) {
+        payload.disetujui_oleh = window.currentUser.id || null;
+        payload.disetujui_pada = new Date().toISOString();
+      }
+      const { error } = await window.supabase.from('usulan_pembelian').update(payload).eq('id', id);
       if (error) throw error;
       await loadAllData();
     } catch (err) {
@@ -551,16 +561,26 @@
       .filter(u => selectedIds.has(u.id) && (u.status === 'DRAFT' || u.status === 'DITOLAK'))
       .map(u => u.id);
     if (ids.length === 0) return;
-    if (!confirm(`Ajukan ${ids.length} usulan ke Koordinator Logistik Farmasi?`)) return;
+
+    const autoApprove = bisaApprove();
+    const teksKonfirmasi = autoApprove
+      ? `Setujui langsung ${ids.length} usulan? Karena role Anda (${window.currentUser.role}), semua akan berstatus DISETUJUI.`
+      : `Ajukan ${ids.length} usulan ke Koordinator Logistik Farmasi?`;
+    if (!confirm(teksKonfirmasi)) return;
 
     try {
-      const { error } = await window.supabase.from('usulan_pembelian').update({
-        status: 'DIUSULKAN',
+      const payload = {
+        status: autoApprove ? 'DISETUJUI' : 'DIUSULKAN',
         diusulkan_oleh: window.currentUser.id || null,
         diusulkan_pada: new Date().toISOString()
-      }).in('id', ids);
+      };
+      if (autoApprove) {
+        payload.disetujui_oleh = window.currentUser.id || null;
+        payload.disetujui_pada = new Date().toISOString();
+      }
+      const { error } = await window.supabase.from('usulan_pembelian').update(payload).in('id', ids);
       if (error) throw error;
-      alert(`✅ ${ids.length} usulan diajukan.`);
+      alert(`✅ ${ids.length} usulan ${autoApprove ? 'disetujui' : 'diajukan'}.`);
       await loadAllData();
     } catch (err) {
       alert('Gagal: ' + err.message);
