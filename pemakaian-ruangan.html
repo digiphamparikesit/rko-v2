@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
@@ -55,6 +56,7 @@
         </p>
         <button class="btn btn-primary" style="width:100%;" onclick="window.openUploadModal()">&#8593; Upload CSV NUHA</button>
         <button class="btn btn-upload" style="width:100%; margin-top:8px;" onclick="window.openManualModal()">+ Input Manual</button>
+        <button class="btn btn-secondary" style="width:100%; margin-top:8px;" onclick="window.exportExcel()">&#8681; Download Excel</button>
       </div>
 
       <div class="panel side-panel">
@@ -895,6 +897,78 @@
       msg.textContent = '❌ Gagal: ' + err.message;
       msg.style.color = 'var(--coral)';
     }
+  };
+
+  // ============================================================
+  //  EXPORT EXCEL — Pemakaian Ruangan
+  // ============================================================
+  window.exportExcel = function() {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum siap. Coba refresh halaman.');
+      return;
+    }
+    if (!filteredList || filteredList.length === 0) {
+      alert('Tidak ada data pemakaian untuk di-export.');
+      return;
+    }
+
+    const bulanSel = document.getElementById('bulanSelect');
+    const bulanTeks = bulanSel.options[bulanSel.selectedIndex].textContent;
+    const tahun = document.getElementById('tahunSelect').value;
+    const namaUser = window.currentUser ? window.currentUser.nama : '-';
+    const tglCetak = new Date().toLocaleString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const rows = [
+      ['RS AM PARIKESIT — RKO RSAMP'],
+      ['Laporan Pemakaian Ruangan'],
+      ['Periode: ' + bulanTeks + ' ' + tahun],
+      ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
+      [],
+      ['No', 'Tanggal', 'Ruangan', 'Nama Barang', 'Qty Dipakai',
+       'Satuan Jual', 'Sumber Data']
+    ];
+
+    let totalQty = 0;
+
+    filteredList.forEach((p, idx) => {
+      const barang = barangMap[p.barang_id] || {};
+      const ruangan = ruanganList.find(r => r.id === p.ruangan_id);
+      const qty = Number(p.qty_pakai) || 0;
+      totalQty += qty;
+
+      rows.push([
+        idx + 1,
+        p.tanggal_pakai || '-',
+        ruangan ? ruangan.nama_ruangan : '-',
+        barang.nama_barang || 'Tidak dikenal',
+        qty,
+        barang.satuan_jual || '-',
+        p.sumber_data === 'UPLOAD_NUHA' ? 'NUHA' : 'Manual'
+      ]);
+    });
+
+    rows.push([]);
+    rows.push(['', '', '', '', totalQty, '', 'TOTAL']);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 6 } }
+    ];
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 14 }, { wch: 32 }, { wch: 42 }, { wch: 12 },
+      { wch: 14 }, { wch: 14 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Pemakaian');
+    const namaFile = 'Pemakaian-Ruangan_' + bulanTeks + '-' + tahun + '.xlsx';
+    XLSX.writeFile(wb, namaFile);
   };
 </script>
 </body>
