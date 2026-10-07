@@ -221,8 +221,9 @@
   function bisaGenerate() {
     return ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI'].includes(window.currentUser.role);
   }
-  function bisaApprove() {
-    return ['KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI', 'SUPER_ADMIN'].includes(window.currentUser.role);
+   function bisaApprove() {
+    // SUPER_ADMIN hanya boleh klik Setujui manual, tapi tidak auto-approve
+    return ['KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI'].includes(window.currentUser.role);
   }
 
   // ============================================================
