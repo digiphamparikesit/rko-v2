@@ -371,6 +371,38 @@
         existingKebutuhan[k.barang_id] = { sisa: k.sisa_stok_ruangan, kebutuhan: k.kebutuhan, saved: true };
       });
 
+      // === AUTO-FILL SISA STOK DARI OPNAME BULAN LALU ===
+      // Kalau user belum input RKO bulan ini, isi sisa dari stok_fisik opname bulan lalu
+      const bulanLalu = Number(bulan) === 1 ? 12 : Number(bulan) - 1;
+      const tahunLalu = Number(bulan) === 1 ? Number(tahun) - 1 : Number(tahun);
+
+      let stokLaluMap = {};
+      try {
+        const stokLalu = await fetchAllRows('stok_ruangan', q =>
+          q.eq('ruangan_id', activeRuanganId).eq('bulan', bulanLalu).eq('tahun', tahunLalu)
+        );
+        stokLalu.forEach(s => {
+          if (s.stok_fisik !== null && s.stok_fisik !== undefined) {
+            stokLaluMap[s.barang_id] = Number(s.stok_fisik);
+          }
+        });
+      } catch (e) {
+        console.warn('[auto-fill] gagal ambil stok bulan lalu:', e);
+      }
+
+      // Isi otomatis untuk barang yang belum pernah diinput RKO bulan ini
+      allBarang.forEach(b => {
+        if (!existingKebutuhan[b.id] && stokLaluMap[b.id] !== undefined) {
+          existingKebutuhan[b.id] = {
+            sisa: stokLaluMap[b.id],
+            kebutuhan: '',
+            saved: false,
+            autoFilled: true
+          };
+        }
+      });
+      // === END AUTO-FILL ===
+
       const { data: kunjunganList } = await window.supabase
         .from('kunjungan').select('*')
         .eq('ruangan_id', activeRuanganId).eq('bulan', bulan).eq('tahun', tahun).limit(1);
@@ -495,7 +527,7 @@
             <div class="barang-info">${escapeHtml(infoKonversi)}</div>
           </td>
           <td>
-            <input type="number" class="qty" data-field="sisa" value="${existing.sisa}" onchange="window.markUnsaved(${b.id})" ${dis} />
+            <input type="number" class="qty" data-field="sisa" value="${existing.sisa}" onchange="window.markUnsaved(${b.id})" ${dis} title="${existing.autoFilled ? 'Auto-isi dari opname bulan lalu. Ubah jika perlu.' : ''}" ${existing.autoFilled ? 'style="background:#FFF8E7;"' : ''} />
             <span class="satuan-jual">${escapeHtml(satuanJual)}</span>
           </td>
           <td>
