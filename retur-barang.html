@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retur Barang — RKO RSAMP</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script src="auth.js"></script>
+  <style>
+    /* CSS khusus retur-barang.html */
+    .layout-split { grid-template-columns: 1fr 3fr; }
+    .panel { overflow-x: auto; }
+    table { min-width: 1000px; }
+
+    .badge.draft    { background: #F1F1EE; color: var(--text-muted); }
+    .badge.dikirim  { background: #FDF1E0; color: var(--amber); }
+    .badge.diterima { background: #E9EEFB; color: #3B5BDB; }
+    .badge.selesai  { background: var(--green-soft); color: var(--green-mid); }
+    .badge.batal    { background: #FBEAE7; color: var(--coral); }
+
+    .stat-grid { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .btn-mini { padding: 5px 10px; font-size: 11.5px; }
+
+    .detail-list {
+      background: #FAFBFA; border: 1px solid var(--border); border-radius: 10px;
+      max-height: 240px; overflow-y: auto; margin-bottom: 14px;
+    }
+    .detail-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      font-size: 12.5px;
+    }
+    .detail-item:last-child { border-bottom: none; }
+    .detail-item .nama { font-weight: 600; }
+    .detail-item .qty { color: var(--coral); font-weight: 700; }
+    .detail-item .alasan { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .status-info-box {
+      background: #E7F5EC; color: var(--green-deep);
+      padding: 10px 14px; border-radius: 10px; font-size: 12.5px;
+      line-height: 1.5; margin-bottom: 14px;
+    }
+
+    .retur-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; margin-bottom: 12px; overflow: hidden;
+    }
+    .retur-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 18px; gap: 12px; flex-wrap: wrap;
+    }
+    .retur-title { font-size: 14px; font-weight: 700; }
+    .retur-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+    .retur-body {
+      display: none; border-top: 1px solid var(--border);
+      padding: 14px 18px;
+    }
+    .retur-card.open .retur-body { display: block; }
+    .retur-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">RS</div>
+    <div>
+      <div class="title">RKO RSAMP</div>
+      <div class="label">Retur barang — barang rusak ke distributor</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="who" id="whoLabel"></span>
+    <select id="bulanSelect"></select>
+    <select id="tahunSelect"></select>
+    <a class="back" href="index.html">&#8592; Menu utama</a>
+  </div>
+</header>
+
+<main>
+  <div id="errorContainer" style="display:none;" class="error-box"></div>
+
+  <section class="stat-grid">
+    <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl">Total retur periode ini</div></div>
+    <div class="stat-card kuning"><div class="num" id="statDraft">-</div><div class="lbl">Menunggu kirim (Draft)</div></div>
+    <div class="stat-card biru"><div class="num" id="statDikirim">-</div><div class="lbl">Sudah dikirim ke distributor</div></div>
+    <div class="stat-card hijau"><div class="num" id="statSelesai">-</div><div class="lbl">Selesai (terverifikasi)</div></div>
+  </section>
+
+  <div class="layout-split">
+    <aside class="left-col">
+      <div class="panel side-panel">
+        <h2 class="side-title">Filter &amp; Aksi</h2>
+        <div class="field">
+          <label>Cari no. retur / barang / distributor</label>
+          <input type="text" id="searchBox" placeholder="Cari...">
+        </div>
+        <div class="field">
+          <label>Status retur</label>
+          <select id="filterStatus">
+            <option value="">Semua status</option>
+            <option value="DRAFT">Draft (menunggu kirim)</option>
+            <option value="DIKIRIM">Sudah dikirim</option>
+            <option value="DITERIMA_DIST">Diterima distributor</option>
+            <option value="SELESAI">Selesai</option>
+            <option value="DIBATALKAN">Dibatalkan</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="window.openBuatRetur()">+ Buat Retur Baru</button>
+        <button class="btn btn-secondary" style="width:100%; margin-top:8px;" onclick="window.exportExcel()">&#8681; Download Excel</button>
+      </div>
+      <div class="panel side-panel">
+        <h2 class="side-title">Alur Status</h2>
+        <div class="info-note" style="font-size:11.5px; line-height:1.7;">
+          <strong>DRAFT</strong> — Baru dibuat, belum dikirim<br>
+          <strong>DIKIRIM</strong> — Sudah dikirim ke distributor<br>
+          <strong>DITERIMA_DIST</strong> — Distributor konfirmasi terima<br>
+          <strong>SELESAI</strong> — Verifikasi akhir oleh Koor/Kepala IF<br>
+          <strong>DIBATALKAN</strong> — Retur dibatalkan
+        </div>
+      </div>
+    </aside>
+
+    <section class="right-col">
+      <div id="returList"><div class="empty-state">Memuat data...</div></div>
+    </section>
+  </div>
+</main>
+
+<!-- MODAL BUAT RETUR -->
+<div id="modalBuat">
+  <div class="modal modal-wide">
+    <h2>Buat Surat Retur Baru</h2>
+    <div class="status-info-box">
+      Surat retur mencakup <strong>semua barang rusak</strong> dari 1 kali penerimaan (batch).
+    </div>
+
+    <div class="field">
+      <label>Pilih Penerimaan Rusak <span style="color:var(--coral);">*</span></label>
+      <select id="fPenerimaan" onchange="window.onPenerimaanChange()">
+        <option value="">-- Memuat... --</option>
+      </select>
+      <div class="help-text">Hanya menampilkan penerimaan rusak yang belum dibuatkan retur.</div>
+    </div>
+
+    <div id="previewBarangRusak" style="display:none;">
+      <label style="display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:5px;">Daftar Barang Rusak</label>
+      <div class="detail-list" id="detailListBuat"></div>
+    </div>
+
+    <div class="field">
+      <label>Tanggal Retur <span style="color:var(--coral);">*</span></label>
+      <input type="date" id="fTanggalRetur">
+    </div>
+
+    <div class="field">
+      <label>Alasan Utama Retur <span style="color:var(--coral);">*</span></label>
+      <input type="text" id="fAlasan" placeholder="mis. kemasan rusak, kadaluarsa, tidak sesuai pesanan">
+    </div>
+
+    <div class="field">
+      <label>Catatan (opsional)</label>
+      <input type="text" id="fCatatan" placeholder="catatan tambahan">
+    </div>
+
+    <div class="form-msg" id="buatMsg"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeBuat()">Batal</button>
+      <button class="btn btn-primary" id="btnSubmitBuat" onclick="window.submitBuat()">Simpan Retur</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KIRIM -->
+<div id="modalKirim">
+  <div class="modal">
+    <h2>Kirim Retur ke Distributor</h2>
+    <div class="status-info-box" id="kirimInfo"></div>
+    <div class="field">
+      <label>Nomor Tanda Terima / Surat Jalan (opsional)</label>
+      <input type="text" id="fTandaTerima" placeholder="nomor dari distributor">
+    </div>
+    <div class="form-msg" id="kirimMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeKirim()">Batal</button>
+      <button class="btn btn-primary" onclick="window.submitKirim()">Kirim</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL -->
+<div id="modalDetail">
+  <div class="modal modal-wide">
+    <h2 id="detailTitle">Detail Retur</h2>
+    <div id="detailInfo" style="margin-bottom:14px;"></div>
+    <div class="detail-list" id="detailListModal"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closeDetail()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  //  SESSION
+  // ============================================================
+  (async function() {
+    const user = await window.auth.requireAuth({
+      allowRoles: ['TIM_PENERIMAAN', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI', 'ADMIN', 'SUPER_ADMIN']
+    });
+    if (!user) return;
+    document.getElementById('whoLabel').textContent = user.nama + ' · ' + user.role;
+    window.currentUser = user;
+    initData();
+  })();
+
+  // ============================================================
+  //  HAK AKSES
+  // ============================================================
+  function bisaBuatRetur() {
+    return ['TIM_PENERIMAAN', 'ADMIN', 'SUPER_ADMIN'].includes(window.currentUser.role);
+  }
+  function bisaVerifikasi() {
+    return ['KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI', 'ADMIN', 'SUPER_ADMIN'].includes(window.currentUser.role);
+  }
+
+  // ============================================================
+  //  HELPER
+  // ============================================================
+  async function fetchAllRows(tableName, buildQuery) {
+    const PAGE = 1000;
+    let all = [];
+    let from = 0;
+    while (true) {
+      const base = window.supabase.from(tableName).select('*');
+      const query = buildQuery ? buildQuery(base) : base;
+      const { data, error } = await query.range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  function formatTanggal(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function formatDT(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  // ============================================================
+  //  VARIABEL
+  // ============================================================
+  let barangMap = {};
+  let distributorMap = {};
+  let pembelianMap = {};
+  let penerimaanMap = {};
+  let userMap = {};
+
+  let listRetur = [];
+  let detailMap = {};       // retur_id -> [detail]
+  let penerimaanRusakAll = [];
+  let filtered = [];
+  let currentBuat = null;
+
+  const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+  // ============================================================
+  //  PERIODE OPTIONS
+  // ============================================================
+  function fillPeriodOptions(curBulan, curTahun) {
+    const bSel = document.getElementById('bulanSelect');
+    const tSel = document.getElementById('tahunSelect');
+    bSel.innerHTML = ''; tSel.innerHTML = '';
+    NAMA_BULAN.forEach((nm, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1; opt.textContent = nm;
+      if (i + 1 === curBulan) opt.selected = true;
+      bSel.appendChild(opt);
+    });
+    for (let y = curTahun - 2; y <= curTahun + 2; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === curTahun) opt.selected = true;
+      tSel.appendChild(opt);
+    }
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function initData() {
+    const now = new Date();
+    fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
+    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
+    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    document.getElementById('searchBox').addEventListener('input', applyFilter);
+    document.getElementById('filterStatus').addEventListener('change', applyFilter);
+    loadAllData();
+  }
+
+  // ============================================================
+  //  LOAD DATA
+  // ============================================================
+  async function loadAllData() {
+    const bulan = Number(document.getElementById('bulanSelect').value);
+    const tahun = Number(document.getElementById('tahunSelect').value);
+    document.getElementById('returList').innerHTML = '<div class="empty-state">Memuat data...</div>';
+
+    try {
+      const [barangData, distData, pembelianData, penerimaanData, userData, returData] = await Promise.all([
+        fetchAllRows('master_barang'),
+        fetchAllRows('master_distributor'),
+        fetchAllRows('pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('penerimaan', q => q.eq('kondisi', 'RUSAK')),
+        fetchAllRows('users'),
+        fetchAllRows('retur_barang', q => {
+          // Filter berdasarkan bulan/tahun di no_retur? Atau tanggal_retur?
+          // Pakai tanggal_retur
+          const startDate = tahun + '-' + String(bulan).padStart(2, '0') + '-01';
+          const endDate = bulan === 12 ? (tahun + 1) + '-01-01' : tahun + '-' + String(bulan + 1).padStart(2, '0') + '-01';
+          return q.gte('tanggal_retur', startDate).lt('tanggal_retur', endDate);
+        })
+      ]);
+
+      barangMap = {}; barangData.forEach(b => { barangMap[b.id] = b; });
+      distributorMap = {}; distData.forEach(d => { distributorMap[d.id] = d; });
+      pembelianMap = {}; pembelianData.forEach(p => { pembelianMap[p.id] = p; });
+      penerimaanMap = {}; penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
+      userMap = {}; userData.forEach(u => { userMap[u.id] = u; });
+
+      penerimaanRusakAll = penerimaanData;
+
+      // Filter retur berdasarkan pembelian bulan/tahun
+      const pembelianIdsPeriode = new Set(pembelianData.map(p => p.id));
+      listRetur = returData.filter(r => !r.pembelian_id || pembelianIdsPeriode.has(r.pembelian_id));
+
+      // Load detail untuk semua retur
+      detailMap = {};
+      if (listRetur.length > 0) {
+        const returIds = listRetur.map(r => r.id);
+        const detailAll = await fetchAllRows('retur_barang_detail', q => q.in('retur_id', returIds));
+        detailAll.forEach(d => {
+          if (!detailMap[d.retur_id]) detailMap[d.retur_id] = [];
+          detailMap[d.retur_id].push(d);
+        });
+      }
+
+      renderList();
+      updateStats();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('returList').innerHTML =
+        '<div class="empty-state">Gagal memuat: ' + escapeHtml(err.message) + '</div>';
+    }
+  }
+
+  function updateStats() {
+    const total = listRetur.length;
+    const draft = listRetur.filter(r => r.status === 'DRAFT').length;
+    const dikirim = listRetur.filter(r => r.status === 'DIKIRIM' || r.status === 'DITERIMA_DIST').length;
+    const selesai = listRetur.filter(r => r.status === 'SELESAI').length;
+
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statDraft').textContent = draft;
+    document.getElementById('statDikirim').textContent = dikirim;
+    document.getElementById('statSelesai').textContent = selesai;
+  }
+
+  // ============================================================
+  //  FILTER & RENDER
+  // ============================================================
+  function applyFilter() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+
+    filtered = listRetur.filter(r => {
+      const dist = distributorMap[r.distributor_id];
+      const detail = detailMap[r.id] || [];
+      const namaBarang = detail.map(d => barangMap[d.barang_id]?.nama_barang || '').join(' ');
+      const haystack = [
+        r.no_retur || '',
+        dist ? dist.nama_distributor : '',
+        namaBarang
+      ].join(' ').toLowerCase();
+      const matchQ = !q || haystack.includes(q);
+      const matchS = !status || r.status === status;
+      return matchQ && matchS;
+    });
+
+    renderList();
+  }
+
+  function statusBadge(status) {
+    const map = {
+      DRAFT: '<span class="badge draft">Draft</span>',
+      DIKIRIM: '<span class="badge dikirim">Dikirim</span>',
+      DITERIMA_DIST: '<span class="badge diterima">Diterima Distributor</span>',
+      SELESAI: '<span class="badge selesai">Selesai</span>',
+      DIBATALKAN: '<span class="badge batal">Dibatalkan</span>'
+    };
+    return map[status] || status;
+  }
+
+  function renderList() {
+    const container = document.getElementById('returList');
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state">Belum ada retur untuk periode ini.</div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(r => {
+      const dist = distributorMap[r.distributor_id];
+      const detail = detailMap[r.id] || [];
+      const totalQty = detail.reduce((s, d) => s + Number(d.qty_retur || 0), 0);
+      const jumlahBarang = detail.length;
+
+      const detailHtml = detail.map(d => {
+        const barang = barangMap[d.barang_id] || {};
+        return `<div class="detail-item">
+          <div>
+            <div class="nama">${escapeHtml(barang.nama_barang || '-')}</div>
+            ${d.alasan ? '<div class="alasan">' + escapeHtml(d.alasan) + '</div>' : ''}
+          </div>
+          <div class="qty">${Number(d.qty_retur || 0).toLocaleString('id-ID')} ${escapeHtml(d.satuan_beli || '')}</div>
+        </div>`;
+      }).join('');
+
+      let actions = '';
+
+      // Detail — selalu tampil
+      actions += `<button class="btn btn-secondary btn-mini" onclick="window.openDetail(${r.id})">Detail</button>`;
+
+      // Aksi per status
+      if (r.status === 'DRAFT') {
+        if (bisaBuatRetur()) {
+          actions += `<button class="btn btn-primary btn-mini" onclick="window.openKirim(${r.id})">Kirim</button>`;
+          actions += `<button class="btn btn-danger btn-mini" onclick="window.batalkanRetur(${r.id})">Batalkan</button>`;
+        }
+      } else if (r.status === 'DIKIRIM') {
+        if (bisaBuatRetur()) {
+          actions += `<button class="btn btn-primary btn-mini" onclick="window.konfirmasiDiterima(${r.id})">Konfirmasi Diterima</button>`;
+        }
+      } else if (r.status === 'DITERIMA_DIST') {
+        if (bisaVerifikasi()) {
+          actions += `<button class="btn btn-primary btn-mini" onclick="window.verifikasiSelesai(${r.id})">Verifikasi Selesai</button>`;
+        } else {
+          actions += `<span style="font-size:11px; color:var(--text-muted);">Menunggu verifikasi</span>`;
+        }
+      }
+
+      return `<div class="retur-card" id="card-${r.id}">
+        <div class="retur-head">
+          <div>
+            <div class="retur-title">
+              ${escapeHtml(r.no_retur)} ${statusBadge(r.status)}
+            </div>
+            <div class="retur-sub">
+              📅 ${formatTanggal(r.tanggal_retur)} ·
+              🚛 ${escapeHtml(dist ? dist.nama_distributor : '-')} ·
+              📦 ${jumlahBarang} barang (${totalQty.toLocaleString('id-ID')} unit)
+            </div>
+          </div>
+          <div class="retur-actions">${actions}</div>
+        </div>
+        <div class="retur-body">
+          <div class="detail-list">${detailHtml || '<div class="empty-state" style="padding:14px;">Tidak ada barang</div>'}</div>
+          ${r.alasan_utama ? '<div style="font-size:12px; color:var(--text-muted); margin-top:6px;"><strong>Alasan:</strong> ' + escapeHtml(r.alasan_utama) + '</div>' : ''}
+          ${r.no_tanda_terima ? '<div style="font-size:12px; color:var(--text-muted); margin-top:4px;"><strong>No. Tanda Terima:</strong> ' + escapeHtml(r.no_tanda_terima) + '</div>' : ''}
+          ${r.catatan ? '<div style="font-size:12px; color:var(--text-muted); margin-top:4px;"><strong>Catatan:</strong> ' + escapeHtml(r.catatan) + '</div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ============================================================
+  //  BUAT RETUR BARU
+  // ============================================================
+  window.openBuatRetur = async function() {
+    if (!bisaBuatRetur()) {
+      alert('Hanya Tim Penerimaan / Admin yang bisa membuat retur.');
+      return;
+    }
+
+    document.getElementById('buatMsg').textContent = '';
+    document.getElementById('fPenerimaan').value = '';
+    document.getElementById('previewBarangRusak').style.display = 'none';
+    document.getElementById('detailListBuat').innerHTML = '';
+    document.getElementById('fTanggalRetur').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('fAlasan').value = '';
+    document.getElementById('fCatatan').value = '';
+    currentBuat = null;
+
+    // Isi dropdown penerimaan rusak
+    const sel = document.getElementById('fPenerimaan');
+    sel.innerHTML = '<option value="">-- Memuat... --</option>';
+
+    // Cari penerimaan rusak yang belum ada retur
+    const existingPenerimaanIds = new Set(listRetur.map(r => r.penerimaan_id));
+
+    // Group by pembelian_id + no_batch + tanggal_terima (batch)
+    const groups = {};
+    penerimaanRusakAll.forEach(p => {
+      if (existingPenerimaanIds.has(p.id)) return;
+      const key = p.pembelian_id + '||' + (p.no_batch || '') + '||' + (p.tanggal_terima || '');
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          pembelian_id: p.pembelian_id,
+          no_batch: p.no_batch,
+          tanggal_terima: p.tanggal_terima,
+          penerimaanIds: [],
+          items: {}
+        };
+      }
+      groups[key].penerimaanIds.push(p.id);
+      const bid = p.barang_id;
+      if (!groups[key].items[bid]) groups[key].items[bid] = { qty: 0, alasan: '' };
+      groups[key].items[bid].qty += Number(p.qty_diterima || 0);
+    });
+
+    const listGroup = Object.values(groups);
+
+    // Skip grup kalau penerimaan pertama sudah ada di retur
+    const tersedia = listGroup.filter(g => !existingPenerimaanIds.has(g.penerimaanIds[0]));
+
+    if (tersedia.length === 0) {
+      sel.innerHTML = '<option value="">-- Tidak ada penerimaan rusak yang perlu diretur --</option>';
+      document.getElementById('buatMsg').textContent = 'Tidak ada penerimaan rusak yang belum dibuatkan retur.';
+      document.getElementById('buatMsg').style.color = 'var(--amber)';
+      document.getElementById('btnSubmitBuat').disabled = true;
+    } else {
+      sel.innerHTML = '<option value="">-- Pilih penerimaan --</option>' +
+        tersedia.map((g, idx) => {
+          const po = pembelianMap[g.pembelian_id];
+          const dist = po ? distributorMap[po.distributor_id] : null;
+          const jumlahItem = Object.keys(g.items).length;
+          const label = (po ? po.no_po : 'PO#') + ' · ' +
+            formatTanggal(g.tanggal_terima) + ' · ' +
+            (dist ? dist.nama_distributor : '-') + ' · ' +
+            jumlahItem + ' barang';
+          return `<option value="${idx}">${escapeHtml(label)}</option>`;
+        }).join('');
+      document.getElementById('btnSubmitBuat').disabled = false;
+      window._tersediaBuat = tersedia;
+    }
+
+    document.getElementById('modalBuat').classList.add('show');
+  };
+
+  window.closeBuat = function() {
+    document.getElementById('modalBuat').classList.remove('show');
+  };
+
+  window.onPenerimaanChange = function() {
+    const idx = document.getElementById('fPenerimaan').value;
+    if (idx === '') {
+      document.getElementById('previewBarangRusak').style.display = 'none';
+      currentBuat = null;
+      return;
+    }
+
+    const g = window._tersediaBuat[Number(idx)];
+    if (!g) return;
+
+    currentBuat = g;
+
+    // Render daftar barang rusak
+    const detailList = document.getElementById('detailListBuat');
+    detailList.innerHTML = Object.keys(g.items).map(bid => {
+      const barang = barangMap[bid] || {};
+      const item = g.items[bid];
+      return `<div class="detail-item">
+        <div>
+          <div class="nama">${escapeHtml(barang.nama_barang || '-')}</div>
+        </div>
+        <div class="qty">${Number(item.qty || 0).toLocaleString('id-ID')} ${escapeHtml(barang.satuan_beli || '')}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('previewBarangRusak').style.display = 'block';
+  };
+
+  async function generateNoRetur() {
+    const tahun = new Date().getFullYear();
+    const prefix = 'RTR-' + tahun + '-';
+    const { data, error } = await window.supabase
+      .from('retur_barang')
+      .select('no_retur')
+      .like('no_retur', prefix + '%')
+      .order('no_retur', { ascending: false })
+      .limit(1);
+    if (error) throw error;
+    let seq = 1;
+    if (data && data[0]) {
+      const last = data[0].no_retur;
+      const lastSeq = parseInt(last.slice(prefix.length), 10);
+      if (!isNaN(lastSeq)) seq = lastSeq + 1;
+    }
+    return prefix + String(seq).padStart(4, '0');
+  }
+
+  window.submitBuat = async function() {
+    if (!currentBuat) {
+      document.getElementById('buatMsg').textContent = 'Pilih penerimaan dulu.';
+      return;
+    }
+
+    const tanggal = document.getElementById('fTanggalRetur').value;
+    const alasan = document.getElementById('fAlasan').value.trim();
+    const catatan = document.getElementById('fCatatan').value.trim();
+    const msg = document.getElementById('buatMsg');
+    const btn = document.getElementById('btnSubmitBuat');
+
+    if (!tanggal) { msg.textContent = 'Tanggal retur wajib diisi.'; return; }
+    if (!alasan) { msg.textContent = 'Alasan wajib diisi.'; return; }
+
+    btn.disabled = true;
+    msg.textContent = 'Menyimpan...';
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      const noRetur = await generateNoRetur();
+      const po = pembelianMap[currentBuat.pembelian_id];
+
+      // Insert header
+      const { data: headerData, error: headerErr } = await window.supabase.from('retur_barang').insert({
+        no_retur: noRetur,
+        penerimaan_id: currentBuat.penerimaanIds[0],
+        pembelian_id: currentBuat.pembelian_id,
+        distributor_id: po ? po.distributor_id : null,
+        tanggal_retur: tanggal,
+        status: 'DRAFT',
+        alasan_utama: alasan,
+        catatan: catatan || null,
+        dibuat_oleh: window.currentUser.id || null
+      }).select('id');
+
+      if (headerErr) throw headerErr;
+      const returId = headerData[0].id;
+
+      // Insert detail
+      const details = Object.keys(currentBuat.items).map(bid => {
+        const barang = barangMap[bid] || {};
+        return {
+          retur_id: returId,
+          barang_id: Number(bid),
+          qty_retur: currentBuat.items[bid].qty,
+          satuan_beli: barang.satuan_beli || null,
+          alasan: alasan
+        };
+      });
+
+      const { error: detailErr } = await window.supabase.from('retur_barang_detail').insert(details);
+      if (detailErr) throw detailErr;
+
+      msg.textContent = '✅ Retur berhasil dibuat: ' + noRetur;
+      msg.style.color = 'var(--green-mid)';
+
+      setTimeout(() => {
+        window.closeBuat();
+        loadAllData();
+      }, 1200);
+    } catch (err) {
+      console.error(err);
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
+  //  KIRIM KE DISTRIBUTOR
+  // ============================================================
+  let currentKirim = null;
+
+  window.openKirim = function(id) {
+    const r = listRetur.find(x => x.id === id);
+    if (!r) return;
+    if (!bisaBuatRetur()) {
+      alert('Hanya Tim Penerimaan / Admin yang bisa mengirim retur.');
+      return;
+    }
+    currentKirim = r;
+
+    const dist = distributorMap[r.distributor_id];
+    document.getElementById('kirimInfo').innerHTML =
+      `📦 <strong>${escapeHtml(r.no_retur)}</strong><br>` +
+      `Distributor: <strong>${escapeHtml(dist ? dist.nama_distributor : '-')}</strong><br>` +
+      `Tanggal retur: <strong>${formatTanggal(r.tanggal_retur)}</strong>`;
+    document.getElementById('fTandaTerima').value = '';
+    document.getElementById('kirimMsg').textContent = '';
+
+    document.getElementById('modalKirim').classList.add('show');
+  };
+
+  window.closeKirim = function() {
+    document.getElementById('modalKirim').classList.remove('show');
+    currentKirim = null;
+  };
+
+  window.submitKirim = async function() {
+    if (!currentKirim) return;
+    const tandaTerima = document.getElementById('fTandaTerima').value.trim();
+    const msg = document.getElementById('kirimMsg');
+
+    msg.textContent = 'Mengirim...';
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      const { error } = await window.supabase.from('retur_barang').update({
+        status: 'DIKIRIM',
+        no_tanda_terima: tandaTerima || null,
+        dikirim_pada: new Date().toISOString()
+      }).eq('id', currentKirim.id);
+      if (error) throw error;
+
+      msg.textContent = '✅ Retur ditandai terkirim.';
+      msg.style.color = 'var(--green-mid)';
+
+      setTimeout(() => {
+        window.closeKirim();
+        loadAllData();
+      }, 900);
+    } catch (err) {
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+    }
+  };
+
+  // ============================================================
+  //  KONFIRMASI DITERIMA (dari distributor)
+  // ============================================================
+  window.konfirmasiDiterima = async function(id) {
+    const r = listRetur.find(x => x.id === id);
+    if (!r) return;
+    if (!confirm(`Konfirmasi bahwa distributor sudah menerima retur ${r.no_retur}?`)) return;
+
+    try {
+      const { error } = await window.supabase.from('retur_barang').update({
+        status: 'DITERIMA_DIST'
+      }).eq('id', id);
+      if (error) throw error;
+      loadAllData();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    }
+  };
+
+  // ============================================================
+  //  VERIFIKASI SELESAI
+  // ============================================================
+  window.verifikasiSelesai = async function(id) {
+    const r = listRetur.find(x => x.id === id);
+    if (!r) return;
+    if (!bisaVerifikasi()) {
+      alert('Hanya Koordinator / Kepala IF / Admin yang bisa verifikasi.');
+      return;
+    }
+    if (!confirm(`Verifikasi retur ${r.no_retur} sebagai SELESAI?`)) return;
+
+    try {
+      const { error } = await window.supabase.from('retur_barang').update({
+        status: 'SELESAI',
+        diverifikasi_pada: new Date().toISOString(),
+        diverifikasi_oleh: window.currentUser.id || null
+      }).eq('id', id);
+      if (error) throw error;
+      loadAllData();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    }
+  };
+
+  // ============================================================
+  //  BATALKAN
+  // ============================================================
+  window.batalkanRetur = async function(id) {
+    const r = listRetur.find(x => x.id === id);
+    if (!r) return;
+    if (!confirm(`Batalkan retur ${r.no_retur}?`)) return;
+
+    try {
+      const { error } = await window.supabase.from('retur_barang').update({
+        status: 'DIBATALKAN'
+      }).eq('id', id);
+      if (error) throw error;
+      loadAllData();
+    } catch (err) {
+      alert('Gagal: ' + err.message);
+    }
+  };
+
+  // ============================================================
+  //  DETAIL
+  // ============================================================
+  window.openDetail = function(id) {
+    const r = listRetur.find(x => x.id === id);
+    if (!r) return;
+    const dist = distributorMap[r.distributor_id];
+    const detail = detailMap[r.id] || [];
+    const pembuat = r.dibuat_oleh ? userMap[r.dibuat_oleh] : null;
+    const verif = r.diverifikasi_oleh ? userMap[r.diverifikasi_oleh] : null;
+
+    document.getElementById('detailTitle').textContent = 'Detail Retur ' + r.no_retur;
+    document.getElementById('detailInfo').innerHTML = `
+      <div class="detail-info-row"><span class="label">No. Retur</span><span class="val">${escapeHtml(r.no_retur)}</span></div>
+      <div class="detail-info-row"><span class="label">Status</span><span class="val">${statusBadge(r.status)}</span></div>
+      <div class="detail-info-row"><span class="label">Tanggal Retur</span><span class="val">${formatTanggal(r.tanggal_retur)}</span></div>
+      <div class="detail-info-row"><span class="label">Distributor</span><span class="val">${escapeHtml(dist ? dist.nama_distributor : '-')}</span></div>
+      <div class="detail-info-row"><span class="label">Alasan Utama</span><span class="val">${escapeHtml(r.alasan_utama || '-')}</span></div>
+      <div class="detail-info-row"><span class="label">No. Tanda Terima</span><span class="val">${escapeHtml(r.no_tanda_terima || '-')}</span></div>
+      <div class="detail-info-row"><span class="label">Catatan</span><span class="val">${escapeHtml(r.catatan || '-')}</span></div>
+      <div class="detail-info-row"><span class="label">Dibuat Oleh</span><span class="val">${escapeHtml(pembuat ? pembuat.nama : '-')} · ${formatDT(r.dibuat_pada)}</span></div>
+      ${r.dikirim_pada ? '<div class="detail-info-row"><span class="label">Dikirim Pada</span><span class="val">' + formatDT(r.dikirim_pada) + '</span></div>' : ''}
+      ${verif ? '<div class="detail-info-row"><span class="label">Diverifikasi Oleh</span><span class="val">' + escapeHtml(verif.nama) + ' · ' + formatDT(r.diverifikasi_pada) + '</span></div>' : ''}
+    `;
+
+    document.getElementById('detailListModal').innerHTML = detail.map(d => {
+      const barang = barangMap[d.barang_id] || {};
+      return `<div class="detail-item">
+        <div>
+          <div class="nama">${escapeHtml(barang.nama_barang || '-')}</div>
+          ${d.alasan ? '<div class="alasan">' + escapeHtml(d.alasan) + '</div>' : ''}
+        </div>
+        <div class="qty">${Number(d.qty_retur || 0).toLocaleString('id-ID')} ${escapeHtml(d.satuan_beli || '')}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('modalDetail').classList.add('show');
+  };
+
+  window.closeDetail = function() {
+    document.getElementById('modalDetail').classList.remove('show');
+  };
+
+  // ============================================================
+  //  EXPORT EXCEL
+  // ============================================================
+  window.exportExcel = function() {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum siap. Refresh dulu.');
+      return;
+    }
+    if (listRetur.length === 0) {
+      alert('Tidak ada data retur untuk di-export.');
+      return;
+    }
+
+    const bulanSel = document.getElementById('bulanSelect');
+    const bulanTeks = bulanSel.options[bulanSel.selectedIndex].textContent;
+    const tahun = document.getElementById('tahunSelect').value;
+    const namaUser = window.currentUser ? window.currentUser.nama : '-';
+    const tglCetak = new Date().toLocaleString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    const labelStatus = {
+      DRAFT: 'Draft', DIKIRIM: 'Dikirim',
+      DITERIMA_DIST: 'Diterima Distributor', SELESAI: 'Selesai', DIBATALKAN: 'Dibatalkan'
+    };
+
+    const rows = [
+      ['RS AM PARIKESIT — RKO RSAMP'],
+      ['Laporan Retur Barang'],
+      ['Periode: ' + bulanTeks + ' ' + tahun],
+      ['Dicetak: ' + tglCetak + ' oleh ' + namaUser],
+      [],
+      ['No', 'No. Retur', 'Tanggal', 'Distributor', 'Nama Barang', 'Qty Retur', 'Satuan', 'Alasan', 'Status']
+    ];
+
+    listRetur.forEach((r, idx) => {
+      const dist = distributorMap[r.distributor_id];
+      const detail = detailMap[r.id] || [];
+      detail.forEach((d, j) => {
+        const barang = barangMap[d.barang_id] || {};
+        rows.push([
+          j === 0 ? idx + 1 : '',
+          j === 0 ? r.no_retur : '',
+          j === 0 ? (r.tanggal_retur || '-') : '',
+          j === 0 ? (dist ? dist.nama_distributor : '-') : '',
+          barang.nama_barang || '-',
+          Number(d.qty_retur || 0),
+          barang.satuan_beli || '',
+          r.alasan_utama || '',
+          j === 0 ? (labelStatus[r.status] || r.status) : ''
+        ]);
+      });
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 8 } }
+    ];
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 26 },
+      { wch: 42 }, { wch: 10 }, { wch: 10 }, { wch: 30 }, { wch: 20 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Retur Barang');
+    XLSX.writeFile(wb, 'Retur-Barang_' + bulanTeks + '-' + tahun + '.xlsx');
+  };
+
+  // Toggle card expand
+  document.addEventListener('click', function(e) {
+    const head = e.target.closest('.retur-head');
+    if (!head) return;
+    // Hanya toggle kalau bukan klik tombol
+    if (e.target.closest('button')) return;
+    const card = head.closest('.retur-card');
+    if (card) card.classList.toggle('open');
+  });
+</script>
+</body>
+</html>
