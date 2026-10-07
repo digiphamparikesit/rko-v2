@@ -117,6 +117,9 @@
       flex-direction: column;
       overflow: hidden;
     }
+    /* BARU: sembunyikan body saat collapsed */
+    .usulan-panel.collapsed .up-body { display: none; }
+    .usulan-panel.collapsed { max-height: none; }
     .usulan-panel .up-head {
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 20px;
@@ -306,6 +309,13 @@
     <button class="btn" style="background:#F1F1EE; color:var(--text-dark);" onclick="window.openUploadModal()">&#8593; Upload CSV</button>
     <button class="btn btn-warning" onclick="window.openSelisihModal()">&#9888; PO Ulang dari Selisih</button>
     <button class="btn btn-secondary" onclick="window.exportExcel()">&#8681; Excel</button>
+    <!-- ==== Toggle Usulan Siap PO ==== -->
+    <button class="btn-action-toggle" id="btnUsulanToggle" onclick="window.toggleUsulanPanel()">
+      <span>📥</span>
+      <span>Usulan Siap PO</span>
+      <span class="count-pill" id="usulanToggleCount">0</span>
+      <span class="arrow">▼</span>
+    </button>
     <!-- ==== Toggle Daftar PO ==== -->
     <button class="btn-action-toggle" id="btnPoListToggle" onclick="window.togglePoListPanel()">
       <span>📋</span>
@@ -351,7 +361,7 @@
   </div>
 
   <!-- ==== Panel Usulan Siap Buat PO ==== -->
-  <section class="usulan-panel" id="usulanPanel">
+  <section class="usulan-panel collapsed" id="usulanPanel">
     <div class="up-head">
       <div class="up-title">
         <span class="up-icon">📥</span>
@@ -550,6 +560,18 @@
     btn.classList.toggle('open');
     if (panel.classList.contains('show')) {
       setTimeout(() => document.getElementById('searchBox').focus(), 100);
+    }
+  };
+
+  // BARU: toggle panel usulan
+  window.toggleUsulanPanel = function() {
+    const panel = document.getElementById('usulanPanel');
+    const btn = document.getElementById('btnUsulanToggle');
+    panel.classList.toggle('collapsed');
+    btn.classList.toggle('open');
+    // Render ulang saat dibuka (untuk refresh pager)
+    if (!panel.classList.contains('collapsed')) {
+      renderUsulanPanel();
     }
   };
 
@@ -863,6 +885,7 @@
       renderUsulanPanel();
 
       // Update count di tombol toggle
+      document.getElementById('usulanToggleCount').textContent = usulanPendingList.length;
       document.getElementById('poToggleCount').textContent = pembelianList.length;
       document.getElementById('poPanelCount').textContent = pembelianList.length;
     } catch (err) {
