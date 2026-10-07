@@ -38,6 +38,74 @@
     .log-item.ubah { border-left-color: var(--amber); }
     .log-item.ubah .log-aksi { color: var(--amber); }
     select.status-select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
+
+    /* ==== BARU: PANEL USULAN SIAP BUAT PO ==== */
+    .usulan-panel {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--green-mid);
+      border-radius: 14px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .usulan-panel .up-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+      background: #F1FAF4;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap: 10px;
+    }
+    .usulan-panel .up-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 700; color: var(--green-deep);
+    }
+    .usulan-panel .up-title .up-icon {
+      width: 32px; height: 32px;
+      background: var(--green-soft);
+      color: var(--green-mid);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .usulan-panel .up-count {
+      background: var(--green-mid); color: #fff;
+      padding: 3px 11px;
+      border-radius: 999px;
+      font-size: 11.5px; font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .usulan-panel .up-sub {
+      font-size: 12px; color: var(--text-muted); margin-left: 4px;
+      font-weight: 400;
+    }
+    .usulan-panel table { min-width: 100%; }
+    .usulan-panel table th {
+      background: #F7FAF8;
+    }
+    .usulan-panel .qty-hi {
+      color: var(--green-deep);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .usulan-panel .btn-buat-po {
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--green-mid); color: #fff;
+      border: none; border-radius: 8px;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.15s;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .usulan-panel .btn-buat-po:hover { background: #128a3e; }
+    .usulan-panel .barang-nama {
+      font-weight: 600;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+    .usulan-panel .barang-meta {
+      font-size: 11px; color: var(--text-muted); margin-top: 2px;
+    }
   </style>
 </head>
 <body>
@@ -74,6 +142,22 @@
       <div class="lbl">Total nilai PO (estimasi)</div>
     </div>
   </section>
+
+  <!-- ==== BARU: Panel Usulan Siap Buat PO ==== -->
+  <section class="usulan-panel" id="usulanPanel">
+    <div class="up-head">
+      <div class="up-title">
+        <span class="up-icon">📥</span>
+        <span>Usulan Siap Buat PO</span>
+        <span class="up-count" id="usulanCount">0</span>
+        <span class="up-sub" id="usulanSub">usulan dari ruangan yang sudah disetujui</span>
+      </div>
+    </div>
+    <div id="usulanListWrap">
+      <div class="empty-state" style="padding:24px;">Memuat usulan...</div>
+    </div>
+  </section>
+  <!-- ==== /BARU ==== -->
 
   <div class="layout-split">
     <aside class="left-col">
@@ -238,8 +322,9 @@
   let filteredList = [];
   let uploadRows = [];
   let barangRkoList = [];
+  let usulanPendingList = [];  // ==== BARU ====
   window._selisihData = null;
-  let prefillUsulan = null;   // Menyimpan data dari URL usulan (kalau ada)
+  let prefillUsulan = null;
 
   // ============================================================
   //  PERIODE OPTIONS
@@ -278,7 +363,7 @@
   }
 
   // ============================================================
-  //  PREFILL DARI USULAN PEMBELIAN
+  //  PREFILL DARI USULAN PEMBELIAN (URL params flow)
   // ============================================================
   function cekPrefillDariUsulan() {
     const params = new URLSearchParams(window.location.search);
@@ -293,74 +378,176 @@
 
     if (!barangId) return;
 
-    // Simpan di variable global untuk dipakai saat submitForm
-    prefillUsulan = {
-      usulan_id: usulanId ? Number(usulanId) : null,
+    const usulanData = {
+      id: usulanId ? Number(usulanId) : null,
       barang_id: Number(barangId),
       distributor_id: distributorId ? Number(distributorId) : null,
-      qty: qty ? Number(qty) : null,
+      qty_usulan_box: qty ? Number(qty) : null,
       bulan: bulanParam ? Number(bulanParam) : null,
       tahun: tahunParam ? Number(tahunParam) : null
     };
 
-    // Set periode dropdown jika berbeda
     const bulanSel = document.getElementById('bulanSelect');
     const tahunSel = document.getElementById('tahunSelect');
     if (bulanParam) bulanSel.value = bulanParam;
     if (tahunParam) tahunSel.value = tahunParam;
 
-    const periodeBerubah = bulanSel.value !== bulanParam || tahunSel.value !== tahunParam;
+    const periodeBerubah = String(bulanSel.value) !== String(bulanParam) || String(tahunSel.value) !== String(tahunParam);
 
-    const lanjutPrefill = () => {
-      const barang = barangMap[barangId];
-      if (!barang) {
-        alert('Barang tidak ditemukan di master. Hubungi admin.');
-        return;
-      }
-
-      // Buka form PO baru
-      window.openForm();
-
-      // Isi barang & qty
-      document.getElementById('fBarangInput').value = barang.nama_barang;
-      document.getElementById('fBarang').value = barang.id;
-      if (qty) document.getElementById('fQty').value = qty;
-      document.getElementById('fStatus').value = 'DIKIRIM';
-
-      // Isi distributor kalau ada dari usulan
-      if (distributorId) {
-        const dist = distributorList.find(d => String(d.id) === String(distributorId));
-        if (dist) {
-          document.getElementById('fDistributor').value = dist.nama_distributor;
-          document.getElementById('fDistributorId').value = dist.id;
-        }
-      }
-
-      // Info banner
-      const infoDiv = document.getElementById('formInfo');
-      infoDiv.style.display = 'block';
-      infoDiv.style.cssText = 'background:#E7F5EC; padding:10px; border-radius:8px; margin-bottom:12px; font-size:13px; line-height:1.5;';
-      const distText = distributorId
-        ? `Distributor rencana: <strong>${escapeHtml((distributorList.find(d => String(d.id) === String(distributorId)) || {}).nama_distributor || '-')}</strong>`
-        : '<span style="color:var(--coral);">Distributor belum ditentukan di usulan — silakan pilih manual.</span>';
-      infoDiv.innerHTML = `
-        📦 <strong>Dari Usulan Pembelian</strong><br>
-        Barang: <strong>${escapeHtml(barang.nama_barang)}</strong><br>
-        Qty usulan: <strong>${qty || '-'} ${escapeHtml(barang.satuan_beli || 'Box')}</strong><br>
-        ${distText}<br>
-        <span style="color:var(--text-muted); font-size:11.5px;">Kalau distributor diubah, alasan wajib diisi.</span>
-      `;
-
-      // Clean URL biar tidak repeat prefill kalau refresh
+    const lanjut = () => {
+      prefillFormFromUsulan(usulanData);
       window.history.replaceState({}, document.title, window.location.pathname);
     };
 
     if (periodeBerubah) {
-      loadAllData().then(lanjutPrefill);
+      loadAllData().then(lanjut);
     } else {
-      setTimeout(lanjutPrefill, 300);
+      setTimeout(lanjut, 300);
     }
   }
+
+  // ============================================================
+  //  BARU: PRE-FILL FORM DARI DATA USULAN (dipakai di 2 tempat)
+  // ============================================================
+  function prefillFormFromUsulan(usulan) {
+    const barang = barangMap[usulan.barang_id];
+    if (!barang) {
+      alert('Barang tidak ditemukan di master. Hubungi admin.');
+      return;
+    }
+
+    // Simpan state prefill
+    prefillUsulan = {
+      usulan_id: usulan.id,
+      barang_id: usulan.barang_id,
+      distributor_id: usulan.distributor_id,
+      qty: usulan.qty_usulan_box,
+      bulan: usulan.bulan,
+      tahun: usulan.tahun
+    };
+
+    // Buka form PO baru (reset state)
+    window.openForm();
+
+    // Isi field
+    document.getElementById('fBarangInput').value = barang.nama_barang;
+    document.getElementById('fBarang').value = barang.id;
+    if (usulan.qty_usulan_box) document.getElementById('fQty').value = usulan.qty_usulan_box;
+    document.getElementById('fStatus').value = 'DIKIRIM';
+
+    if (usulan.distributor_id) {
+      const dist = distributorList.find(d => String(d.id) === String(usulan.distributor_id));
+      if (dist) {
+        document.getElementById('fDistributor').value = dist.nama_distributor;
+        document.getElementById('fDistributorId').value = dist.id;
+      }
+    }
+
+    // Info banner
+    const infoDiv = document.getElementById('formInfo');
+    infoDiv.style.display = 'block';
+    infoDiv.style.cssText = 'background:#E7F5EC; padding:10px; border-radius:8px; margin-bottom:12px; font-size:13px; line-height:1.5;';
+    const distText = usulan.distributor_id
+      ? `Distributor rencana: <strong>${escapeHtml((distributorList.find(d => String(d.id) === String(usulan.distributor_id)) || {}).nama_distributor || '-')}</strong>`
+      : '<span style="color:var(--coral);">Distributor belum ditentukan di usulan — silakan pilih manual.</span>';
+    infoDiv.innerHTML = `
+      📦 <strong>Dari Usulan Pembelian</strong><br>
+      Barang: <strong>${escapeHtml(barang.nama_barang)}</strong><br>
+      Qty usulan: <strong>${usulan.qty_usulan_box || '-'} ${escapeHtml(barang.satuan_beli || 'Box')}</strong><br>
+      ${distText}<br>
+      <span style="color:var(--text-muted); font-size:11.5px;">Kalau distributor diubah, alasan wajib diisi.</span>
+    `;
+  }
+
+  // ============================================================
+  //  BARU: RENDER PANEL USULAN SIAP BUAT PO
+  // ============================================================
+  function renderUsulanPanel() {
+    const wrap = document.getElementById('usulanListWrap');
+    const countEl = document.getElementById('usulanCount');
+    const subEl = document.getElementById('usulanSub');
+
+    countEl.textContent = usulanPendingList.length;
+
+    if (usulanPendingList.length === 0) {
+      subEl.textContent = 'tidak ada usulan baru untuk periode ini';
+      wrap.innerHTML = `<div class="empty-state" style="padding:24px 20px;">
+        Belum ada usulan disetujui untuk periode ini.
+      </div>`;
+      return;
+    }
+
+    subEl.textContent = 'usulan disetujui — klik Buat PO untuk memproses';
+
+    const rows = usulanPendingList.map(u => {
+      const barang = barangMap[u.barang_id] || {};
+      const dist = u.distributor_id ? distributorList.find(d => String(d.id) === String(u.distributor_id)) : null;
+      const satuanBeli = barang.satuan_beli || 'Box';
+      const satuanJual = barang.satuan_jual || 'PCS';
+      const content = Number(u.content_saat_dibuat) || 1;
+      const qty = Number(u.qty_usulan_box || 0);
+      const rko = Number(u.qty_rko_box || 0);
+
+      const tanggalSetujui = u.disetujui_pada
+        ? new Date(u.disetujui_pada).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' })
+        : (u.diusulkan_pada ? new Date(u.diusulkan_pada).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }) : '-');
+
+      return `<tr>
+        <td>
+          <div class="barang-nama">${escapeHtml(barang.nama_barang || '-')}</div>
+          <div class="barang-meta">1 ${escapeHtml(satuanBeli)} = ${content} ${escapeHtml(satuanJual)} · RKO: ${rko.toLocaleString('id-ID')} ${escapeHtml(satuanBeli)}</div>
+        </td>
+        <td>
+          ${dist
+            ? `<div style="font-weight:600; font-size:12.5px;">${escapeHtml(dist.nama_distributor)}</div>`
+            : `<span style="color:var(--coral); font-size:12px; font-weight:600;">⚠ Belum dipilih</span>`}
+        </td>
+        <td class="num">
+          <span class="qty-hi">${qty.toLocaleString('id-ID')}</span>
+          <span style="font-size:11.5px; color:var(--text-muted);">${escapeHtml(satuanBeli)}</span>
+        </td>
+        <td style="font-size:12px; color:var(--text-muted);">${tanggalSetujui}</td>
+        <td>
+          <button class="btn-buat-po" onclick="window.buatPOFromUsulanPanel(${u.id})">
+            <span>+</span> Buat PO
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    wrap.innerHTML = `<table>
+      <thead>
+        <tr>
+          <th>Nama Barang</th>
+          <th>Distributor</th>
+          <th class="num">Qty Usulan</th>
+          <th>Disetujui</th>
+          <th style="width:120px;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  // ============================================================
+  //  BARU: BUAT PO DARI PANEL USULAN
+  // ============================================================
+  window.buatPOFromUsulanPanel = function(usulanId) {
+    const u = usulanPendingList.find(x => x.id === usulanId);
+    if (!u) {
+      alert('Usulan tidak ditemukan. Refresh halaman.');
+      return;
+    }
+    // Panggil prefill form — status usulan akan diubah ke DIBUAT_PO saat submitForm berhasil
+    prefillFormFromUsulan({
+      id: u.id,
+      barang_id: u.barang_id,
+      distributor_id: u.distributor_id,
+      qty_usulan_box: u.qty_usulan_box,
+      bulan: u.bulan,
+      tahun: u.tahun
+    });
+  };
 
   // ============================================================
   //  LOAD DATA
@@ -369,13 +556,15 @@
     const bulan = document.getElementById('bulanSelect').value;
     const tahun = document.getElementById('tahunSelect').value;
     document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
+    document.getElementById('usulanListWrap').innerHTML = '<div class="empty-state" style="padding:24px;">Memuat usulan...</div>';
 
     try {
-      const [barangData, distData, rencanaData, pembelianData] = await Promise.all([
+      const [barangData, distData, rencanaData, pembelianData, usulanData] = await Promise.all([
         fetchAllRows('master_barang'),
         fetchAllRows('master_distributor', q => q.order('nama_distributor')),
         fetchAllRows('rencana_belanja', q => q.eq('bulan', bulan).eq('tahun', tahun)),
-        fetchAllRows('pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun))
+        fetchAllRows('pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun)),
+        fetchAllRows('usulan_pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun).eq('status', 'DISETUJUI'))
       ]);
 
       barangMap = {};
@@ -384,13 +573,23 @@
       rencanaList = rencanaData;
       pembelianList = pembelianData;
 
+      // Sort usulan by nama barang
+      usulanPendingList = (usulanData || []).sort((a, b) => {
+        const na = barangMap[a.barang_id]?.nama_barang || '';
+        const nb = barangMap[b.barang_id]?.nama_barang || '';
+        return na.localeCompare(nb);
+      });
+
       fillFormOptions();
       applyFilter();
       updateStats();
+      renderUsulanPanel();
     } catch (err) {
       console.error(err);
       document.getElementById('tableBody').innerHTML =
         '<tr><td colspan="7" class="empty-state">Gagal memuat data: ' + err.message + '</td></tr>';
+      document.getElementById('usulanListWrap').innerHTML =
+        '<div class="empty-state" style="padding:24px; color:var(--coral);">Gagal memuat usulan: ' + escapeHtml(err.message) + '</div>';
     }
   }
 
@@ -696,6 +895,10 @@
     simpanBtn.textContent = 'Simpan PO';
     simpanBtn.onclick = window.submitForm;
     document.querySelector('#modalOverlay .modal h2').textContent = 'Buat PO Baru';
+
+    // Reset prefill (tidak menyentuh status usulan — biarkan tetap DISETUJUI)
+    prefillUsulan = null;
+
     document.getElementById('modalOverlay').classList.remove('show');
   };
 
@@ -722,7 +925,7 @@
           'Alasan perubahan (wajib):',
           ''
         );
-        if (alasanGanti === null) return; // user klik Cancel
+        if (alasanGanti === null) return;
         if (!alasanGanti.trim()) {
           msg.textContent = 'Alasan perubahan distributor wajib diisi.';
           return;
@@ -745,7 +948,6 @@
         status: statusAwal
       };
 
-      // Kalau dari usulan, tambahkan link + rencana
       if (prefillUsulan && prefillUsulan.usulan_id) {
         insertPayload.usulan_id = prefillUsulan.usulan_id;
         insertPayload.distributor_rencana_id = prefillUsulan.distributor_id || null;
@@ -759,7 +961,6 @@
         .select('id');
 
       if (error) throw error;
-
       const newId = inserted && inserted[0] ? inserted[0].id : null;
 
       // Log perubahan distributor kalau ganti
@@ -784,7 +985,17 @@
         });
       }
 
-      // Reset prefillUsulan
+      // ==== BARU: Update status usulan ke DIBUAT_PO ====
+      if (prefillUsulan && prefillUsulan.usulan_id) {
+        try {
+          await window.supabase.from('usulan_pembelian')
+            .update({ status: 'DIBUAT_PO' })
+            .eq('id', prefillUsulan.usulan_id);
+        } catch (e) {
+          console.warn('Gagal update status usulan:', e);
+        }
+      }
+
       prefillUsulan = null;
 
       closeForm();
