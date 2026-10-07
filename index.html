@@ -247,6 +247,47 @@
     .quick-card .q-name { font-weight: 600; font-size: 13.5px; line-height: 1.3; }
     .quick-card .q-desc { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
 
+    /* ==== BARU: FLOW CARD (Alur Retur) ==== */
+    .flow-card {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 14px; padding: 22px 26px; margin-bottom: 28px;
+    }
+    .flow-card .section-heading { margin-bottom: 10px; }
+    .flow-intro { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin: 0 0 18px; }
+    .flow-link { color: var(--green-mid); font-weight: 600; text-decoration: none; }
+    .flow-link:hover { text-decoration: underline; }
+    .flow-track { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .flow-node {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 10px;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+      border: 1px solid var(--border);
+    }
+    .flow-node.draft    { background: #F1F1EE; color: var(--text-muted); }
+    .flow-node.dikirim  { background: #FDF1E0; color: var(--amber); border-color: #FAE5B8; }
+    .flow-node.diterima { background: #E9EEFB; color: #3B5BDB; border-color: #D7DEEF; }
+    .flow-node.selesai  { background: var(--green-soft); color: var(--green-mid); border-color: #C4E8D2; }
+    .flow-node.batal    { background: #FBEAE7; color: var(--coral); border-color: #F3D0C4; }
+    .flow-node.rusak    { background: #FBEAE7; color: var(--coral); border-color: #F3D0C4; }
+    .flow-arrow { color: var(--text-muted); font-size: 15px; font-weight: 700; }
+    .flow-branch {
+      display: flex; align-items: center; gap: 10px;
+      padding-left: 8px; margin-bottom: 20px;
+      font-size: 11.5px; color: var(--text-muted);
+    }
+    .flow-branch::before { content: '⤷'; font-size: 16px; color: var(--text-muted); }
+    .flow-roles {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px; padding-top: 16px; border-top: 1px dashed var(--border);
+    }
+    .flow-role { display: flex; align-items: flex-start; gap: 10px; }
+    .flow-role-icon { font-size: 18px; flex-shrink: 0; line-height: 1.2; }
+    .flow-role-name {
+      font-size: 11px; font-weight: 700; color: var(--green-deep);
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .flow-role-desc { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
     /* Mobile toggle & backdrop */
     .btn-toggle-sidebar {
       display: none;
@@ -325,6 +366,57 @@
 
       <h3 class="section-heading">Aksi Cepat</h3>
       <div class="quick-grid" id="quickGrid"></div>
+
+      <!-- ==== BARU: KARTU ALUR RETUR BARANG RUSAK ==== -->
+      <div class="flow-card">
+        <h3 class="section-heading">Alur Retur Barang Rusak</h3>
+        <p class="flow-intro">
+          Barang rusak yang ditemukan saat <strong>penerimaan barang</strong> tercatat dengan status
+          <span class="flow-node rusak" style="padding:2px 10px; font-size:11px;">MENUNGGU_RETUR</span>
+          dan otomatis muncul di halaman
+          <a href="retur-barang.html" class="flow-link">Retur Barang</a>.
+        </p>
+
+        <div class="flow-track">
+          <span class="flow-node draft">DRAFT</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node dikirim">DIKIRIM</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node diterima">DITERIMA_DIST</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node selesai">SELESAI</span>
+        </div>
+
+        <div class="flow-branch">
+          <span>Dibatalkan dari DRAFT / DIKIRIM</span>
+          <span class="flow-node batal">DIBATALKAN</span>
+        </div>
+
+        <div class="flow-roles">
+          <div class="flow-role">
+            <span class="flow-role-icon">📦</span>
+            <div>
+              <div class="flow-role-name">Tim Penerimaan</div>
+              <div class="flow-role-desc">Terima barang, tandai yang rusak → MENUNGGU_RETUR</div>
+            </div>
+          </div>
+          <div class="flow-role">
+            <span class="flow-role-icon">🔄</span>
+            <div>
+              <div class="flow-role-name">Retur Barang</div>
+              <div class="flow-role-desc">Buat surat retur, catat pengiriman &amp; tanda terima</div>
+            </div>
+          </div>
+          <div class="flow-role">
+            <span class="flow-role-icon">✅</span>
+            <div>
+              <div class="flow-role-name">Koordinator / Kepala IF</div>
+              <div class="flow-role-desc">Verifikasi retur selesai</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ==== /BARU ==== -->
     </div>
   </main>
 </div>
@@ -350,6 +442,10 @@
           roles: ['SUPER_ADMIN', 'ADMIN', 'TIM_PEMBELIAN'] },
         { name: 'Penerimaan Barang', desc: 'Cocokkan barang datang vs PO', icon: '📦', url: 'penerimaan.html', ready: true,
           roles: ['SUPER_ADMIN', 'ADMIN', 'TIM_PENERIMAAN'] },
+        // ==== BARU: menu Retur Barang ====
+        { name: 'Retur Barang', desc: 'Kelola retur barang rusak ke distributor', icon: '🔄', color: 'orange', url: 'retur-barang.html', ready: true,
+          roles: ['SUPER_ADMIN', 'ADMIN', 'TIM_PENERIMAAN', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI'] },
+        // ==== /BARU ====
         { name: 'Mutasi ke Ruangan', desc: 'Bagi barang ke ruangan proporsional RKO', icon: '🚚', url: 'mutasi-barang.html', ready: true,
           roles: ['SUPER_ADMIN', 'ADMIN', 'PETUGAS_MUTASI_OBAT', 'PETUGAS_MUTASI_BMHP', 'KOORDINATOR_LOGISTIK_FARMASI'] },
         { name: 'Riwayat Mutasi', desc: 'Log & koreksi mutasi ke ruangan', icon: '📋', url: 'riwayat-mutasi.html', ready: true,
@@ -465,7 +561,6 @@
     let html = '';
     let totalItems = 0;
 
-    // Section terbuka secara default: hanya yang paling atas
     let firstOpened = false;
 
     MENU_GROUPS.forEach((group, groupIdx) => {
@@ -529,14 +624,14 @@
     const role = window.currentUser.role;
     const grid = document.getElementById('quickGrid');
 
-    // Menu yang dianggap "sering dipakai"
+    // ==== BARU: retur-barang.html ditambahkan ke prioritas ====
     const quickPriority = [
       'dashboard.html', 'usulan-pembelian.html', 'monitoring-rko.html',
-      'user.html', 'pembelian.html', 'penerimaan.html',
+      'user.html', 'pembelian.html', 'penerimaan.html', 'retur-barang.html',
       'mutasi-barang.html', 'laporan.html'
     ];
+    // ==== /BARU ====
 
-    // Ambil semua item yang role-nya cocok
     let allItems = [];
     MENU_GROUPS.forEach(group => {
       group.items.forEach(it => {
@@ -544,7 +639,6 @@
       });
     });
 
-    // Urutkan sesuai prioritas
     allItems.sort((a, b) => {
       const ia = quickPriority.indexOf(a.url);
       const ib = quickPriority.indexOf(b.url);
@@ -554,7 +648,6 @@
       return ia - ib;
     });
 
-    // Ambil maksimum 6
     const top = allItems.slice(0, 6);
 
     if (top.length === 0) {
@@ -653,6 +746,9 @@
     renderSidebarMenu();
     renderQuickActions();
     renderSidebarBadges();
+    // ==== BARU: badge retur ====
+    renderReturBadge();
+    // ==== /BARU ====
   })();
 
   // ============================================================
@@ -680,10 +776,8 @@
     items.forEach(item => {
       if (item.getAttribute('href') === url) {
         found = true;
-        // Hapus badge lama
         const oldBadge = item.querySelector('.sidebar-badge');
         if (oldBadge) oldBadge.remove();
-        // Tambah badge kalau count > 0
         if (count > 0) {
           const badge = document.createElement('span');
           badge.className = 'sidebar-badge';
@@ -693,6 +787,29 @@
       }
     });
   }
+
+  // ============================================================
+  //  BARU: BADGE RETUR — jumlah retur aktif di sidebar
+  // ============================================================
+  async function renderReturBadge() {
+    const role = window.currentUser && window.currentUser.role;
+    const ROLES = ['SUPER_ADMIN', 'ADMIN', 'TIM_PENERIMAAN',
+      'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI'];
+    if (!role || !ROLES.includes(role)) return;
+    try {
+      const { count, error } = await window.supabase
+        .from('retur_barang')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['DRAFT', 'DIKIRIM', 'DITERIMA_DIST']);
+      if (error) throw error;
+      updateSidebarBadge('retur-barang.html', count || 0);
+    } catch (err) {
+      console.warn('[RETUR] fetch count gagal:', err);
+    }
+  }
+  // ============================================================
+  //  /BARU
+  // ============================================================
 </script>
 </body>
 </html>
