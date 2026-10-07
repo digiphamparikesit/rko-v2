@@ -26,6 +26,52 @@
     .preview-table th:first-child, .preview-table td:first-child { width: 90px; min-width: 90px; white-space: nowrap; }
     .preview-table th:nth-child(2), .preview-table td:nth-child(2) { min-width: 240px; }
     .preview-table td.num { text-align: right; }
+
+    /* Khusus untuk modal paste */
+    .paste-textarea {
+      width: 100%;
+      min-height: 180px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: "Courier New", monospace;
+      font-size: 12.5px;
+      line-height: 1.5;
+      resize: vertical;
+      background: #FAFBFA;
+    }
+    .paste-textarea:focus {
+      outline: none;
+      border-color: var(--green-mid);
+      background: #fff;
+    }
+    .paste-hint {
+      background: #E7F5EC;
+      color: var(--green-deep);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .paste-hint code {
+      background: #fff;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11.5px;
+    }
+    .paste-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+      margin-bottom: 12px;
+    }
+    .paste-actions .info-rows {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
   </style>
 </head>
 <body>
@@ -67,6 +113,7 @@
           <input type="text" id="ruanganInfo" readonly>
         </div>
         <button class="btn btn-upload" style="width:100%;" onclick="window.openUploadModal()">&#8593; Upload CSV Opname</button>
+        <button class="btn btn-secondary" style="width:100%; margin-top:8px;" onclick="window.openPasteModal()">&#128203; Paste dari Excel</button>
         <button class="btn btn-secondary" style="width:100%; margin-top:8px;" onclick="window.exportExcel()">&#8681; Download Excel</button>
       </div>
       <div class="panel side-panel">
@@ -140,6 +187,54 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="window.closeUploadModal()">Batal</button>
       <button class="btn btn-primary" id="btnConfirmUpload" onclick="window.confirmUpload()" disabled>Import &amp; Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PASTE DARI EXCEL -->
+<div id="modalPaste">
+  <div class="modal modal-wide">
+    <h2>Paste Data dari Excel / Google Sheets</h2>
+    <div class="paste-hint">
+      📋 <strong>Cara pakai:</strong> Buka Excel / Google Sheets, pilih data (termasuk baris header), tekan <code>Ctrl+C</code>. Balik ke sini, klik di kotak bawah, tekan <code>Ctrl+V</code>. Klik <strong>Proses Data</strong>.<br>
+      <strong>Kolom wajib di header:</strong> <code>id_barang</code>, <code>stok_fisik</code>, <code>keterangan</code> (opsional)
+    </div>
+
+    <textarea id="pasteTextarea" class="paste-textarea" placeholder="Contoh:
+id_barang	stok_fisik	keterangan
+4501	200	habis sebagian
+4502	150	
+4523	75	stok lama"></textarea>
+
+    <div class="paste-actions">
+      <button class="btn btn-primary" onclick="window.prosesPaste()">&#9654; Proses Data</button>
+      <button class="btn btn-secondary" onclick="window.clearPaste()">Kosongkan</button>
+      <span class="info-rows" id="pasteInfoRows"></span>
+    </div>
+
+    <div id="pasteSummary" style="display:none; margin-bottom:12px; font-size:13px; line-height:1.6;"></div>
+
+    <div id="pastePreviewWrap" style="display:none; max-height:340px; overflow-y:auto; border:1px solid var(--border); border-radius:10px;">
+      <table class="preview-table">
+        <thead style="position:sticky; top:0; z-index:1;">
+          <tr>
+            <th>ID</th>
+            <th>Nama Barang</th>
+            <th class="num">Stok Sistem</th>
+            <th class="num">Stok Fisik</th>
+            <th class="num">Selisih</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="pastePreviewBody"></tbody>
+      </table>
+    </div>
+
+    <div class="form-msg" id="pasteMsg"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="window.closePasteModal()">Batal</button>
+      <button class="btn btn-primary" id="btnConfirmPaste" onclick="window.confirmPaste()" disabled>Import &amp; Simpan</button>
     </div>
   </div>
 </div>
@@ -700,6 +795,192 @@
   };
 
   // ============================================================
+  //  PASTE DARI EXCEL
+  // ============================================================
+  window.openPasteModal = function() {
+    if (!activeRuanganId) {
+      alert('Pilih ruangan terlebih dahulu.');
+      return;
+    }
+    document.getElementById('pasteTextarea').value = '';
+    document.getElementById('pasteSummary').style.display = 'none';
+    document.getElementById('pastePreviewWrap').style.display = 'none';
+    document.getElementById('pasteMsg').textContent = '';
+    document.getElementById('pasteInfoRows').textContent = '';
+    document.getElementById('btnConfirmPaste').disabled = true;
+    uploadRows = [];
+    document.getElementById('modalPaste').classList.add('show');
+    setTimeout(() => document.getElementById('pasteTextarea').focus(), 100);
+  };
+
+  window.closePasteModal = function() {
+    document.getElementById('modalPaste').classList.remove('show');
+  };
+
+  window.clearPaste = function() {
+    document.getElementById('pasteTextarea').value = '';
+    document.getElementById('pasteSummary').style.display = 'none';
+    document.getElementById('pastePreviewWrap').style.display = 'none';
+    document.getElementById('pasteInfoRows').textContent = '';
+    document.getElementById('pasteMsg').textContent = '';
+    document.getElementById('btnConfirmPaste').disabled = true;
+    uploadRows = [];
+    document.getElementById('pasteTextarea').focus();
+  };
+
+  window.prosesPaste = function() {
+    const text = document.getElementById('pasteTextarea').value.trim();
+    const msg = document.getElementById('pasteMsg');
+    if (!text) { msg.textContent = 'Paste data terlebih dahulu.'; return; }
+
+    // Split per baris
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+    if (lines.length < 2) {
+      msg.textContent = 'Data minimal: 1 baris header + 1 baris data.';
+      return;
+    }
+
+    // Detect separator: TAB (Excel) atau koma
+    const headerLine = lines[0];
+    const sep = headerLine.includes('\t') ? '\t' : ',';
+    const headers = headerLine.split(sep).map(h => h.trim().toLowerCase().replace(/^\uFEFF/, ''));
+
+    // Cari index kolom
+    const idxId = headers.findIndex(h => h.includes('id_barang') || h === 'id');
+    const idxFisik = headers.findIndex(h => h.includes('stok_fisik') || h === 'stok' || h === 'qty');
+    const idxKet = headers.findIndex(h => h.includes('keterangan') || h === 'ket');
+
+    if (idxId === -1) { msg.textContent = 'Kolom "id_barang" tidak ditemukan di header.'; return; }
+    if (idxFisik === -1) { msg.textContent = 'Kolom "stok_fisik" tidak ditemukan di header.'; return; }
+
+    // Parse data rows
+    const rawRows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(sep).map(c => c.trim());
+      rawRows.push({
+        id_barang: cols[idxId] || '',
+        stok_fisik: cols[idxFisik] || '',
+        keterangan: idxKet >= 0 ? (cols[idxKet] || '') : ''
+      });
+    }
+
+    document.getElementById('pasteInfoRows').textContent = rawRows.length + ' baris terbaca';
+
+    // Simpan hasil parse ke uploadRows global (dipakai bersama)
+    processUploadRows(rawRows);
+
+    // Render preview di modal paste
+    renderPastePreview();
+
+    msg.textContent = '';
+  };
+
+  function renderPastePreview() {
+    const valid = uploadRows.filter(r => r.status === 'valid');
+    const invalid = uploadRows.filter(r => r.status === 'invalid');
+
+    document.getElementById('pasteSummary').style.display = 'block';
+    document.getElementById('pasteSummary').innerHTML =
+      `Total <strong>${uploadRows.length}</strong> baris — ` +
+      `<span style="color:var(--green-mid); font-weight:600;">${valid.length} valid</span>, ` +
+      `<span style="color:var(--coral); font-weight:600;">${invalid.length} bermasalah</span>`;
+
+    document.getElementById('pastePreviewWrap').style.display = 'block';
+    document.getElementById('pastePreviewBody').innerHTML = uploadRows.slice(0, 200).map(r => {
+      const warna = r.status === 'valid' ? 'var(--green-mid)' : 'var(--coral)';
+      const bg = r.status === 'valid' ? 'var(--green-soft)' : '#FBEAE7';
+      const label = r.status === 'valid' ? 'Siap import' : r.alasan;
+      const selisihTampil = r.selisih === null ? '-' : (r.selisih > 0 ? '+' + r.selisih : r.selisih);
+      return `<tr>
+        <td><span class="id-display">${escapeHtml(r.id_raw)}</span></td>
+        <td>${escapeHtml(r.nama_barang)}</td>
+        <td class="num">${r.status === 'valid' ? r.stok_sistem.toLocaleString('id-ID') + ' ' + escapeHtml(r.satuan_jual) : '-'}</td>
+        <td class="num">${r.status === 'valid' ? r.fisik.toLocaleString('id-ID') + ' ' + escapeHtml(r.satuan_jual) : '-'}</td>
+        <td class="num">${r.status === 'valid' ? selisihTampil : '-'}</td>
+        <td><span class="badge-status" style="color:${warna}; background:${bg};">${escapeHtml(label)}</span></td>
+      </tr>`;
+    }).join('') + (uploadRows.length > 200
+      ? `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); font-size:11.5px; padding:10px;">... dan ${uploadRows.length - 200} baris lain tidak ditampilkan</td></tr>`
+      : '');
+
+    document.getElementById('btnConfirmPaste').disabled = valid.length === 0;
+  }
+
+  window.confirmPaste = async function() {
+    const valid = uploadRows.filter(r => r.status === 'valid');
+    if (valid.length === 0) return;
+
+    const msg = document.getElementById('pasteMsg');
+    const btn = document.getElementById('btnConfirmPaste');
+    btn.disabled = true;
+
+    const bulan = Number(document.getElementById('bulanSelect').value);
+    const tahun = Number(document.getElementById('tahunSelect').value);
+
+    msg.textContent = `Menyimpan ${valid.length} baris...`;
+    msg.style.color = 'var(--text-muted)';
+
+    try {
+      const toUpdate = [];
+      const toInsert = [];
+      const now = new Date().toISOString();
+
+      valid.forEach(r => {
+        const stok = stokRuanganMap[r.barang_id];
+        if (stok) {
+          toUpdate.push({
+            id: stok.id,
+            stok_fisik: r.fisik,
+            keterangan_opname: r.keterangan || null,
+            diopname_pada: now,
+            diopname_oleh: window.currentUser.id || null,
+            terakhir_diperbarui: now
+          });
+        } else {
+          toInsert.push({
+            ruangan_id: activeRuanganId,
+            barang_id: r.barang_id,
+            bulan, tahun,
+            stok_awal: 0, total_terima: 0, total_pakai: 0, stok_sisa: 0,
+            stok_fisik: r.fisik,
+            keterangan_opname: r.keterangan || null,
+            diopname_pada: now,
+            diopname_oleh: window.currentUser.id || null,
+            terakhir_diperbarui: now
+          });
+        }
+      });
+
+      for (const u of toUpdate) {
+        const { id, ...payload } = u;
+        const { error } = await window.supabase.from('stok_ruangan').update(payload).eq('id', id);
+        if (error) throw error;
+      }
+
+      if (toInsert.length > 0) {
+        const BATCH = 500;
+        for (let i = 0; i < toInsert.length; i += BATCH) {
+          const chunk = toInsert.slice(i, i + BATCH);
+          const { error } = await window.supabase.from('stok_ruangan').insert(chunk);
+          if (error) throw error;
+        }
+      }
+
+      msg.textContent = `✅ Berhasil! ${valid.length} baris opname tersimpan (${toUpdate.length} update, ${toInsert.length} baru).`;
+      msg.style.color = 'var(--green-mid)';
+
+      setTimeout(() => {
+        window.closePasteModal();
+        loadAllData();
+      }, 1500);
+    } catch (err) {
+      msg.textContent = '❌ Gagal: ' + err.message;
+      msg.style.color = 'var(--coral)';
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
   //  INIT
   // ============================================================
   (async function init() {
@@ -722,6 +1003,7 @@
 
     if (activeRuanganId) loadAllData();
   })();
+
   // ============================================================
   //  EXPORT EXCEL
   // ============================================================
