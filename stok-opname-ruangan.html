@@ -658,7 +658,7 @@ id_barang	stok_fisik	keterangan
 
         if (isNaN(fisik) || fisik < 0) { status = 'invalid'; alasan = 'Stok fisik tidak valid'; }
         else if (!barangMap[barangId]) { status = 'invalid'; alasan = 'Barang tidak ada di master'; }
-        else if (!barangRuanganIds.has(barangId)) { status = 'invalid'; alasan = 'Barang tidak terdaftar di ruangan ini'; }
+        else if (!barangRuanganIds.has(barangId)) { status = 'skip'; alasan = 'Barang tidak terdaftar di ruangan ini (diabaikan)'; }
         else {
           const stok = stokRuanganMap[barangId];
           stokSistem = stok ? Number(stok.stok_sisa || 0) : 0;
@@ -691,18 +691,24 @@ id_barang	stok_fisik	keterangan
   function renderUploadPreview() {
     const valid = uploadRows.filter(r => r.status === 'valid');
     const invalid = uploadRows.filter(r => r.status === 'invalid');
+    const skip = uploadRows.filter(r => r.status === 'skip');
 
     document.getElementById('uploadSummary').style.display = 'block';
     document.getElementById('uploadSummary').innerHTML =
       `Total <strong>${uploadRows.length}</strong> baris — ` +
       `<span style="color:var(--green-mid); font-weight:600;">${valid.length} valid</span>, ` +
+      `<span style="color:var(--text-muted); font-weight:600;">${skip.length} skip (bukan barang ruangan)</span>, ` +
       `<span style="color:var(--coral); font-weight:600;">${invalid.length} bermasalah</span>`;
 
     document.getElementById('uploadPreviewWrap').style.display = 'block';
+     // Urutkan: valid dulu, lalu skip, lalu invalid
+    const order = { valid: 0, skip: 1, invalid: 2 };
+    uploadRows.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
     document.getElementById('uploadPreviewBody').innerHTML = uploadRows.slice(0, 200).map(r => {
-      const warna = r.status === 'valid' ? 'var(--green-mid)' : 'var(--coral)';
-      const bg = r.status === 'valid' ? 'var(--green-soft)' : '#FBEAE7';
-      const label = r.status === 'valid' ? 'Siap import' : r.alasan;
+      let warna, bg, label;
+      if (r.status === 'valid') { warna = 'var(--green-mid)'; bg = 'var(--green-soft)'; label = 'Siap import'; }
+      else if (r.status === 'skip') { warna = 'var(--text-muted)'; bg = '#F1F1EE'; label = r.alasan; }
+      else { warna = 'var(--coral)'; bg = '#FBEAE7'; label = r.alasan; }
       const selisihTampil = r.selisih === null ? '-' : (r.selisih > 0 ? '+' + r.selisih : r.selisih);
       return `<tr>
         <td><span class="id-display">${escapeHtml(r.id_raw)}</span></td>
@@ -864,8 +870,8 @@ id_barang	stok_fisik	keterangan
       });
     }
 
-    document.getElementById('pasteInfoRows').textContent = rawRows.length + ' baris terbaca';
-
+    // Info count setelah diproses
+    // (dipindah ke bawah setelah renderPastePreview)
     // Simpan hasil parse ke uploadRows global (dipakai bersama)
     processUploadRows(rawRows);
 
@@ -878,18 +884,24 @@ id_barang	stok_fisik	keterangan
   function renderPastePreview() {
     const valid = uploadRows.filter(r => r.status === 'valid');
     const invalid = uploadRows.filter(r => r.status === 'invalid');
+    const skip = uploadRows.filter(r => r.status === 'skip');
 
     document.getElementById('pasteSummary').style.display = 'block';
+    // Urutkan: valid dulu, lalu skip, lalu invalid
+    const order = { valid: 0, skip: 1, invalid: 2 };
+    uploadRows.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
     document.getElementById('pasteSummary').innerHTML =
       `Total <strong>${uploadRows.length}</strong> baris — ` +
       `<span style="color:var(--green-mid); font-weight:600;">${valid.length} valid</span>, ` +
+      `<span style="color:var(--text-muted); font-weight:600;">${skip.length} skip (bukan barang ruangan)</span>, ` +
       `<span style="color:var(--coral); font-weight:600;">${invalid.length} bermasalah</span>`;
 
     document.getElementById('pastePreviewWrap').style.display = 'block';
     document.getElementById('pastePreviewBody').innerHTML = uploadRows.slice(0, 200).map(r => {
-      const warna = r.status === 'valid' ? 'var(--green-mid)' : 'var(--coral)';
-      const bg = r.status === 'valid' ? 'var(--green-soft)' : '#FBEAE7';
-      const label = r.status === 'valid' ? 'Siap import' : r.alasan;
+      let warna, bg, label;
+      if (r.status === 'valid') { warna = 'var(--green-mid)'; bg = 'var(--green-soft)'; label = 'Siap import'; }
+      else if (r.status === 'skip') { warna = 'var(--text-muted)'; bg = '#F1F1EE'; label = r.alasan; }
+      else { warna = 'var(--coral)'; bg = '#FBEAE7'; label = r.alasan; }
       const selisihTampil = r.selisih === null ? '-' : (r.selisih > 0 ? '+' + r.selisih : r.selisih);
       return `<tr>
         <td><span class="id-display">${escapeHtml(r.id_raw)}</span></td>
@@ -904,6 +916,8 @@ id_barang	stok_fisik	keterangan
       : '');
 
     document.getElementById('btnConfirmPaste').disabled = valid.length === 0;
+    document.getElementById('pasteInfoRows').textContent =
+      `${valid.length} valid · ${skip.length} skip · ${invalid.length} invalid`;
   }
 
   window.confirmPaste = async function() {
