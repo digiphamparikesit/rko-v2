@@ -366,57 +366,7 @@
 
       <h3 class="section-heading">Aksi Cepat</h3>
       <div class="quick-grid" id="quickGrid"></div>
-
-      <!-- ==== BARU: KARTU ALUR RETUR BARANG RUSAK ==== -->
-      <div class="flow-card">
-        <h3 class="section-heading">Alur Retur Barang Rusak</h3>
-        <p class="flow-intro">
-          Barang rusak yang ditemukan saat <strong>penerimaan barang</strong> tercatat dengan status
-          <span class="flow-node rusak" style="padding:2px 10px; font-size:11px;">MENUNGGU_RETUR</span>
-          dan otomatis muncul di halaman
-          <a href="retur-barang.html" class="flow-link">Retur Barang</a>.
-        </p>
-
-        <div class="flow-track">
-          <span class="flow-node draft">DRAFT</span>
-          <span class="flow-arrow">→</span>
-          <span class="flow-node dikirim">DIKIRIM</span>
-          <span class="flow-arrow">→</span>
-          <span class="flow-node diterima">DITERIMA_DIST</span>
-          <span class="flow-arrow">→</span>
-          <span class="flow-node selesai">SELESAI</span>
-        </div>
-
-        <div class="flow-branch">
-          <span>Dibatalkan dari DRAFT / DIKIRIM</span>
-          <span class="flow-node batal">DIBATALKAN</span>
-        </div>
-
-        <div class="flow-roles">
-          <div class="flow-role">
-            <span class="flow-role-icon">📦</span>
-            <div>
-              <div class="flow-role-name">Tim Penerimaan</div>
-              <div class="flow-role-desc">Terima barang, tandai yang rusak → MENUNGGU_RETUR</div>
-            </div>
-          </div>
-          <div class="flow-role">
-            <span class="flow-role-icon">🔄</span>
-            <div>
-              <div class="flow-role-name">Retur Barang</div>
-              <div class="flow-role-desc">Buat surat retur, catat pengiriman &amp; tanda terima</div>
-            </div>
-          </div>
-          <div class="flow-role">
-            <span class="flow-role-icon">✅</span>
-            <div>
-              <div class="flow-role-name">Koordinator / Kepala IF</div>
-              <div class="flow-role-desc">Verifikasi retur selesai</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- ==== /BARU ==== -->
+  
     </div>
   </main>
 </div>
