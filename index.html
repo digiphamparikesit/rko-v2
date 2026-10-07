@@ -116,11 +116,17 @@
       text-align: center;
       flex-shrink: 0;
     }
-    .sidebar-item .label {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .sidebar-item .sidebar-badge {
+      background: #DC5B45;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      min-width: 20px;
+      text-align: center;
+      line-height: 1.3;
+      flex-shrink: 0;
     }
 
     .sidebar-footer {
@@ -646,7 +652,47 @@
 
     renderSidebarMenu();
     renderQuickActions();
+    renderSidebarBadges();
   })();
+
+  // ============================================================
+  //  BADGE DI SIDEBAR — usulan + approval pending
+  // ============================================================
+  async function renderSidebarBadges() {
+    const role = window.currentUser && window.currentUser.role;
+    const NOTIF_ALLOW_ROLES = ['SUPER_ADMIN', 'ADMIN', 'KOORDINATOR_LOGISTIK_FARMASI', 'KEPALA_INSTALASI_FARMASI'];
+    if (!role || !NOTIF_ALLOW_ROLES.includes(role)) return;
+
+    try {
+      const counts = await window.auth.fetchNotifCounts();
+      if (!counts) return;
+
+      updateSidebarBadge('usulan-pembelian.html', counts.usulan);
+      updateSidebarBadge('approval.html', counts.approval);
+    } catch (err) {
+      console.warn('[NOTIF] fetch gagal:', err);
+    }
+  }
+
+  function updateSidebarBadge(url, count) {
+    const items = document.querySelectorAll('.sidebar-item');
+    let found = false;
+    items.forEach(item => {
+      if (item.getAttribute('href') === url) {
+        found = true;
+        // Hapus badge lama
+        const oldBadge = item.querySelector('.sidebar-badge');
+        if (oldBadge) oldBadge.remove();
+        // Tambah badge kalau count > 0
+        if (count > 0) {
+          const badge = document.createElement('span');
+          badge.className = 'sidebar-badge';
+          badge.textContent = count > 99 ? '99+' : count;
+          item.appendChild(badge);
+        }
+      }
+    });
+  }
 </script>
 </body>
 </html>
