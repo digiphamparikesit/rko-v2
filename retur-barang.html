@@ -67,90 +67,114 @@
     .retur-card.open .retur-body { display: block; }
     .retur-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
-    /* ====== PERBAIKAN: CSS MODAL ====== */
+    /* ============================================================
+       OVERRIDE MODAL — menyesuaikan global CSS
+       Global CSS sudah punya #modalDetail, tapi TIDAK punya
+       #modalBuat dan #modalKirim. Selain itu z-index modal (40)
+       lebih rendah dari header sticky (100).
+       ============================================================ */
     #modalBuat, #modalKirim, #modalDetail {
-      display: none; /* Sembunyikan secara default */
+      display: none;
       position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.5); /* Overlay gelap */
-      backdrop-filter: blur(2px);
-      z-index: 9999;
+      inset: 0;
+      background: rgba(15, 61, 46, 0.45);
       align-items: center;
       justify-content: center;
+      z-index: 9999;
       padding: 20px;
-      overflow-y: auto; /* Agar bisa discroll jika konten panjang */
+      overflow-y: auto;
     }
     #modalBuat.show, #modalKirim.show, #modalDetail.show {
-      display: flex; /* Tampilkan sebagai flexbox untuk centering */
+      display: flex;
     }
-    .modal {
+    #modalBuat .modal,
+    #modalKirim .modal,
+    #modalDetail .modal {
       background: #fff;
-      border-radius: 14px;
-      padding: 24px;
+      border-radius: 16px;
       width: 100%;
-      max-width: 500px;
+      max-width: 520px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-      position: relative;
+      padding: 26px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
-    .modal-wide { max-width: 700px; }
-    .modal h2 {
-      margin-top: 0;
-      margin-bottom: 20px;
-      font-size: 18px;
-      color: var(--text-dark, #333);
+    #modalBuat .modal-wide,
+    #modalDetail .modal-wide {
+      max-width: 780px;
     }
-    .modal .field { margin-bottom: 16px; }
-    .modal .field label {
+    #modalBuat .modal h2,
+    #modalKirim .modal h2,
+    #modalDetail .modal h2 {
+      font-size: 16px;
+      margin: 0 0 16px;
+    }
+    #modalBuat .modal .field,
+    #modalKirim .modal .field {
+      margin-bottom: 14px;
+    }
+    #modalBuat .modal .field label,
+    #modalKirim .modal .field label {
       display: block;
       font-size: 12px;
       font-weight: 600;
-      color: var(--text-muted, #666);
+      color: var(--text-muted);
       margin-bottom: 6px;
     }
-    .modal .field input, .modal .field select {
+    #modalBuat .modal .field input,
+    #modalBuat .modal .field select,
+    #modalKirim .modal .field input {
       width: 100%;
       padding: 10px 12px;
-      border: 1px solid var(--border, #ddd);
+      border: 1px solid var(--border);
       border-radius: 8px;
       font-size: 13px;
       font-family: inherit;
       background: #fff;
       box-sizing: border-box;
     }
-    .modal .field input:focus, .modal .field select:focus {
+    #modalBuat .modal .field input:focus,
+    #modalBuat .modal .field select:focus,
+    #modalKirim .modal .field input:focus {
       outline: none;
-      border-color: var(--green-mid, #2e7d32);
-      box-shadow: 0 0 0 3px var(--green-soft, #e8f5e9);
+      border-color: var(--green-mid);
+      box-shadow: 0 0 0 3px var(--green-soft);
     }
-    .modal-actions {
+    #modalBuat .modal-actions,
+    #modalKirim .modal-actions,
+    #modalDetail .modal-actions {
       display: flex;
       justify-content: flex-end;
       gap: 10px;
-      margin-top: 24px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border, #ddd);
+      margin-top: 18px;
     }
-    .help-text {
+    #modalBuat .help-text {
       font-size: 11px;
-      color: var(--text-muted, #666);
+      color: var(--text-muted);
       margin-top: 4px;
     }
-    .form-msg {
-      font-size: 12px;
-      margin-top: 10px;
-    }
-    .detail-info-row {
+    #modalBuat .detail-info-row,
+    #modalDetail .detail-info-row {
       display: flex;
       justify-content: space-between;
+      gap: 12px;
       padding: 8px 0;
-      border-bottom: 1px solid var(--border, #ddd);
+      border-bottom: 1px solid var(--border);
       font-size: 13px;
     }
-    .detail-info-row:last-child { border-bottom: none; }
-    .detail-info-row .label { color: var(--text-muted, #666); }
-    .detail-info-row .val { font-weight: 600; text-align: right; }
+    #modalBuat .detail-info-row:last-child,
+    #modalDetail .detail-info-row:last-child { border-bottom: none; }
+    #modalBuat .detail-info-row .label,
+    #modalDetail .detail-info-row .label {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    #modalBuat .detail-info-row .val,
+    #modalDetail .detail-info-row .val {
+      font-weight: 600;
+      text-align: right;
+      word-break: break-word;
+    }
   </style>
 </head>
 <body>
@@ -222,7 +246,7 @@
 </main>
 
 <!-- MODAL BUAT RETUR -->
-<div id="modalBuat" class="modal-overlay">
+<div id="modalBuat">
   <div class="modal modal-wide">
     <h2>Buat Surat Retur Baru</h2>
     <div class="status-info-box">
@@ -267,7 +291,7 @@
 </div>
 
 <!-- MODAL KIRIM -->
-<div id="modalKirim" class="modal-overlay">
+<div id="modalKirim">
   <div class="modal">
     <h2>Kirim Retur ke Distributor</h2>
     <div class="status-info-box" id="kirimInfo"></div>
@@ -284,7 +308,7 @@
 </div>
 
 <!-- MODAL DETAIL -->
-<div id="modalDetail" class="modal-overlay">
+<div id="modalDetail">
   <div class="modal modal-wide">
     <h2 id="detailTitle">Detail Retur</h2>
     <div id="detailInfo" style="margin-bottom:14px;"></div>
@@ -368,7 +392,7 @@
   let userMap = {};
 
   let listRetur = [];
-  let detailMap = {};       // retur_id -> [detail]
+  let detailMap = {};
   let penerimaanRusakAll = [];
   let filtered = [];
   let currentBuat = null;
@@ -425,8 +449,6 @@
         fetchAllRows('penerimaan', q => q.eq('kondisi', 'RUSAK')),
         fetchAllRows('users'),
         fetchAllRows('retur_barang', q => {
-          // Filter berdasarkan bulan/tahun di no_retur? Atau tanggal_retur?
-          // Pakai tanggal_retur
           const startDate = tahun + '-' + String(bulan).padStart(2, '0') + '-01';
           const endDate = bulan === 12 ? (tahun + 1) + '-01-01' : tahun + '-' + String(bulan + 1).padStart(2, '0') + '-01';
           return q.gte('tanggal_retur', startDate).lt('tanggal_retur', endDate);
@@ -441,11 +463,9 @@
 
       penerimaanRusakAll = penerimaanData;
 
-      // Filter retur berdasarkan pembelian bulan/tahun
       const pembelianIdsPeriode = new Set(pembelianData.map(p => p.id));
       listRetur = returData.filter(r => !r.pembelian_id || pembelianIdsPeriode.has(r.pembelian_id));
 
-      // Load detail untuk semua retur
       detailMap = {};
       if (listRetur.length > 0) {
         const returIds = listRetur.map(r => r.id);
@@ -537,11 +557,8 @@
       }).join('');
 
       let actions = '';
-
-      // Detail — selalu tampil
       actions += `<button class="btn btn-secondary btn-mini" onclick="window.openDetail(${r.id})">Detail</button>`;
 
-      // Aksi per status
       if (r.status === 'DRAFT') {
         if (bisaBuatRetur()) {
           actions += `<button class="btn btn-primary btn-mini" onclick="window.openKirim(${r.id})">Kirim</button>`;
@@ -601,14 +618,11 @@
     document.getElementById('fCatatan').value = '';
     currentBuat = null;
 
-    // Isi dropdown penerimaan rusak
     const sel = document.getElementById('fPenerimaan');
     sel.innerHTML = '<option value="">-- Memuat... --</option>';
 
-    // Cari penerimaan rusak yang belum ada retur
     const existingPenerimaanIds = new Set(listRetur.map(r => r.penerimaan_id));
 
-    // Group by pembelian_id + no_batch + tanggal_terima (batch)
     const groups = {};
     penerimaanRusakAll.forEach(p => {
       if (existingPenerimaanIds.has(p.id)) return;
@@ -630,8 +644,6 @@
     });
 
     const listGroup = Object.values(groups);
-
-    // Skip grup kalau penerimaan pertama sudah ada di retur
     const tersedia = listGroup.filter(g => !existingPenerimaanIds.has(g.penerimaanIds[0]));
 
     if (tersedia.length === 0) {
@@ -675,7 +687,6 @@
 
     currentBuat = g;
 
-    // Render daftar barang rusak
     const detailList = document.getElementById('detailListBuat');
     detailList.innerHTML = Object.keys(g.items).map(bid => {
       const barang = barangMap[bid] || {};
@@ -733,7 +744,6 @@
       const noRetur = await generateNoRetur();
       const po = pembelianMap[currentBuat.pembelian_id];
 
-      // Insert header
       const { data: headerData, error: headerErr } = await window.supabase.from('retur_barang').insert({
         no_retur: noRetur,
         penerimaan_id: currentBuat.penerimaanIds[0],
@@ -749,7 +759,6 @@
       if (headerErr) throw headerErr;
       const returId = headerData[0].id;
 
-      // Insert detail
       const details = Object.keys(currentBuat.items).map(bid => {
         const barang = barangMap[bid] || {};
         return {
@@ -839,7 +848,7 @@
   };
 
   // ============================================================
-  //  KONFIRMASI DITERIMA (dari distributor)
+  //  KONFIRMASI DITERIMA
   // ============================================================
   window.konfirmasiDiterima = async function(id) {
     const r = listRetur.find(x => x.id === id);
@@ -1017,19 +1026,21 @@
   document.addEventListener('click', function(e) {
     const head = e.target.closest('.retur-head');
     if (!head) return;
-    // Hanya toggle kalau bukan klik tombol
     if (e.target.closest('button')) return;
     const card = head.closest('.retur-card');
     if (card) card.classList.toggle('open');
   });
 
-  // ====== PERBAIKAN: Tutup modal jika klik di luar area modal ======
-  document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', function(e) {
-      if (e.target === this) {
-        this.classList.remove('show');
-      }
-    });
+  // Tutup modal jika klik di luar area modal
+  ['modalBuat', 'modalKirim', 'modalDetail'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', function(e) {
+        if (e.target === this) {
+          this.classList.remove('show');
+        }
+      });
+    }
   });
 </script>
 </body>
