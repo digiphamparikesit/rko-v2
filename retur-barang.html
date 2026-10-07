@@ -15,7 +15,7 @@
   <script src="auth.js"></script>
   <style>
     /* CSS khusus retur-barang.html */
-    .layout-split { grid-template-columns: 1fr 3fr; }
+    .layout-split { grid-template-columns: 1fr 4fr; }
     .panel { overflow-x: auto; }
     table { min-width: 1000px; }
 
@@ -66,6 +66,91 @@
     }
     .retur-card.open .retur-body { display: block; }
     .retur-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* ====== PERBAIKAN: CSS MODAL ====== */
+    #modalBuat, #modalKirim, #modalDetail {
+      display: none; /* Sembunyikan secara default */
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5); /* Overlay gelap */
+      backdrop-filter: blur(2px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto; /* Agar bisa discroll jika konten panjang */
+    }
+    #modalBuat.show, #modalKirim.show, #modalDetail.show {
+      display: flex; /* Tampilkan sebagai flexbox untuk centering */
+    }
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 24px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      position: relative;
+    }
+    .modal-wide { max-width: 700px; }
+    .modal h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 18px;
+      color: var(--text-dark, #333);
+    }
+    .modal .field { margin-bottom: 16px; }
+    .modal .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted, #666);
+      margin-bottom: 6px;
+    }
+    .modal .field input, .modal .field select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border, #ddd);
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    .modal .field input:focus, .modal .field select:focus {
+      outline: none;
+      border-color: var(--green-mid, #2e7d32);
+      box-shadow: 0 0 0 3px var(--green-soft, #e8f5e9);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border, #ddd);
+    }
+    .help-text {
+      font-size: 11px;
+      color: var(--text-muted, #666);
+      margin-top: 4px;
+    }
+    .form-msg {
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .detail-info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border, #ddd);
+      font-size: 13px;
+    }
+    .detail-info-row:last-child { border-bottom: none; }
+    .detail-info-row .label { color: var(--text-muted, #666); }
+    .detail-info-row .val { font-weight: 600; text-align: right; }
   </style>
 </head>
 <body>
@@ -137,7 +222,7 @@
 </main>
 
 <!-- MODAL BUAT RETUR -->
-<div id="modalBuat">
+<div id="modalBuat" class="modal-overlay">
   <div class="modal modal-wide">
     <h2>Buat Surat Retur Baru</h2>
     <div class="status-info-box">
@@ -182,7 +267,7 @@
 </div>
 
 <!-- MODAL KIRIM -->
-<div id="modalKirim">
+<div id="modalKirim" class="modal-overlay">
   <div class="modal">
     <h2>Kirim Retur ke Distributor</h2>
     <div class="status-info-box" id="kirimInfo"></div>
@@ -199,7 +284,7 @@
 </div>
 
 <!-- MODAL DETAIL -->
-<div id="modalDetail">
+<div id="modalDetail" class="modal-overlay">
   <div class="modal modal-wide">
     <h2 id="detailTitle">Detail Retur</h2>
     <div id="detailInfo" style="margin-bottom:14px;"></div>
@@ -936,6 +1021,15 @@
     if (e.target.closest('button')) return;
     const card = head.closest('.retur-card');
     if (card) card.classList.toggle('open');
+  });
+
+  // ====== PERBAIKAN: Tutup modal jika klik di luar area modal ======
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.remove('show');
+      }
+    });
   });
 </script>
 </body>
