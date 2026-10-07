@@ -39,7 +39,59 @@
     .log-item.ubah .log-aksi { color: var(--amber); }
     select.status-select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
 
-    /* ==== BARU: PANEL USULAN SIAP BUAT PO ==== */
+    /* ==== Filter & Aksi (collapsible) ==== */
+    .filter-toggle-bar {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .btn-filter-toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 16px; border-radius: 10px;
+      border: 1px solid var(--border); background: #fff;
+      color: var(--text-dark); font-weight: 600; font-size: 13px;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .btn-filter-toggle:hover {
+      border-color: var(--green-mid); color: var(--green-deep);
+      background: var(--green-soft);
+    }
+    .btn-filter-toggle.open {
+      background: var(--green-mid); color: #fff;
+      border-color: var(--green-mid);
+    }
+    .btn-filter-toggle .arrow {
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+    .btn-filter-toggle.open .arrow { transform: rotate(180deg); }
+
+    .filter-panel {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .filter-panel.show { display: block; }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      align-items: end;
+    }
+    .filter-grid .field { margin-bottom: 0; }
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* ==== Panel Usulan Siap Buat PO ==== */
     .usulan-panel {
       background: #fff;
       border: 1px solid var(--border);
@@ -79,18 +131,10 @@
       font-weight: 400;
     }
     .usulan-panel table { min-width: 100%; }
-    .usulan-panel table th {
-      background: #F7FAF8;
-    }
-    .usulan-panel .qty-hi {
-      color: var(--green-deep);
-      font-weight: 700;
-      font-size: 14px;
-    }
+    .usulan-panel table th { background: #F7FAF8; }
+    .usulan-panel .qty-hi { color: var(--green-deep); font-weight: 700; font-size: 14px; }
     .usulan-panel .btn-buat-po {
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 600;
+      padding: 6px 14px; font-size: 12px; font-weight: 600;
       background: var(--green-mid); color: #fff;
       border: none; border-radius: 8px;
       cursor: pointer; font-family: inherit;
@@ -98,13 +142,52 @@
       display: inline-flex; align-items: center; gap: 5px;
     }
     .usulan-panel .btn-buat-po:hover { background: #128a3e; }
-    .usulan-panel .barang-nama {
-      font-weight: 600;
-      font-size: 13px;
-      line-height: 1.3;
+    .usulan-panel .barang-nama { font-weight: 600; font-size: 13px; line-height: 1.3; }
+    .usulan-panel .barang-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ==== Pagination ==== */
+    .pager {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px;
+      background: #FAFBFA;
+      border-top: 1px solid var(--border);
+      gap: 12px; flex-wrap: wrap;
     }
-    .usulan-panel .barang-meta {
-      font-size: 11px; color: var(--text-muted); margin-top: 2px;
+    .pager .pager-info {
+      font-size: 12.5px; color: var(--text-muted);
+    }
+    .pager .pager-info strong { color: var(--text-dark); }
+    .pager .pager-controls {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .pager .pg-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 8px;
+      font-size: 12.5px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      color: var(--text-dark);
+      transition: all 0.15s;
+    }
+    .pager .pg-btn:hover:not(:disabled) {
+      border-color: var(--green-mid);
+      color: var(--green-deep);
+      background: var(--green-soft);
+    }
+    .pager .pg-btn:disabled {
+      opacity: 0.4; cursor: not-allowed;
+    }
+    .pager .pg-current {
+      padding: 6px 12px;
+      font-size: 12.5px; font-weight: 700;
+      color: var(--green-deep);
+    }
+
+    @media (max-width: 700px) {
+      .filter-grid { grid-template-columns: 1fr; }
+      .pager { flex-direction: column; align-items: stretch; text-align: center; }
+      .pager .pager-controls { justify-content: center; }
     }
   </style>
 </head>
@@ -143,7 +226,55 @@
     </div>
   </section>
 
-  <!-- ==== BARU: Panel Usulan Siap Buat PO ==== -->
+  <!-- ==== Toggle Filter ==== -->
+  <div class="filter-toggle-bar">
+    <button class="btn-filter-toggle" id="btnFilterToggle" onclick="window.toggleFilterPanel()">
+      <span>🔍</span>
+      <span>Cari &amp; Filter</span>
+      <span class="arrow">▼</span>
+    </button>
+    <button class="btn btn-primary" onclick="window.openForm()">+ Buat PO Baru</button>
+    <button class="btn" style="background:#F1F1EE; color:var(--text-dark);" onclick="window.openUploadModal()">&#8593; Upload CSV</button>
+    <button class="btn btn-warning" onclick="window.openSelisihModal()">&#9888; PO Ulang dari Selisih</button>
+    <button class="btn btn-secondary" onclick="window.exportExcel()">&#8681; Excel</button>
+  </div>
+
+  <!-- ==== Panel Filter (collapsed default) ==== -->
+  <div class="filter-panel" id="filterPanel">
+    <div class="filter-grid">
+      <div class="field">
+        <label>Cari nama barang / no. PO</label>
+        <input type="text" id="searchBox" placeholder="Ketik untuk mencari...">
+      </div>
+      <div class="field">
+        <label>Golongan</label>
+        <select id="filterGolongan">
+          <option value="">Semua golongan</option>
+          <option value="OBAT">Obat</option>
+          <option value="BMHP">BMHP</option>
+          <option value="BHP">BHP</option>
+          <option value="B3">B3</option>
+          <option value="NUTRISI ENTERAL">Nutrisi Enteral</option>
+          <option value="PROGRAM">Program</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status PO</label>
+        <select id="filterStatus">
+          <option value="">Semua status</option>
+          <option value="DRAFT">Draft</option>
+          <option value="DIKIRIM">Dikirim</option>
+          <option value="DITERIMA_SEBAGIAN">Diterima sebagian</option>
+          <option value="SELESAI">Selesai</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-secondary btn-mini" onclick="window.resetFilter()">Reset Filter</button>
+    </div>
+  </div>
+
+  <!-- ==== Panel Usulan Siap Buat PO ==== -->
   <section class="usulan-panel" id="usulanPanel">
     <div class="up-head">
       <div class="up-title">
@@ -156,40 +287,28 @@
     <div id="usulanListWrap">
       <div class="empty-state" style="padding:24px;">Memuat usulan...</div>
     </div>
+    <!-- pager usulan akan di-render di sini -->
+    <div id="usulanPagerWrap"></div>
   </section>
-  <!-- ==== /BARU ==== -->
 
-  <div class="layout-split">
-    <aside class="left-col">
-      <div class="panel side-panel">
-        <h2 class="side-title">Cari &amp; Filter</h2>
-        <div class="field"><label>Cari nama barang / no. PO</label><input type="text" id="searchBox" placeholder="Cari nama barang atau no. PO..."></div>
-        <div class="field"><label>Golongan</label><select id="filterGolongan"><option value="">Semua golongan</option><option value="OBAT">Obat</option><option value="BMHP">BMHP</option><option value="BHP">BHP</option><option value="B3">B3</option><option value="NUTRISI ENTERAL">Nutrisi Enteral</option><option value="PROGRAM">Program</option></select></div>
-        <div class="field"><label>Status PO</label><select id="filterStatus"><option value="">Semua status</option><option value="DRAFT">Draft</option><option value="DIKIRIM">Dikirim</option><option value="DITERIMA_SEBAGIAN">Diterima sebagian</option><option value="SELESAI">Selesai</option></select></div>
-        <button class="btn btn-primary" style="width:100%;" onclick="window.openForm()">+ Buat PO Baru</button>
-        <button class="btn" style="width:100%; margin-top:8px; background:#F1F1EE; color:var(--text-dark);" onclick="window.openUploadModal()">&#8593; Upload Data dari SIM RS (CSV)</button>
-        <button class="btn btn-warning" style="width:100%; margin-top:8px;" onclick="window.openSelisihModal()">&#9888; Buat PO Ulang dari Selisih</button>
-        <button class="btn btn-secondary" style="width:100%; margin-top:8px;" onclick="window.exportExcel()">&#8681; Download Excel</button>
-      </div>
-    </aside>
-    <section class="right-col">
-      <div class="panel">
-        <table>
-          <thead>
-            <tr>
-              <th>No. PO</th>
-              <th>Nama barang</th>
-              <th>Distributor</th>
-              <th class="num">Qty pesan</th>
-              <th>Tanggal PO</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
-        </table>
-      </div>
-    </section>
+  <!-- ==== Tabel PO ==== -->
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>No. PO</th>
+          <th>Nama barang</th>
+          <th>Distributor</th>
+          <th class="num">Qty pesan</th>
+          <th>Tanggal PO</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
+    </table>
+    <!-- pager PO akan di-render di sini -->
+    <div id="poPagerWrap"></div>
   </div>
 </main>
 
@@ -277,6 +396,12 @@
 
 <script>
   // ============================================================
+  //  KONSTANTA
+  // ============================================================
+  const PAGE_SIZE_USULAN = 50;
+  const PAGE_SIZE_PO = 50;
+
+  // ============================================================
   //  SESSION
   // ============================================================
   (async function() {
@@ -322,9 +447,34 @@
   let filteredList = [];
   let uploadRows = [];
   let barangRkoList = [];
-  let usulanPendingList = [];  // ==== BARU ====
+  let usulanPendingList = [];
   window._selisihData = null;
   let prefillUsulan = null;
+
+  // Pagination state
+  let usulanPage = 1;
+  let poPage = 1;
+
+  // ============================================================
+  //  TOGGLE FILTER PANEL
+  // ============================================================
+  window.toggleFilterPanel = function() {
+    const panel = document.getElementById('filterPanel');
+    const btn = document.getElementById('btnFilterToggle');
+    panel.classList.toggle('show');
+    btn.classList.toggle('open');
+    // Fokus ke search box saat dibuka
+    if (panel.classList.contains('show')) {
+      setTimeout(() => document.getElementById('searchBox').focus(), 100);
+    }
+  };
+
+  window.resetFilter = function() {
+    document.getElementById('searchBox').value = '';
+    document.getElementById('filterGolongan').value = '';
+    document.getElementById('filterStatus').value = '';
+    applyFilter();
+  };
 
   // ============================================================
   //  PERIODE OPTIONS
@@ -354,8 +504,11 @@
   async function initData() {
     const now = new Date();
     fillPeriodOptions(now.getMonth() + 1, now.getFullYear());
-    document.getElementById('bulanSelect').addEventListener('change', loadAllData);
-    document.getElementById('tahunSelect').addEventListener('change', loadAllData);
+    document.getElementById('bulanSelect').addEventListener('change', () => { usulanPage = 1; poPage = 1; loadAllData(); });
+    document.getElementById('tahunSelect').addEventListener('change', () => { usulanPage = 1; poPage = 1; loadAllData(); });
+    document.getElementById('searchBox').addEventListener('input', applyFilter);
+    document.getElementById('filterGolongan').addEventListener('change', applyFilter);
+    document.getElementById('filterStatus').addEventListener('change', applyFilter);
     await loadAllData();
 
     // Cek apakah datang dari halaman usulan-pembelian
@@ -363,7 +516,7 @@
   }
 
   // ============================================================
-  //  PREFILL DARI USULAN PEMBELIAN (URL params flow)
+  //  PREFILL DARI URL USULAN
   // ============================================================
   function cekPrefillDariUsulan() {
     const params = new URLSearchParams(window.location.search);
@@ -407,7 +560,7 @@
   }
 
   // ============================================================
-  //  BARU: PRE-FILL FORM DARI DATA USULAN (dipakai di 2 tempat)
+  //  PRE-FILL FORM DARI DATA USULAN
   // ============================================================
   function prefillFormFromUsulan(usulan) {
     const barang = barangMap[usulan.barang_id];
@@ -416,7 +569,6 @@
       return;
     }
 
-    // Simpan state prefill
     prefillUsulan = {
       usulan_id: usulan.id,
       barang_id: usulan.barang_id,
@@ -426,10 +578,8 @@
       tahun: usulan.tahun
     };
 
-    // Buka form PO baru (reset state)
     window.openForm();
 
-    // Isi field
     document.getElementById('fBarangInput').value = barang.nama_barang;
     document.getElementById('fBarang').value = barang.id;
     if (usulan.qty_usulan_box) document.getElementById('fQty').value = usulan.qty_usulan_box;
@@ -443,7 +593,6 @@
       }
     }
 
-    // Info banner
     const infoDiv = document.getElementById('formInfo');
     infoDiv.style.display = 'block';
     infoDiv.style.cssText = 'background:#E7F5EC; padding:10px; border-radius:8px; margin-bottom:12px; font-size:13px; line-height:1.5;';
@@ -460,10 +609,11 @@
   }
 
   // ============================================================
-  //  BARU: RENDER PANEL USULAN SIAP BUAT PO
+  //  RENDER PANEL USULAN — dengan pagination
   // ============================================================
   function renderUsulanPanel() {
     const wrap = document.getElementById('usulanListWrap');
+    const pagerWrap = document.getElementById('usulanPagerWrap');
     const countEl = document.getElementById('usulanCount');
     const subEl = document.getElementById('usulanSub');
 
@@ -474,12 +624,23 @@
       wrap.innerHTML = `<div class="empty-state" style="padding:24px 20px;">
         Belum ada usulan disetujui untuk periode ini.
       </div>`;
+      pagerWrap.innerHTML = '';
       return;
     }
 
     subEl.textContent = 'usulan disetujui — klik Buat PO untuk memproses';
 
-    const rows = usulanPendingList.map(u => {
+    // Pagination
+    const total = usulanPendingList.length;
+    const totalPages = Math.ceil(total / PAGE_SIZE_USULAN);
+    if (usulanPage > totalPages) usulanPage = totalPages;
+    if (usulanPage < 1) usulanPage = 1;
+
+    const startIdx = (usulanPage - 1) * PAGE_SIZE_USULAN;
+    const endIdx = Math.min(startIdx + PAGE_SIZE_USULAN, total);
+    const pageItems = usulanPendingList.slice(startIdx, endIdx);
+
+    const rows = pageItems.map(u => {
       const barang = barangMap[u.barang_id] || {};
       const dist = u.distributor_id ? distributorList.find(d => String(d.id) === String(u.distributor_id)) : null;
       const satuanBeli = barang.satuan_beli || 'Box';
@@ -527,10 +688,43 @@
       </thead>
       <tbody>${rows}</tbody>
     </table>`;
+
+    // Render pager hanya kalau lebih dari 1 halaman
+    if (totalPages > 1) {
+      pagerWrap.innerHTML = buildPagerHtml(total, usulanPage, totalPages, startIdx + 1, endIdx, 'usulan');
+      // Wire buttons
+      const prev = document.getElementById('usulanPgPrev');
+      const next = document.getElementById('usulanPgNext');
+      if (prev) prev.addEventListener('click', () => { usulanPage--; renderUsulanPanel(); scrollToPanel('usulanPanel'); });
+      if (next) next.addEventListener('click', () => { usulanPage++; renderUsulanPanel(); scrollToPanel('usulanPanel'); });
+    } else {
+      pagerWrap.innerHTML = '';
+    }
   }
 
   // ============================================================
-  //  BARU: BUAT PO DARI PANEL USULAN
+  //  BUILD PAGER HTML
+  // ============================================================
+  function buildPagerHtml(total, currentPage, totalPages, showingFrom, showingTo, prefix) {
+    return `<div class="pager">
+      <div class="pager-info">
+        Menampilkan <strong>${showingFrom}–${showingTo}</strong> dari <strong>${total}</strong> baris
+      </div>
+      <div class="pager-controls">
+        <button class="pg-btn" id="${prefix}PgPrev" ${currentPage === 1 ? 'disabled' : ''}>← Sebelumnya</button>
+        <span class="pg-current">Hal ${currentPage} / ${totalPages}</span>
+        <button class="pg-btn" id="${prefix}PgNext" ${currentPage === totalPages ? 'disabled' : ''}>Berikutnya →</button>
+      </div>
+    </div>`;
+  }
+
+  function scrollToPanel(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ============================================================
+  //  BUAT PO DARI PANEL USULAN
   // ============================================================
   window.buatPOFromUsulanPanel = function(usulanId) {
     const u = usulanPendingList.find(x => x.id === usulanId);
@@ -538,7 +732,6 @@
       alert('Usulan tidak ditemukan. Refresh halaman.');
       return;
     }
-    // Panggil prefill form — status usulan akan diubah ke DIBUAT_PO saat submitForm berhasil
     prefillFormFromUsulan({
       id: u.id,
       barang_id: u.barang_id,
@@ -573,7 +766,6 @@
       rencanaList = rencanaData;
       pembelianList = pembelianData;
 
-      // Sort usulan by nama barang
       usulanPendingList = (usulanData || []).sort((a, b) => {
         const na = barangMap[a.barang_id]?.nama_barang || '';
         const nb = barangMap[b.barang_id]?.nama_barang || '';
@@ -590,6 +782,7 @@
         '<tr><td colspan="7" class="empty-state">Gagal memuat data: ' + err.message + '</td></tr>';
       document.getElementById('usulanListWrap').innerHTML =
         '<div class="empty-state" style="padding:24px; color:var(--coral);">Gagal memuat usulan: ' + escapeHtml(err.message) + '</div>';
+      document.getElementById('usulanPagerWrap').innerHTML = '';
     }
   }
 
@@ -669,7 +862,14 @@
       }
     });
 
-    // SETUP PENCARIAN BARANG
+    setupBarangAutocomplete();
+    setupDistributorAutocomplete();
+  }
+
+  // ============================================================
+  //  AUTOCOMPLETE BARANG
+  // ============================================================
+  function setupBarangAutocomplete() {
     const bInput = document.getElementById('fBarangInput');
     const bDropdown = document.getElementById('barangDropdown');
 
@@ -677,7 +877,7 @@
     bInput.parentNode.replaceChild(newBInput, bInput);
     const bInputFresh = document.getElementById('fBarangInput');
 
-    function renderBarangOptions(query) {
+    function renderOptions(query) {
       const q = String(query || '').toLowerCase().trim();
       let hasil = barangRkoList;
       if (q) {
@@ -723,17 +923,21 @@
 
     bInputFresh.addEventListener('input', () => {
       document.getElementById('fBarang').value = '';
-      renderBarangOptions(bInputFresh.value);
+      renderOptions(bInputFresh.value);
     });
-    bInputFresh.addEventListener('focus', () => { renderBarangOptions(bInputFresh.value); });
+    bInputFresh.addEventListener('focus', () => { renderOptions(bInputFresh.value); });
 
     document.addEventListener('click', (e) => {
       if (!bInputFresh.contains(e.target) && !bDropdown.contains(e.target)) {
         bDropdown.style.display = 'none';
       }
     });
+  }
 
-    // SETUP PENCARIAN DISTRIBUTOR
+  // ============================================================
+  //  AUTOCOMPLETE DISTRIBUTOR
+  // ============================================================
+  function setupDistributorAutocomplete() {
     const distInput = document.getElementById('fDistributor');
     const distDropdown = document.getElementById('distDropdown');
 
@@ -741,7 +945,7 @@
     distInput.parentNode.replaceChild(newInput, distInput);
     const distInputFresh = document.getElementById('fDistributor');
 
-    function renderDistOptions(query) {
+    function renderOptions(query) {
       const q = String(query || '').toLowerCase().trim();
       let hasil = distributorList;
       if (q) {
@@ -775,9 +979,9 @@
 
     distInputFresh.addEventListener('input', () => {
       document.getElementById('fDistributorId').value = '';
-      renderDistOptions(distInputFresh.value);
+      renderOptions(distInputFresh.value);
     });
-    distInputFresh.addEventListener('focus', () => { renderDistOptions(distInputFresh.value); });
+    distInputFresh.addEventListener('focus', () => { renderOptions(distInputFresh.value); });
 
     document.addEventListener('click', (e) => {
       if (!distInputFresh.contains(e.target) && !distDropdown.contains(e.target)) {
@@ -787,12 +991,8 @@
   }
 
   // ============================================================
-  //  FILTER & TABEL
+  //  FILTER & TABEL PO — dengan pagination
   // ============================================================
-  document.getElementById('searchBox').addEventListener('input', applyFilter);
-  document.getElementById('filterGolongan').addEventListener('change', applyFilter);
-  document.getElementById('filterStatus').addEventListener('change', applyFilter);
-
   function applyFilter() {
     const q = document.getElementById('searchBox').value.toLowerCase();
     const golongan = document.getElementById('filterGolongan').value;
@@ -805,16 +1005,31 @@
       const matchS = !status || p.status === status;
       return matchQ && matchG && matchS;
     });
+    poPage = 1;
     renderTable();
   }
 
   function renderTable() {
     const tbody = document.getElementById('tableBody');
+    const pagerWrap = document.getElementById('poPagerWrap');
+
     if (filteredList.length === 0) {
       tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada PO untuk periode ini.</td></tr>';
+      pagerWrap.innerHTML = '';
       return;
     }
-    tbody.innerHTML = filteredList.map(p => {
+
+    // Pagination
+    const total = filteredList.length;
+    const totalPages = Math.ceil(total / PAGE_SIZE_PO);
+    if (poPage > totalPages) poPage = totalPages;
+    if (poPage < 1) poPage = 1;
+
+    const startIdx = (poPage - 1) * PAGE_SIZE_PO;
+    const endIdx = Math.min(startIdx + PAGE_SIZE_PO, total);
+    const pageItems = filteredList.slice(startIdx, endIdx);
+
+    tbody.innerHTML = pageItems.map(p => {
       const barang = barangMap[p.barang_id] || {};
       const dist = distributorList.find(d => d.id === p.distributor_id);
       return `<tr>
@@ -832,8 +1047,22 @@
         <td><button class="btn btn-secondary" style="padding:5px 12px; font-size:11.5px;" onclick="window.openDetail(${p.id})">Detail</button></td>
       </tr>`;
     }).join('');
+
+    // Render pager
+    if (totalPages > 1) {
+      pagerWrap.innerHTML = buildPagerHtml(total, poPage, totalPages, startIdx + 1, endIdx, 'po');
+      const prev = document.getElementById('poPgPrev');
+      const next = document.getElementById('poPgNext');
+      if (prev) prev.addEventListener('click', () => { poPage--; renderTable(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+      if (next) next.addEventListener('click', () => { poPage++; renderTable(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    } else {
+      pagerWrap.innerHTML = '';
+    }
   }
 
+  // ============================================================
+  //  UPDATE STATUS PO
+  // ============================================================
   window.updateStatus = async function(id, status) {
     try {
       const poLama = pembelianList.find(p => p.id === id);
@@ -896,7 +1125,6 @@
     simpanBtn.onclick = window.submitForm;
     document.querySelector('#modalOverlay .modal h2').textContent = 'Buat PO Baru';
 
-    // Reset prefill (tidak menyentuh status usulan — biarkan tetap DISETUJUI)
     prefillUsulan = null;
 
     document.getElementById('modalOverlay').classList.remove('show');
@@ -916,7 +1144,6 @@
     if (!distId) { msg.textContent = 'Pilih distributor dari daftar pencarian.'; return; }
     if (qty <= 0) { msg.textContent = 'Qty > 0.'; return; }
 
-    // Kalau dari usulan dan distributor BERBEDA dari rencana → wajib isi alasan
     let alasanGanti = '';
     if (prefillUsulan && prefillUsulan.usulan_id && prefillUsulan.distributor_id) {
       if (Number(distId) !== Number(prefillUsulan.distributor_id)) {
@@ -963,7 +1190,6 @@
       if (error) throw error;
       const newId = inserted && inserted[0] ? inserted[0].id : null;
 
-      // Log perubahan distributor kalau ganti
       if (newId && alasanGanti.trim() && prefillUsulan && prefillUsulan.distributor_id) {
         await window.supabase.from('log_perubahan_distributor').insert({
           pembelian_id: newId,
@@ -974,7 +1200,6 @@
         });
       }
 
-      // Log pembuatan PO
       if (newId) {
         await window.supabase.from('pembelian_log').insert({
           pembelian_id: newId,
@@ -985,7 +1210,6 @@
         });
       }
 
-      // ==== BARU: Update status usulan ke DIBUAT_PO ====
       if (prefillUsulan && prefillUsulan.usulan_id) {
         try {
           await window.supabase.from('usulan_pembelian')
@@ -997,7 +1221,6 @@
       }
 
       prefillUsulan = null;
-
       closeForm();
       await loadAllData();
     } catch (err) {
