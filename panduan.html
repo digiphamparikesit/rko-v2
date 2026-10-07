@@ -13,349 +13,107 @@
 </script>
 <script src="auth.js"></script>
 <style>
-  /* ============ DESIGN TOKENS ============ */
   :root {
-    --green-deep: #0F3D2E;
-    --green-mid: #16A34A;
-    --green-bright: #3FCF6A;
-    --green-soft: #E7F5EC;
-    --bg: #F4F7F4;
-    --card: #FFFFFF;
-    --text-dark: #14201A;
-    --text-muted: #6B7A72;
-    --amber: #D97706;
-    --coral: #DC5B45;
-    --border: #E4EAE5;
+    --green-deep: #0F3D2E; --green-mid: #16A34A; --green-bright: #3FCF6A;
+    --green-soft: #E7F5EC; --bg: #F4F7F4; --card: #FFFFFF;
+    --text-dark: #14201A; --text-muted: #6B7A72;
+    --amber: #D97706; --coral: #DC5B45; --border: #E4EAE5;
     --shadow: 0 4px 16px rgba(15,61,46,0.06);
     --shadow-lg: 0 12px 32px rgba(15,61,46,0.10);
   }
-
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    color: var(--text-dark);
-    line-height: 1.6;
-    font-size: 15px;
-  }
+  body { margin: 0; background: var(--bg); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text-dark); line-height: 1.6; font-size: 15px; }
+  body:not(.auth-ok) .app { visibility: hidden; }
 
   .app { display: flex; min-height: 100vh; }
 
-  /* ============ SIDEBAR ============ */
   .sidebar {
-    width: 280px;
-    background: var(--green-deep);
-    color: #fff;
-    position: fixed;
-    top: 0; left: 0; bottom: 0;
-    overflow-y: auto;
-    z-index: 50;
-    transition: transform 0.25s ease;
+    width: 280px; background: var(--green-deep); color: #fff;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    overflow-y: auto; z-index: 50; transition: transform 0.25s ease;
   }
   .sidebar::-webkit-scrollbar { width: 6px; }
   .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
 
-  .sb-brand {
-    padding: 22px 22px 18px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    display: flex; align-items: center; gap: 12px;
-  }
-  .sb-brand .mark {
-    width: 40px; height: 40px; border-radius: 10px;
-    background: var(--green-bright);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 15px; color: var(--green-deep);
-    flex-shrink: 0;
-  }
+  .sb-brand { padding: 22px 22px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
+  .sb-brand .mark { width: 40px; height: 40px; border-radius: 10px; background: var(--green-bright); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; color: var(--green-deep); flex-shrink: 0; }
   .sb-brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
   .sb-brand .sub { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
 
-  .sb-user {
-    padding: 12px 22px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    font-size: 12px;
-    color: rgba(255,255,255,0.75);
-  }
+  .sb-user { padding: 12px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: rgba(255,255,255,0.75); }
   .sb-user .who { font-weight: 600; color: #fff; font-size: 13px; }
-  .sb-user .role-tag {
-    display: inline-block;
-    margin-top: 4px;
-    padding: 2px 8px;
-    background: rgba(63,207,106,0.18);
-    color: var(--green-bright);
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-  }
+  .sb-user .role-tag { display: inline-block; margin-top: 4px; padding: 2px 8px; background: rgba(63,207,106,0.18); color: var(--green-bright); border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
 
-  .sb-back {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 22px;
-    background: rgba(255,255,255,0.05);
-    color: rgba(255,255,255,0.85);
-    text-decoration: none;
-    font-size: 13px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    transition: background 0.15s;
-  }
+  .sb-back { display: flex; align-items: center; gap: 8px; padding: 10px 22px; background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.08); transition: background 0.15s; }
   .sb-back:hover { background: rgba(255,255,255,0.10); color: #fff; }
 
-  .sb-section {
-    padding: 16px 22px 8px;
-    font-size: 10.5px; font-weight: 700; letter-spacing: 1px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.4);
-  }
-
+  .sb-section { padding: 16px 22px 8px; font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
   .sb-nav { padding: 4px 0 24px; }
-  .sb-link {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 22px;
-    color: rgba(255,255,255,0.78);
-    text-decoration: none;
-    font-size: 13.5px;
-    border-left: 3px solid transparent;
-    transition: all 0.15s;
-    cursor: pointer;
-  }
-  .sb-link:hover {
-    background: rgba(255,255,255,0.06);
-    color: #fff;
-    border-left-color: rgba(255,255,255,0.25);
-  }
-  .sb-link.active {
-    background: rgba(255,255,255,0.10);
-    color: #fff;
-    border-left-color: var(--green-bright);
-    font-weight: 600;
-  }
-  .sb-link .ico {
-    width: 22px; text-align: center; font-size: 15px;
-    flex-shrink: 0;
-  }
+  .sb-link { display: flex; align-items: center; gap: 10px; padding: 10px 22px; color: rgba(255,255,255,0.78); text-decoration: none; font-size: 13.5px; border-left: 3px solid transparent; transition: all 0.15s; cursor: pointer; }
+  .sb-link:hover { background: rgba(255,255,255,0.06); color: #fff; border-left-color: rgba(255,255,255,0.25); }
+  .sb-link.active { background: rgba(255,255,255,0.10); color: #fff; border-left-color: var(--green-bright); font-weight: 600; }
+  .sb-link .ico { width: 22px; text-align: center; font-size: 15px; flex-shrink: 0; }
 
-  .sb-footer {
-    padding: 16px 22px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    font-size: 11px;
-    color: rgba(255,255,255,0.4);
-    line-height: 1.5;
-  }
+  .sb-footer { padding: 16px 22px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: rgba(255,255,255,0.4); line-height: 1.5; }
 
-  /* ============ MAIN ============ */
-  .main {
-    flex: 1;
-    margin-left: 280px;
-    padding: 32px 44px 80px;
-    max-width: 1100px;
-  }
+  .main { flex: 1; margin-left: 280px; padding: 32px 44px 80px; max-width: 1100px; }
 
-  /* ============ ROLE PAGE ============ */
   .role-page { display: none; animation: fadeIn 0.25s ease; }
   .role-page.active { display: block; }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-  .role-header {
-    background: linear-gradient(135deg, var(--green-deep) 0%, #16543E 100%);
-    color: #fff;
-    padding: 32px 36px;
-    border-radius: 18px;
-    margin-bottom: 28px;
-    position: relative;
-    overflow: hidden;
-  }
-  .role-header::before {
-    content: '';
-    position: absolute;
-    top: -50%; right: -10%;
-    width: 320px; height: 320px;
-    background: radial-gradient(circle, rgba(63,207,106,0.15) 0%, transparent 70%);
-    border-radius: 50%;
-  }
+  .role-header { background: linear-gradient(135deg, var(--green-deep) 0%, #16543E 100%); color: #fff; padding: 32px 36px; border-radius: 18px; margin-bottom: 28px; position: relative; overflow: hidden; }
+  .role-header::before { content: ''; position: absolute; top: -50%; right: -10%; width: 320px; height: 320px; background: radial-gradient(circle, rgba(63,207,106,0.15) 0%, transparent 70%); border-radius: 50%; }
   .role-header-inner { position: relative; z-index: 1; }
-  .role-eyebrow {
-    font-size: 11px; font-weight: 700;
-    letter-spacing: 1.2px; text-transform: uppercase;
-    color: var(--green-bright);
-    margin-bottom: 8px;
-  }
-  .role-header h1 {
-    margin: 0 0 8px;
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.3px;
-  }
-  .role-header .role-code {
-    display: inline-block;
-    padding: 4px 12px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 999px;
-    font-family: "SF Mono", "Courier New", monospace;
-    font-size: 12px;
-    margin-bottom: 12px;
-  }
-  .role-header p {
-    margin: 12px 0 0;
-    font-size: 14px;
-    color: rgba(255,255,255,0.85);
-    max-width: 720px;
-  }
+  .role-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--green-bright); margin-bottom: 8px; }
+  .role-header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 700; letter-spacing: -0.3px; }
+  .role-header .role-code { display: inline-block; padding: 4px 12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 999px; font-family: "SF Mono", "Courier New", monospace; font-size: 12px; margin-bottom: 12px; }
+  .role-header p { margin: 12px 0 0; font-size: 14px; color: rgba(255,255,255,0.85); max-width: 720px; }
 
-  /* ============ SECTIONS ============ */
-  .section {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 24px 28px;
-    margin-bottom: 20px;
-    box-shadow: var(--shadow);
-  }
-  .section h2 {
-    font-size: 17px;
-    margin: 0 0 16px;
-    display: flex; align-items: center; gap: 10px;
-    color: var(--green-deep);
-  }
-  .section h2 .num {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 26px; height: 26px;
-    background: var(--green-soft);
-    color: var(--green-mid);
-    border-radius: 8px;
-    font-size: 13px; font-weight: 800;
-  }
-  .section h3 {
-    font-size: 14.5px;
-    margin: 20px 0 8px;
-    color: var(--green-deep);
-  }
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px 28px; margin-bottom: 20px; box-shadow: var(--shadow); }
+  .section h2 { font-size: 17px; margin: 0 0 16px; display: flex; align-items: center; gap: 10px; color: var(--green-deep); }
+  .section h2 .num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; background: var(--green-soft); color: var(--green-mid); border-radius: 8px; font-size: 13px; font-weight: 800; }
+  .section h3 { font-size: 14.5px; margin: 20px 0 8px; color: var(--green-deep); }
   .section h3:first-child { margin-top: 0; }
   .section p { margin: 8px 0; }
   .section p.muted { color: var(--text-muted); font-size: 13.5px; }
 
-  .menu-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 10px;
-    margin-top: 12px;
-  }
-  .menu-item {
-    padding: 10px 14px;
-    background: #FAFBFA;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-size: 13px;
-    display: flex; align-items: center; gap: 8px;
-    transition: all 0.15s;
-  }
-  .menu-item:hover {
-    background: var(--green-soft);
-    border-color: var(--green-mid);
-  }
+  .menu-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 12px; }
+  .menu-item { padding: 10px 14px; background: #FAFBFA; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: all 0.15s; }
+  .menu-item:hover { background: var(--green-soft); border-color: var(--green-mid); }
   .menu-item .mico { font-size: 15px; flex-shrink: 0; }
 
-  .steps {
-    counter-reset: step;
-    padding: 0; margin: 12px 0;
-    list-style: none;
-  }
-  .steps > li {
-    position: relative;
-    padding: 14px 0 14px 52px;
-    border-bottom: 1px dashed var(--border);
-    counter-increment: step;
-  }
+  .steps { counter-reset: step; padding: 0; margin: 12px 0; list-style: none; }
+  .steps > li { position: relative; padding: 14px 0 14px 52px; border-bottom: 1px dashed var(--border); counter-increment: step; }
   .steps > li:last-child { border-bottom: none; }
-  .steps > li::before {
-    content: counter(step);
-    position: absolute;
-    left: 0; top: 14px;
-    width: 34px; height: 34px;
-    background: var(--green-mid);
-    color: #fff;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 14px;
-    box-shadow: 0 0 0 4px var(--green-soft);
-  }
-  .steps > li .title {
-    font-weight: 600; margin-bottom: 4px; font-size: 14px;
-  }
+  .steps > li::before { content: counter(step); position: absolute; left: 0; top: 14px; width: 34px; height: 34px; background: var(--green-mid); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; box-shadow: 0 0 0 4px var(--green-soft); }
+  .steps > li .title { font-weight: 600; margin-bottom: 4px; font-size: 14px; }
   .steps > li .desc { font-size: 13.5px; color: var(--text-muted); }
 
-  table {
-    width: 100%; border-collapse: collapse;
-    font-size: 13px; margin: 12px 0;
-    border-radius: 10px; overflow: hidden;
-  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; border-radius: 10px; overflow: hidden; }
   thead { background: #FAFBFA; }
-  th {
-    text-align: left; padding: 11px 14px;
-    font-size: 11px; font-weight: 700;
-    letter-spacing: 0.4px; text-transform: uppercase;
-    color: var(--text-muted);
-    border-bottom: 2px solid var(--border);
-  }
-  td {
-    padding: 11px 14px;
-    border-bottom: 1px solid var(--border);
-  }
+  th { text-align: left; padding: 11px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #FAFBFA; }
 
-  .callout {
-    padding: 14px 18px;
-    border-radius: 10px;
-    font-size: 13.5px;
-    line-height: 1.6;
-    margin: 14px 0;
-    border-left: 4px solid;
-  }
+  .callout { padding: 14px 18px; border-radius: 10px; font-size: 13.5px; line-height: 1.6; margin: 14px 0; border-left: 4px solid; }
   .callout.info    { background: #E9EEFB; border-color: #3B5BDB; color: #1F3A8A; }
   .callout.warn    { background: #FDF1E0; border-color: var(--amber); color: #7A4400; }
   .callout.danger  { background: #FBEAE7; border-color: var(--coral); color: #8B2E1F; }
   .callout.success { background: var(--green-soft); border-color: var(--green-mid); color: var(--green-deep); }
-  .callout .ctitle {
-    font-weight: 700; margin-bottom: 4px;
-    display: flex; align-items: center; gap: 6px;
-  }
+  .callout .ctitle { font-weight: 700; margin-bottom: 4px; }
 
-  .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 999px;
-    font-size: 11px; font-weight: 700;
-    letter-spacing: 0.3px;
-  }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
   .badge.green { background: var(--green-soft); color: var(--green-mid); }
   .badge.amber { background: #FDF1E0; color: var(--amber); }
   .badge.blue  { background: #E9EEFB; color: #3B5BDB; }
   .badge.red   { background: #FBEAE7; color: var(--coral); }
   .badge.gray  { background: #F1F1EE; color: var(--text-muted); }
 
-  .flow {
-    display: flex; align-items: center; gap: 8px;
-    flex-wrap: wrap;
-    margin: 16px 0;
-    padding: 16px;
-    background: #FAFBFA;
-    border-radius: 12px;
-    border: 1px dashed var(--border);
-  }
-  .flow-node {
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-size: 12px; font-weight: 700;
-    letter-spacing: 0.3px;
-    border: 1px solid;
-  }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; padding: 16px; background: #FAFBFA; border-radius: 12px; border: 1px dashed var(--border); }
+  .flow-node { padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; border: 1px solid; }
   .flow-node.draft    { background: #F1F1EE; color: var(--text-muted); border-color: var(--border); }
   .flow-node.dikirim  { background: #FDF1E0; color: var(--amber); border-color: #FAE5B8; }
   .flow-node.diterima { background: #E9EEFB; color: #3B5BDB; border-color: #D7DEEF; }
@@ -363,34 +121,10 @@
   .flow-node.batal    { background: #FBEAE7; color: var(--coral); border-color: #F3D0C4; }
   .flow-arrow { color: var(--text-muted); font-weight: 800; font-size: 15px; }
 
-  code {
-    background: #F1F1EE;
-    padding: 2px 7px;
-    border-radius: 5px;
-    font-family: "SF Mono", "Courier New", monospace;
-    font-size: 12.5px;
-    color: var(--green-deep);
-  }
+  code { background: #F1F1EE; padding: 2px 7px; border-radius: 5px; font-family: "SF Mono", "Courier New", monospace; font-size: 12.5px; color: var(--green-deep); }
 
-  .btn-toggle {
-    display: none;
-    position: fixed;
-    top: 16px; left: 16px;
-    z-index: 60;
-    width: 44px; height: 44px;
-    border-radius: 10px;
-    background: var(--green-deep);
-    color: #fff; border: none;
-    font-size: 20px;
-    cursor: pointer;
-    box-shadow: var(--shadow-lg);
-  }
-  .backdrop {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(15,61,46,0.5);
-    z-index: 45;
-  }
+  .btn-toggle { display: none; position: fixed; top: 16px; left: 16px; z-index: 60; width: 44px; height: 44px; border-radius: 10px; background: var(--green-deep); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: var(--shadow-lg); }
+  .backdrop { display: none; position: fixed; inset: 0; background: rgba(15,61,46,0.5); z-index: 45; }
   @media (max-width: 900px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
@@ -403,7 +137,6 @@
     .steps > li { padding-left: 46px; }
     .steps > li::before { width: 30px; height: 30px; font-size: 13px; }
   }
-
   @media print {
     .sidebar, .btn-toggle, .backdrop { display: none !important; }
     .main { margin: 0; padding: 0; max-width: none; }
@@ -411,47 +144,13 @@
     .role-page:first-child { page-break-before: auto; }
     .section { box-shadow: none; page-break-inside: avoid; }
   }
-
-  .home-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
-    margin-top: 20px;
-  }
-  .home-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px 22px;
-    text-decoration: none;
-    color: var(--text-dark);
-    transition: all 0.18s;
-    box-shadow: var(--shadow);
-    display: block;
-  }
-  .home-card:hover {
-    border-color: var(--green-mid);
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
-  }
-  .home-card .ico {
-    width: 44px; height: 44px;
-    background: var(--green-soft);
-    color: var(--green-mid);
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    margin-bottom: 12px;
-  }
+  .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 20px; }
+  .home-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; text-decoration: none; color: var(--text-dark); transition: all 0.18s; box-shadow: var(--shadow); display: block; }
+  .home-card:hover { border-color: var(--green-mid); transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .home-card .ico { width: 44px; height: 44px; background: var(--green-soft); color: var(--green-mid); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px; }
   .home-card .name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
-  .home-card .role {
-    font-family: "SF Mono", "Courier New", monospace;
-    font-size: 11px; color: var(--text-muted); margin-bottom: 8px;
-  }
+  .home-card .role { font-family: "SF Mono", "Courier New", monospace; font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
   .home-card .desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
-
-  /* Hide content until auth check pass */
-  body:not(.auth-ok) .app { visibility: hidden; }
 </style>
 </head>
 <body>
@@ -460,7 +159,6 @@
 <div class="backdrop" id="backdrop" onclick="toggleSidebar()"></div>
 
 <div class="app">
-
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
       <div class="mark">RS</div>
@@ -479,52 +177,25 @@
 
     <div class="sb-section">Mulai</div>
     <nav class="sb-nav">
-      <a class="sb-link active" href="#home" data-role="home">
-        <span class="ico">🏠</span><span>Beranda</span>
-      </a>
+      <a class="sb-link active" href="#home" data-role="home"><span class="ico">🏠</span><span>Beranda</span></a>
     </nav>
 
     <div class="sb-section">Peran Pengguna</div>
     <nav class="sb-nav">
-      <a class="sb-link" href="#super-admin" data-role="super-admin">
-        <span class="ico">⚡</span><span>Super Admin</span>
-      </a>
-      <a class="sb-link" href="#admin" data-role="admin">
-        <span class="ico">🛠️</span><span>Admin</span>
-      </a>
-      <a class="sb-link" href="#kepala-if" data-role="kepala-if">
-        <span class="ico">👔</span><span>Kepala Instalasi Farmasi</span>
-      </a>
-      <a class="sb-link" href="#koordinator" data-role="koordinator">
-        <span class="ico">📋</span><span>Koordinator Logistik</span>
-      </a>
-      <a class="sb-link" href="#mutasi-obat" data-role="mutasi-obat">
-        <span class="ico">💊</span><span>Petugas Mutasi Obat</span>
-      </a>
-      <a class="sb-link" href="#mutasi-bmhp" data-role="mutasi-bmhp">
-        <span class="ico">🧪</span><span>Petugas Mutasi BMHP</span>
-      </a>
-      <a class="sb-link" href="#penerimaan" data-role="penerimaan">
-        <span class="ico">📦</span><span>Tim Penerimaan</span>
-      </a>
-      <a class="sb-link" href="#pembelian" data-role="pembelian">
-        <span class="ico">🛒</span><span>Tim Pembelian</span>
-      </a>
-      <a class="sb-link" href="#keuangan" data-role="keuangan">
-        <span class="ico">💰</span><span>Keuangan</span>
-      </a>
-      <a class="sb-link" href="#user" data-role="user">
-        <span class="ico">👤</span><span>User (Unit/Ruangan)</span>
-      </a>
-      <a class="sb-link" href="#distributor" data-role="distributor">
-        <span class="ico">🚛</span><span>Distributor View</span>
-      </a>
+      <a class="sb-link" href="#super-admin" data-role="super-admin"><span class="ico">⚡</span><span>Super Admin</span></a>
+      <a class="sb-link" href="#admin" data-role="admin"><span class="ico">🛠️</span><span>Admin</span></a>
+      <a class="sb-link" href="#kepala-if" data-role="kepala-if"><span class="ico">👔</span><span>Kepala Instalasi Farmasi</span></a>
+      <a class="sb-link" href="#koordinator" data-role="koordinator"><span class="ico">📋</span><span>Koordinator Logistik</span></a>
+      <a class="sb-link" href="#mutasi-obat" data-role="mutasi-obat"><span class="ico">💊</span><span>Petugas Mutasi Obat</span></a>
+      <a class="sb-link" href="#mutasi-bmhp" data-role="mutasi-bmhp"><span class="ico">🧪</span><span>Petugas Mutasi BMHP</span></a>
+      <a class="sb-link" href="#penerimaan" data-role="penerimaan"><span class="ico">📦</span><span>Tim Penerimaan</span></a>
+      <a class="sb-link" href="#pembelian" data-role="pembelian"><span class="ico">🛒</span><span>Tim Pembelian</span></a>
+      <a class="sb-link" href="#keuangan" data-role="keuangan"><span class="ico">💰</span><span>Keuangan</span></a>
+      <a class="sb-link" href="#user" data-role="user"><span class="ico">👤</span><span>User (Unit/Ruangan)</span></a>
+      <a class="sb-link" href="#distributor" data-role="distributor"><span class="ico">🚛</span><span>Distributor View</span></a>
     </nav>
 
-    <div class="sb-footer">
-      &copy; 2025–2026 RS AM Parikesit<br>
-      Versi panduan 1.0
-    </div>
+    <div class="sb-footer">&copy; 2025–2026 RS AM Parikesit<br>Versi panduan 1.0</div>
   </aside>
 
   <main class="main">
@@ -538,80 +209,23 @@
           <p>Pilih peran Anda di bawah atau dari sidebar kiri untuk melihat panduan penggunaan lengkap sesuai hak akses Anda.</p>
         </div>
       </div>
-
       <div class="section">
         <h2>Pilih Peran</h2>
         <p class="muted">Role Anda: <strong id="homeUserRole">—</strong>. Klik kartu role Anda untuk panduan terkait, atau lihat role lain untuk memahami alur kerja mereka.</p>
         <div class="home-grid">
-          <a class="home-card" href="#super-admin">
-            <div class="ico">⚡</div>
-            <div class="name">Super Admin</div>
-            <div class="role">SUPER_ADMIN</div>
-            <div class="desc">Akses penuh ke seluruh sistem</div>
-          </a>
-          <a class="home-card" href="#admin">
-            <div class="ico">🛠️</div>
-            <div class="name">Admin</div>
-            <div class="role">ADMIN</div>
-            <div class="desc">Kelola master data & user</div>
-          </a>
-          <a class="home-card" href="#kepala-if">
-            <div class="ico">👔</div>
-            <div class="name">Kepala Instalasi Farmasi</div>
-            <div class="role">KEPALA_INSTALASI_FARMASI</div>
-            <div class="desc">Approval & verifikasi</div>
-          </a>
-          <a class="home-card" href="#koordinator">
-            <div class="ico">📋</div>
-            <div class="name">Koordinator Logistik</div>
-            <div class="role">KOORDINATOR_LOGISTIK_FARMASI</div>
-            <div class="desc">Operasional harian logistik</div>
-          </a>
-          <a class="home-card" href="#mutasi-obat">
-            <div class="ico">💊</div>
-            <div class="name">Petugas Mutasi Obat</div>
-            <div class="role">PETUGAS_MUTASI_OBAT</div>
-            <div class="desc">Mutasi obat ke ruangan</div>
-          </a>
-          <a class="home-card" href="#mutasi-bmhp">
-            <div class="ico">🧪</div>
-            <div class="name">Petugas Mutasi BMHP</div>
-            <div class="role">PETUGAS_MUTASI_BMHP</div>
-            <div class="desc">Mutasi BMHP ke ruangan</div>
-          </a>
-          <a class="home-card" href="#penerimaan">
-            <div class="ico">📦</div>
-            <div class="name">Tim Penerimaan</div>
-            <div class="role">TIM_PENERIMAAN</div>
-            <div class="desc">Penerimaan barang & retur</div>
-          </a>
-          <a class="home-card" href="#pembelian">
-            <div class="ico">🛒</div>
-            <div class="name">Tim Pembelian</div>
-            <div class="role">TIM_PEMBELIAN</div>
-            <div class="desc">Buat PO ke distributor</div>
-          </a>
-          <a class="home-card" href="#keuangan">
-            <div class="ico">💰</div>
-            <div class="name">Keuangan</div>
-            <div class="role">KEUANGAN</div>
-            <div class="desc">Anggaran & realisasi</div>
-          </a>
-          <a class="home-card" href="#user">
-            <div class="ico">👤</div>
-            <div class="name">User (Unit/Ruangan)</div>
-            <div class="role">USER</div>
-            <div class="desc">Input RKO & pemakaian</div>
-          </a>
-          <a class="home-card" href="#distributor">
-            <div class="ico">🚛</div>
-            <div class="name">Distributor View</div>
-            <div class="role">DISTRIBUTOR_VIEW</div>
-            <div class="desc">Lihat rencana belanja</div>
-          </a>
+          <a class="home-card" href="#super-admin"><div class="ico">⚡</div><div class="name">Super Admin</div><div class="role">SUPER_ADMIN</div><div class="desc">Akses penuh ke seluruh sistem</div></a>
+          <a class="home-card" href="#admin"><div class="ico">🛠️</div><div class="name">Admin</div><div class="role">ADMIN</div><div class="desc">Kelola master data & user</div></a>
+          <a class="home-card" href="#kepala-if"><div class="ico">👔</div><div class="name">Kepala Instalasi Farmasi</div><div class="role">KEPALA_INSTALASI_FARMASI</div><div class="desc">Approval & verifikasi</div></a>
+          <a class="home-card" href="#koordinator"><div class="ico">📋</div><div class="name">Koordinator Logistik</div><div class="role">KOORDINATOR_LOGISTIK_FARMASI</div><div class="desc">Operasional harian logistik</div></a>
+          <a class="home-card" href="#mutasi-obat"><div class="ico">💊</div><div class="name">Petugas Mutasi Obat</div><div class="role">PETUGAS_MUTASI_OBAT</div><div class="desc">Mutasi obat ke ruangan</div></a>
+          <a class="home-card" href="#mutasi-bmhp"><div class="ico">🧪</div><div class="name">Petugas Mutasi BMHP</div><div class="role">PETUGAS_MUTASI_BMHP</div><div class="desc">Mutasi BMHP ke ruangan</div></a>
+          <a class="home-card" href="#penerimaan"><div class="ico">📦</div><div class="name">Tim Penerimaan</div><div class="role">TIM_PENERIMAAN</div><div class="desc">Penerimaan barang & retur</div></a>
+          <a class="home-card" href="#pembelian"><div class="ico">🛒</div><div class="name">Tim Pembelian</div><div class="role">TIM_PEMBELIAN</div><div class="desc">Buat PO ke distributor</div></a>
+          <a class="home-card" href="#keuangan"><div class="ico">💰</div><div class="name">Keuangan</div><div class="role">KEUANGAN</div><div class="desc">Anggaran & realisasi</div></a>
+          <a class="home-card" href="#user"><div class="ico">👤</div><div class="name">User (Unit/Ruangan)</div><div class="role">USER</div><div class="desc">Input RKO & pemakaian</div></a>
+          <a class="home-card" href="#distributor"><div class="ico">🚛</div><div class="name">Distributor View</div><div class="role">DISTRIBUTOR_VIEW</div><div class="desc">Lihat rencana belanja</div></a>
         </div>
       </div>
-
       <div class="section">
         <h2>Alur Besar Sistem</h2>
         <div class="flow">
@@ -629,32 +243,576 @@
         </div>
       </div>
     </section>
+    
+        <!-- ========== SUPER ADMIN ========== -->
+    <section id="super-admin" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Super Admin</h1>
+        <div class="role-code">SUPER_ADMIN</div>
+        <p>Akses penuh ke seluruh sistem. Digunakan untuk maintenance, setup awal, dan penanganan masalah teknis.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Login</h2>
+        <ol class="steps">
+          <li><div class="title">Buka URL aplikasi</div><div class="desc">Otomatis diarahkan ke <code>login.html</code>.</div></li>
+          <li><div class="title">Isi Email & Password</div><div class="desc">Gunakan kredensial Supabase Auth.</div></li>
+          <li><div class="title">Klik Masuk</div><div class="desc">Masuk ke Menu Utama (<code>index.html</code>).</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Menu yang Bisa Diakses</h2>
+        <p>Semua menu tanpa terkecuali:</p>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📊</span>Dashboard RKO</div>
+          <div class="menu-item"><span class="mico">📝</span>Input RKO Unit</div>
+          <div class="menu-item"><span class="mico">🛒</span>Pembelian (PO)</div>
+          <div class="menu-item"><span class="mico">📦</span>Penerimaan Barang</div>
+          <div class="menu-item"><span class="mico">🔄</span>Retur Barang</div>
+          <div class="menu-item"><span class="mico">🚚</span>Mutasi ke Ruangan</div>
+          <div class="menu-item"><span class="mico">📋</span>Riwayat Mutasi</div>
+          <div class="menu-item"><span class="mico">💉</span>Pemakaian Ruangan</div>
+          <div class="menu-item"><span class="mico">🔎</span>Monitoring RKO</div>
+          <div class="menu-item"><span class="mico">📝</span>Usulan Pembelian</div>
+          <div class="menu-item"><span class="mico">✅</span>Approval Edit Penerimaan</div>
+          <div class="menu-item"><span class="mico">🔑</span>Delegasi Approval</div>
+          <div class="menu-item"><span class="mico">💊</span>Master Barang</div>
+          <div class="menu-item"><span class="mico">🏥</span>Master Ruangan</div>
+          <div class="menu-item"><span class="mico">🚛</span>Master Distributor</div>
+          <div class="menu-item"><span class="mico">🏭</span>Master Prinsipal</div>
+          <div class="menu-item"><span class="mico">👥</span>Manajemen User</div>
+          <div class="menu-item"><span class="mico">📥</span>Stok Opname Gudang</div>
+          <div class="menu-item"><span class="mico">📤</span>Stok Opname Ruangan</div>
+          <div class="menu-item"><span class="mico">💰</span>Keuangan</div>
+          <div class="menu-item"><span class="mico">💵</span>Penjualan Farmasi</div>
+          <div class="menu-item"><span class="mico">📈</span>Laporan RKO</div>
+          <div class="menu-item"><span class="mico">🔍</span>Laporan Audit</div>
+          <div class="menu-item"><span class="mico">📑</span>Rencana per Distributor</div>
+          <div class="menu-item"><span class="mico">🔐</span>Pengaturan Periode RKO</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Setup Awal Sistem</h2>
+        <div class="callout warn"><div class="ctitle">⚠️ Hanya Sekali</div>Setup awal cukup dilakukan sekali saat sistem baru dipasang.</div>
+        <ol class="steps">
+          <li><div class="title">Master Prinsipal</div><div class="desc">Tambah nama prinsipal → <code>master-prinsipal.html</code></div></li>
+          <li><div class="title">Master Distributor</div><div class="desc">Isi nama, kontak, lead time default → <code>master-distributor.html</code></div></li>
+          <li><div class="title">Master Ruangan</div><div class="desc">Isi nama, jenis, status → <code>master-ruangan.html</code></div></li>
+          <li><div class="title">Master Barang</div><div class="desc">Isi detail barang, HPP, prinsipal, gudang → <code>admin.html</code></div></li>
+          <li><div class="title">Manajemen User</div><div class="desc">Buat akun untuk semua role → <code>manajemen-user.html</code></div></li>
+          <li><div class="title">Pengaturan Periode RKO</div><div class="desc">Atur tanggal buka & tutup RKO → <code>pengaturan-rko.html</code></div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">4</span>Troubleshooting</h2>
+        <table>
+          <thead><tr><th>Masalah</th><th>Solusi</th></tr></thead>
+          <tbody>
+            <tr><td>User tidak bisa login</td><td>Cek tabel <code>users</code> — email harus cocok dengan Supabase Auth</td></tr>
+            <tr><td>Menu tidak muncul</td><td>Cek <code>MENU_GROUPS</code> di <code>index.html</code></td></tr>
+            <tr><td>Data tidak muncul</td><td>Cek RLS policy Supabase</td></tr>
+            <tr><td>Badge tidak tampil</td><td>Cek console browser → <code>renderSidebarBadges()</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-    <!-- Konten role lainnya SAMA PERSIS dengan versi sebelumnya.
-         Salin blok <section> dari file panduan.html lama Anda:
-         #super-admin, #admin, #kepala-if, #koordinator,
-         #mutasi-obat, #mutasi-bmhp, #penerimaan, #pembelian,
-         #keuangan, #user, #distributor
-         dan tempel di sini. -->
+    <!-- ========== ADMIN ========== -->
+    <section id="admin" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Admin</h1>
+        <div class="role-code">ADMIN</div>
+        <p>Mengelola data master dan konfigurasi sistem. Tidak memiliki akses approval & delegasi.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <p>Hampir semua menu, <strong>kecuali</strong> Approval Edit Penerimaan & Delegasi Approval.</p>
+        <div class="callout danger"><div class="ctitle">❌ Tidak Bisa Akses</div>Approval Edit Penerimaan & Delegasi Approval — hanya untuk Kepala IF / Koordinator.</div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Panduan per Menu</h2>
+        <h3>🛠️ Master Barang (<code>admin.html</code>)</h3>
+        <ol class="steps">
+          <li><div class="title">Buka menu Master Barang</div></li>
+          <li><div class="title">Tambah baru</div><div class="desc">Klik + Tambah Barang → isi form → Simpan.</div></li>
+          <li><div class="title">Edit</div><div class="desc">Klik ikon pensil → ubah → Simpan.</div></li>
+          <li><div class="title">Nonaktifkan</div><div class="desc">Ubah toggle "Status Aktif" → jangan hapus, histori tetap terjaga.</div></li>
+        </ol>
+        <h3>🏥 Master Ruangan</h3>
+        <p>Isi nama, jenis (<span class="badge blue">BESAR</span> / <span class="badge gray">KECIL</span>), status aktif.</p>
+        <h3>🚛 Master Distributor</h3>
+        <p>Isi nama, kontak, lead time default (hari). Lead time dipakai untuk kalkulasi buffer.</p>
+        <h3>🏭 Master Prinsipal</h3>
+        <p>Isi nama prinsipal, relasikan ke barang saat input Master Barang.</p>
+        <h3>👥 Manajemen User</h3>
+        <ol class="steps">
+          <li><div class="title">Buat user baru</div><div class="desc">Klik + Tambah User → isi email, nama, role, ruangan → Simpan.</div></li>
+          <li><div class="title">Reset password</div><div class="desc">Klik Reset pada baris user.</div></li>
+          <li><div class="title">Nonaktifkan user</div><div class="desc">Ubah status aktif → user tidak bisa login.</div></li>
+        </ol>
+        <h3>🔐 Pengaturan Periode RKO</h3>
+        <p>Pilih bulan & tahun → atur tanggal buka & tutup → Simpan.</p>
+      </div>
+    </section>
+
+    <!-- ========== KEPALA IF ========== -->
+    <section id="kepala-if" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Kepala Instalasi Farmasi</h1>
+        <div class="role-code">KEPALA_INSTALASI_FARMASI</div>
+        <p>Pimpinan Instalasi Farmasi. Fokus pada approval, verifikasi, dan pengawasan menyeluruh.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📊</span>Dashboard RKO</div>
+          <div class="menu-item"><span class="mico">🔄</span>Retur Barang</div>
+          <div class="menu-item"><span class="mico">📋</span>Riwayat Mutasi</div>
+          <div class="menu-item"><span class="mico">🔎</span>Monitoring RKO</div>
+          <div class="menu-item"><span class="mico">📝</span>Usulan Pembelian</div>
+          <div class="menu-item"><span class="mico">✅</span>Approval Edit Penerimaan</div>
+          <div class="menu-item"><span class="mico">🔑</span>Delegasi Approval</div>
+          <div class="menu-item"><span class="mico">📈</span>Laporan RKO</div>
+          <div class="menu-item"><span class="mico">🔍</span>Laporan Audit</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Verifikasi Retur Barang</h2>
+        <p>Kapan: setelah distributor konfirmasi terima (status <span class="badge blue">DITERIMA_DIST</span>).</p>
+        <ol class="steps">
+          <li><div class="title">Buka menu Retur Barang</div><div class="desc">Filter status DITERIMA_DIST.</div></li>
+          <li><div class="title">Review retur</div></li>
+          <li><div class="title">Klik Verifikasi Selesai</div><div class="desc">Status jadi SELESAI.</div></li>
+        </ol>
+        <div class="flow">
+          <span class="flow-node draft">DRAFT</span><span class="flow-arrow">→</span>
+          <span class="flow-node dikirim">DIKIRIM</span><span class="flow-arrow">→</span>
+          <span class="flow-node diterima">DITERIMA_DIST</span><span class="flow-arrow">→</span>
+          <span class="flow-node selesai">SELESAI</span>
+        </div>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Approval Usulan Pembelian</h2>
+        <ol class="steps">
+          <li><div class="title">Buka menu Usulan Pembelian</div><div class="desc">Filter status DIUSULKAN.</div></li>
+          <li><div class="title">Review usulan</div></li>
+          <li><div class="title">Setujui / Tolak</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">4</span>Delegasi Approval</h2>
+        <ol class="steps">
+          <li><div class="title">Buka menu Delegasi Approval</div></li>
+          <li><div class="title">Klik + Buat Delegasi</div></li>
+          <li><div class="title">Isi form</div><div class="desc">Penerima, tanggal mulai & berakhir, alasan.</div></li>
+          <li><div class="title">Simpan</div></li>
+        </ol>
+        <div class="callout info"><div class="ctitle">💡 Tips</div>Buat delegasi jauh hari sebelum cuti supaya tidak ada approval tertahan.</div>
+      </div>
+    </section>
+
+    <!-- ========== KOORDINATOR ========== -->
+    <section id="koordinator" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Koordinator Logistik Farmasi</h1>
+        <div class="role-code">KOORDINATOR_LOGISTIK_FARMASI</div>
+        <p>Penggerak operasional harian logistik farmasi. Paling banyak memakai menu transaksi.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📊</span>Dashboard RKO</div>
+          <div class="menu-item"><span class="mico">🔄</span>Retur Barang</div>
+          <div class="menu-item"><span class="mico">🚚</span>Mutasi ke Ruangan</div>
+          <div class="menu-item"><span class="mico">📋</span>Riwayat Mutasi</div>
+          <div class="menu-item"><span class="mico">💉</span>Pemakaian Ruangan</div>
+          <div class="menu-item"><span class="mico">🔎</span>Monitoring RKO</div>
+          <div class="menu-item"><span class="mico">📝</span>Usulan Pembelian</div>
+          <div class="menu-item"><span class="mico">✅</span>Approval Edit Penerimaan</div>
+          <div class="menu-item"><span class="mico">📥</span>Stok Opname Gudang</div>
+          <div class="menu-item"><span class="mico">📤</span>Stok Opname Ruangan</div>
+          <div class="menu-item"><span class="mico">📈</span>Laporan RKO</div>
+          <div class="menu-item"><span class="mico">🔍</span>Laporan Audit</div>
+          <div class="menu-item"><span class="mico">📑</span>Rencana per Distributor</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Generate Usulan Pembelian</h2>
+        <ol class="steps">
+          <li><div class="title">Buka menu Usulan Pembelian</div></li>
+          <li><div class="title">Klik Generate Usulan</div><div class="desc">Pilih bulan & tahun.</div></li>
+          <li><div class="title">Sistem hitung otomatis</div><div class="desc">Total RKO, sisa stok, buffer, lead time, qty usulan.</div></li>
+          <li><div class="title">Klik Ajukan</div><div class="desc">Kirim ke Kepala IF untuk approval.</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Alur Kerja Harian</h2>
+        <table>
+          <thead><tr><th>Waktu</th><th>Aktivitas</th></tr></thead>
+          <tbody>
+            <tr><td>Pagi</td><td>Dashboard → Monitoring RKO → cek notifikasi approval</td></tr>
+            <tr><td>Siang</td><td>Generate usulan → pantau mutasi → verifikasi stok opname</td></tr>
+            <tr><td>Sore</td><td>Review Laporan Audit → follow up approval</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== MUTASI OBAT ========== -->
+    <section id="mutasi-obat" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Petugas Mutasi Obat</h1>
+        <div class="role-code">PETUGAS_MUTASI_OBAT</div>
+        <p>Khusus menangani mutasi <strong>obat</strong> dari gudang ke ruangan + stok opname gudang.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📊</span>Dashboard RKO</div>
+          <div class="menu-item"><span class="mico">🚚</span>Mutasi ke Ruangan</div>
+          <div class="menu-item"><span class="mico">📋</span>Riwayat Mutasi</div>
+          <div class="menu-item"><span class="mico">🔎</span>Monitoring RKO</div>
+          <div class="menu-item"><span class="mico">📥</span>Stok Opname Gudang</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+        <div class="callout info"><div class="ctitle">💡 Filter</div>Di semua form, filter gudang = <strong>OBAT</strong>.</div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Mutasi Obat ke Ruangan</h2>
+        <ol class="steps">
+          <li><div class="title">Buka menu Mutasi ke Ruangan</div></li>
+          <li><div class="title">Pilih barang</div></li>
+          <li><div class="title">Sistem tampilkan alokasi proporsional</div></li>
+          <li><div class="title">Review & sesuaikan qty</div></li>
+          <li><div class="title">Klik Konfirmasi Mutasi</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Koreksi Mutasi</h2>
+        <ol class="steps">
+          <li><div class="title">Buka Riwayat Mutasi</div></li>
+          <li><div class="title">Cari mutasi yang perlu dikoreksi</div></li>
+          <li><div class="title">Klik Edit</div></li>
+          <li><div class="title">Isi alasan koreksi</div><div class="desc">Wajib — untuk audit trail.</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">4</span>Tips</h2>
+        <ul>
+          <li>Cek RKO terbaru sebelum mutasi.</li>
+          <li>FIFO/FEFO — prioritaskan kadaluarsa terdekat.</li>
+          <li>Koreksi selalu butuh alasan.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ========== MUTASI BMHP ========== -->
+    <section id="mutasi-bmhp" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Petugas Mutasi BMHP</h1>
+        <div class="role-code">PETUGAS_MUTASI_BMHP</div>
+        <p>Khusus menangani mutasi <strong>BMHP</strong> dari gudang ke ruangan.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📊</span>Dashboard RKO</div>
+          <div class="menu-item"><span class="mico">🚚</span>Mutasi ke Ruangan</div>
+          <div class="menu-item"><span class="mico">📋</span>Riwayat Mutasi</div>
+          <div class="menu-item"><span class="mico">🔎</span>Monitoring RKO</div>
+          <div class="menu-item"><span class="mico">📥</span>Stok Opname Gudang</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+        <div class="callout info"><div class="ctitle">💡 Filter</div>Di semua form, filter gudang = <strong>BMHP</strong>.</div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Panduan Detail</h2>
+        <p>Panduan <strong>sama persis</strong> dengan Petugas Mutasi Obat, hanya berbeda filter:</p>
+        <table>
+          <thead><tr><th>Di Mutasi Obat</th><th>Di Mutasi BMHP</th></tr></thead>
+          <tbody>
+            <tr><td>Filter gudang = OBAT</td><td>Filter gudang = BMHP</td></tr>
+            <tr><td>Barang: obat-obatan</td><td>Barang: Bahan Medis Habis Pakai</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Tips Khusus BMHP</h2>
+        <ul>
+          <li>BMHP sering dipakai di IGD, OK, ICU — cek pola pemakaian sebelum mutasi besar.</li>
+          <li>Barang dengan kadaluarsa dekat jangan dimutasi ke ruangan dengan pemakaian lambat.</li>
+          <li>Batch tracking penting — pastikan nomor batch sesuai.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ========== TIM PENERIMAAN ========== -->
+    <section id="penerimaan" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Tim Penerimaan</h1>
+        <div class="role-code">TIM_PENERIMAAN</div>
+        <p>Menerima barang datang dari distributor dan mencatat kondisi termasuk barang rusak.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📊</span>Dashboard RKO</div>
+          <div class="menu-item"><span class="mico">📦</span>Penerimaan Barang</div>
+          <div class="menu-item"><span class="mico">🔄</span>Retur Barang</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Input Penerimaan Barang</h2>
+        <ol class="steps">
+          <li><div class="title">Buka menu Penerimaan Barang</div></li>
+          <li><div class="title">Pilih PO</div></li>
+          <li><div class="title">Isi per barang</div><div class="desc">Qty diterima, No. batch, kadaluarsa, Kondisi (BAIK/RUSAK).</div></li>
+          <li><div class="title">Simpan</div></li>
+          <li><div class="title">Barang RUSAK otomatis berstatus MENUNGGU_RETUR</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Buat Surat Retur</h2>
+        <ol class="steps">
+          <li><div class="title">Buka menu Retur Barang</div></li>
+          <li><div class="title">Klik + Buat Retur Baru</div></li>
+          <li><div class="title">Pilih Penerimaan Rusak</div></li>
+          <li><div class="title">Review daftar barang rusak</div></li>
+          <li><div class="title">Isi form</div><div class="desc">Tanggal, alasan utama, catatan.</div></li>
+          <li><div class="title">Simpan Retur</div><div class="desc">Status jadi <span class="badge gray">DRAFT</span></div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">4</span>Alur Lengkap Retur</h2>
+        <div class="flow">
+          <span class="flow-node draft">DRAFT</span><span class="flow-arrow">→</span>
+          <span class="flow-node dikirim">DIKIRIM</span><span class="flow-arrow">→</span>
+          <span class="flow-node diterima">DITERIMA_DIST</span><span class="flow-arrow">→</span>
+          <span class="flow-node selesai">SELESAI</span>
+        </div>
+        <table>
+          <thead><tr><th>Aksi</th><th>Menu</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Buat retur</td><td>+ Buat</td><td><span class="badge gray">DRAFT</span></td></tr>
+            <tr><td>Kirim ke distributor</td><td>Klik Kirim</td><td><span class="badge amber">DIKIRIM</span></td></tr>
+            <tr><td>Konfirmasi terima</td><td>Klik Konfirmasi Diterima</td><td><span class="badge blue">DITERIMA_DIST</span></td></tr>
+            <tr><td>Verifikasi final</td><td>Kepala IF / Koordinator</td><td><span class="badge green">SELESAI</span></td></tr>
+            <tr><td>Batalkan</td><td>Klik Batalkan</td><td><span class="badge red">DIBATALKAN</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="section">
+        <h2><span class="num">5</span>FAQ</h2>
+        <table>
+          <thead><tr><th>Pertanyaan</th><th>Jawaban</th></tr></thead>
+          <tbody>
+            <tr><td>Barang rusak sedikit, harus diretur?</td><td>Ya, walaupun 1 box.</td></tr>
+            <tr><td>Nomor tanda terima belum ada?</td><td>Bisa kirim dulu — opsional.</td></tr>
+            <tr><td>Salah input qty?</td><td>Ajukan Edit Penerimaan → butuh approval.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== TIM PEMBELIAN ========== -->
+    <section id="pembelian" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Tim Pembelian</h1>
+        <div class="role-code">TIM_PEMBELIAN</div>
+        <p>Membuat dan mengelola Purchase Order (PO) ke distributor.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📊</span>Dashboard RKO</div>
+          <div class="menu-item"><span class="mico">🛒</span>Pembelian (PO)</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Alur PO</h2>
+        <div class="flow">
+          <span class="flow-node selesai">Usulan DISETUJUI</span><span class="flow-arrow">→</span>
+          <span class="flow-node draft">PO DRAFT</span><span class="flow-arrow">→</span>
+          <span class="flow-node dikirim">PO DIKIRIM</span><span class="flow-arrow">→</span>
+          <span class="flow-node selesai">Barang Diterima</span>
+        </div>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Buat PO dari Usulan Disetujui</h2>
+        <ol class="steps">
+          <li><div class="title">Buka menu Pembelian (PO)</div></li>
+          <li><div class="title">Filter usulan status DISETUJUI</div></li>
+          <li><div class="title">Klik Buat PO</div></li>
+          <li><div class="title">Isi form PO</div><div class="desc">No. PO, distributor, tanggal, qty.</div></li>
+          <li><div class="title">Simpan</div><div class="desc">Status <span class="badge gray">DRAFT</span>.</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">4</span>Kirim PO & Ganti Distributor</h2>
+        <ol class="steps">
+          <li><div class="title">Cari PO status DRAFT</div></li>
+          <li><div class="title">Review ulang</div></li>
+          <li><div class="title">Klik Kirim</div><div class="desc">Status jadi <span class="badge amber">DIKIRIM</span>.</div></li>
+          <li><div class="title">Ganti distributor</div><div class="desc">Klik Ubah Distributor → isi alasan → Simpan.</div></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ========== KEUANGAN ========== -->
+    <section id="keuangan" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Keuangan</h1>
+        <div class="role-code">KEUANGAN</div>
+        <p>Mengelola anggaran, realisasi pembayaran, dan data penjualan farmasi.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📊</span>Dashboard RKO</div>
+          <div class="menu-item"><span class="mico">💉</span>Pemakaian Ruangan (read-only)</div>
+          <div class="menu-item"><span class="mico">💰</span>Keuangan</div>
+          <div class="menu-item"><span class="mico">💵</span>Penjualan Farmasi</div>
+          <div class="menu-item"><span class="mico">📈</span>Laporan RKO</div>
+          <div class="menu-item"><span class="mico">📑</span>Rencana per Distributor</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Input Anggaran</h2>
+        <ol class="steps">
+          <li><div class="title">Buka Keuangan → tab Anggaran</div></li>
+          <li><div class="title">Pilih bulan & tahun</div></li>
+          <li><div class="title">Isi form</div><div class="desc">Pagu, DPA Total, Target Efisiensi, Keterangan.</div></li>
+          <li><div class="title">Simpan</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Catat Realisasi Pembayaran</h2>
+        <ol class="steps">
+          <li><div class="title">Buka Keuangan → tab Realisasi</div></li>
+          <li><div class="title">Isi qty, Rp, status bayar, PPN, PPh</div></li>
+          <li><div class="title">Simpan</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">4</span>Input Penjualan Farmasi</h2>
+        <p><strong>Manual:</strong> isi qty terjual, HPP, harga jual per barang per bulan.</p>
+        <p><strong>Upload Excel:</strong> klik Upload Excel → pilih file dari NUHA → preview → Import.</p>
+      </div>
+    </section>
+
+    <!-- ========== USER ========== -->
+    <section id="user" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>User (Unit / Ruangan)</h1>
+        <div class="role-code">USER</div>
+        <p>Pengguna dari unit/ruangan. Fokus pada input RKO dan pemakaian di ruangan sendiri.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📝</span>Input RKO Unit</div>
+          <div class="menu-item"><span class="mico">💉</span>Pemakaian Ruangan</div>
+          <div class="menu-item"><span class="mico">🔎</span>Monitoring RKO</div>
+          <div class="menu-item"><span class="mico">📤</span>Stok Opname Ruangan</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+        <div class="callout danger"><div class="ctitle">🔒 Batasan</div>Hanya bisa mengelola data ruangan Anda sendiri.</div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Input RKO Bulanan</h2>
+        <p>Kapan: hanya saat periode RKO <strong>TERBUKA</strong>.</p>
+        <ol class="steps">
+          <li><div class="title">Buka menu Input RKO Unit</div></li>
+          <li><div class="title">Pilih Bulan & Tahun</div></li>
+          <li><div class="title">Isi kebutuhan per barang</div><div class="desc">Stok Awal (auto), Kebutuhan, Kunjungan (opsional).</div></li>
+          <li><div class="title">Klik Simpan</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Catat Pemakaian Harian</h2>
+        <ol class="steps">
+          <li><div class="title">Buka menu Pemakaian Ruangan</div></li>
+          <li><div class="title">Pilih tanggal</div></li>
+          <li><div class="title">Isi qty pakai per barang</div></li>
+          <li><div class="title">Simpan</div><div class="desc">Bisa juga upload Excel dari NUHA.</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">4</span>Monitoring Status RKO</h2>
+        <table>
+          <thead><tr><th>Status</th><th>Arti</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge gray">Menunggu approval</span></td><td>Usulan belum disetujui</td></tr>
+            <tr><td><span class="badge amber">Sudah di-PO</span></td><td>Barang sedang dipesan</td></tr>
+            <tr><td><span class="badge blue">Sudah diterima</span></td><td>Di gudang</td></tr>
+            <tr><td><span class="badge green">Sudah dimutasi</span></td><td>Sudah sampai ruangan Anda</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== DISTRIBUTOR ========== -->
+    <section id="distributor" class="role-page">
+      <div class="role-header"><div class="role-header-inner">
+        <div class="role-eyebrow">Peran Pengguna</div>
+        <h1>Distributor View</h1>
+        <div class="role-code">DISTRIBUTOR_VIEW</div>
+        <p>Akses terbatas untuk distributor. Hanya bisa melihat rencana belanja yang dialokasikan.</p>
+      </div></div>
+      <div class="section">
+        <h2><span class="num">1</span>Menu yang Bisa Diakses</h2>
+        <div class="menu-list">
+          <div class="menu-item"><span class="mico">📊</span>Dashboard RKO (read-only)</div>
+          <div class="menu-item"><span class="mico">📑</span>Rencana per Distributor</div>
+          <div class="menu-item"><span class="mico">🔒</span>Ubah Password</div>
+        </div>
+        <div class="callout danger"><div class="ctitle">🔒 Tidak Bisa Akses</div>Data stok RS, mutasi, keuangan, user lain.</div>
+      </div>
+      <div class="section">
+        <h2><span class="num">2</span>Lihat Rencana Belanja</h2>
+        <ol class="steps">
+          <li><div class="title">Buka Rencana per Distributor</div></li>
+          <li><div class="title">Filter bulan & tahun</div></li>
+          <li><div class="title">Lihat tabel</div><div class="desc">Nama barang, qty rencana, nilai rencana.</div></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2><span class="num">3</span>Download Excel</h2>
+        <ol class="steps">
+          <li><div class="title">Klik Download Excel</div></li>
+          <li><div class="title">File .xlsx otomatis ter-download</div></li>
+        </ol>
+      </div>
+    </section>
 
   </main>
 </div>
 
 <script>
-  // ===== Hash routing =====
   function showPage(id) {
     document.querySelectorAll('.role-page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.sb-link').forEach(a => a.classList.remove('active'));
-
     const page = document.getElementById(id) || document.getElementById('home');
     const link = document.querySelector(`.sb-link[data-role="${id}"]`) ||
                  document.querySelector('.sb-link[data-role="home"]');
-
     page.classList.add('active');
     if (link) link.classList.add('active');
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
     if (window.innerWidth <= 900) {
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('backdrop').classList.remove('show');
@@ -662,13 +820,10 @@
   }
 
   window.addEventListener('hashchange', () => {
-    const id = location.hash.replace('#', '') || 'home';
-    showPage(id);
+    showPage(location.hash.replace('#', '') || 'home');
   });
-
   window.addEventListener('DOMContentLoaded', () => {
-    const id = location.hash.replace('#', '') || 'home';
-    showPage(id);
+    showPage(location.hash.replace('#', '') || 'home');
   });
 
   function toggleSidebar() {
@@ -677,24 +832,15 @@
   }
   window.toggleSidebar = toggleSidebar;
 
-  // ===== WAJIB LOGIN (Opsi B) =====
   (async function checkAuth() {
-    const ALL_ROLES = [
-      'SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI',
-      'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT',
-      'PETUGAS_MUTASI_BMHP', 'TIM_PENERIMAAN', 'TIM_PEMBELIAN',
-      'KEUANGAN', 'USER', 'DISTRIBUTOR_VIEW'
-    ];
-
+    const ALL_ROLES = ['SUPER_ADMIN','ADMIN','KEPALA_INSTALASI_FARMASI','KOORDINATOR_LOGISTIK_FARMASI','PETUGAS_MUTASI_OBAT','PETUGAS_MUTASI_BMHP','TIM_PENERIMAAN','TIM_PEMBELIAN','KEUANGAN','USER','DISTRIBUTOR_VIEW'];
     const user = await window.auth.requireAuth({ allowRoles: ALL_ROLES });
     if (!user) return;
 
-    // Tampilkan info user di sidebar
     document.getElementById('sbUserName').textContent = user.nama;
     document.getElementById('sbUserRole').textContent = user.role;
     document.getElementById('homeUserRole').textContent = user.role;
 
-    // Highlight link role yang sesuai user (opsional)
     const roleId = user.role.toLowerCase().replace(/_/g, '-');
     document.querySelectorAll('.sb-link').forEach(a => {
       if (a.dataset.role === roleId) {
@@ -704,7 +850,6 @@
       }
     });
 
-    // Tampilkan konten setelah auth OK
     document.body.classList.add('auth-ok');
   })();
 </script>
