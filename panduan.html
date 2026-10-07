@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panduan Pengguna — RKO RSAMP</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://ghdsegrmnkcbjcegsevj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZHNlZ3JtbmtjYmpjZWdzZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MTE1MDUsImV4cCI6MjEwNDM4NzUwNX0.q7BtgOzrNR-CfNap0esLg6HEREIGwKLzeNWUdGo9q70';
+  window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+<script src="auth.js"></script>
+<style>
+  /* ============ DESIGN TOKENS ============ */
+  :root {
+    --green-deep: #0F3D2E;
+    --green-mid: #16A34A;
+    --green-bright: #3FCF6A;
+    --green-soft: #E7F5EC;
+    --bg: #F4F7F4;
+    --card: #FFFFFF;
+    --text-dark: #14201A;
+    --text-muted: #6B7A72;
+    --amber: #D97706;
+    --coral: #DC5B45;
+    --border: #E4EAE5;
+    --shadow: 0 4px 16px rgba(15,61,46,0.06);
+    --shadow-lg: 0 12px 32px rgba(15,61,46,0.10);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--text-dark);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .app { display: flex; min-height: 100vh; }
+
+  /* ============ SIDEBAR ============ */
+  .sidebar {
+    width: 280px;
+    background: var(--green-deep);
+    color: #fff;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 50;
+    transition: transform 0.25s ease;
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+  .sb-brand {
+    padding: 22px 22px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .sb-brand .mark {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--green-bright);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px; color: var(--green-deep);
+    flex-shrink: 0;
+  }
+  .sb-brand .title { font-weight: 700; font-size: 15px; line-height: 1.2; }
+  .sb-brand .sub { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+
+  .sb-user {
+    padding: 12px 22px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px;
+    color: rgba(255,255,255,0.75);
+  }
+  .sb-user .who { font-weight: 600; color: #fff; font-size: 13px; }
+  .sb-user .role-tag {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 8px;
+    background: rgba(63,207,106,0.18);
+    color: var(--green-bright);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  .sb-back {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 22px;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    transition: background 0.15s;
+  }
+  .sb-back:hover { background: rgba(255,255,255,0.10); color: #fff; }
+
+  .sb-section {
+    padding: 16px 22px 8px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .sb-nav { padding: 4px 0 24px; }
+  .sb-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 22px;
+    color: rgba(255,255,255,0.78);
+    text-decoration: none;
+    font-size: 13.5px;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .sb-link:hover {
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    border-left-color: rgba(255,255,255,0.25);
+  }
+  .sb-link.active {
+    background: rgba(255,255,255,0.10);
+    color: #fff;
+    border-left-color: var(--green-bright);
+    font-weight: 600;
+  }
+  .sb-link .ico {
+    width: 22px; text-align: center; font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .sb-footer {
+    padding: 16px 22px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.5;
+  }
+
+  /* ============ MAIN ============ */
+  .main {
+    flex: 1;
+    margin-left: 280px;
+    padding: 32px 44px 80px;
+    max-width: 1100px;
+  }
+
+  /* ============ ROLE PAGE ============ */
+  .role-page { display: none; animation: fadeIn 0.25s ease; }
+  .role-page.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .role-header {
+    background: linear-gradient(135deg, var(--green-deep) 0%, #16543E 100%);
+    color: #fff;
+    padding: 32px 36px;
+    border-radius: 18px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .role-header::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -10%;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(63,207,106,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .role-header-inner { position: relative; z-index: 1; }
+  .role-eyebrow {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--green-bright);
+    margin-bottom: 8px;
+  }
+  .role-header h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .role-header .role-code {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 999px;
+    font-family: "SF Mono", "Courier New", monospace;
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+  .role-header p {
+    margin: 12px 0 0;
+    font-size: 14px;
+    color: rgba(255,255,255,0.85);
+    max-width: 720px;
+  }
+
+  /* ============ SECTIONS ============ */
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .section h2 {
+    font-size: 17px;
+    margin: 0 0 16px;
+    display: flex; align-items: center; gap: 10px;
+    color: var(--green-deep);
+  }
+  .section h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px;
+    background: var(--green-soft);
+    color: var(--green-mid);
+    border-radius: 8px;
+    font-size: 13px; font-weight: 800;
+  }
+  .section h3 {
+    font-size: 14.5px;
+    margin: 20px 0 8px;
+    color: var(--green-deep);
+  }
+  .section h3:first-child { margin-top: 0; }
+  .section p { margin: 8px 0; }
+  .section p.muted { color: var(--text-muted); font-size: 13.5px; }
+
+  .menu-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .menu-item {
+    padding: 10px 14px;
+    background: #FAFBFA;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.15s;
+  }
+  .menu-item:hover {
+    background: var(--green-soft);
+    border-color: var(--green-mid);
+  }
+  .menu-item .mico { font-size: 15px; flex-shrink: 0; }
+
+  .steps {
+    counter-reset: step;
+    padding: 0; margin: 12px 0;
+    list-style: none;
+  }
+  .steps > li {
+    position: relative;
+    padding: 14px 0 14px 52px;
+    border-bottom: 1px dashed var(--border);
+    counter-increment: step;
+  }
+  .steps > li:last-child { border-bottom: none; }
+  .steps > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 14px;
+    width: 34px; height: 34px;
+    background: var(--green-mid);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+    box-shadow: 0 0 0 4px var(--green-soft);
+  }
+  .steps > li .title {
+    font-weight: 600; margin-bottom: 4px; font-size: 14px;
+  }
+  .steps > li .desc { font-size: 13.5px; color: var(--text-muted); }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px; margin: 12px 0;
+    border-radius: 10px; overflow: hidden;
+  }
+  thead { background: #FAFBFA; }
+  th {
+    text-align: left; padding: 11px 14px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.4px; text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+  }
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #FAFBFA; }
+
+  .callout {
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    margin: 14px 0;
+    border-left: 4px solid;
+  }
+  .callout.info    { background: #E9EEFB; border-color: #3B5BDB; color: #1F3A8A; }
+  .callout.warn    { background: #FDF1E0; border-color: var(--amber); color: #7A4400; }
+  .callout.danger  { background: #FBEAE7; border-color: var(--coral); color: #8B2E1F; }
+  .callout.success { background: var(--green-soft); border-color: var(--green-mid); color: var(--green-deep); }
+  .callout .ctitle {
+    font-weight: 700; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .badge.green { background: var(--green-soft); color: var(--green-mid); }
+  .badge.amber { background: #FDF1E0; color: var(--amber); }
+  .badge.blue  { background: #E9EEFB; color: #3B5BDB; }
+  .badge.red   { background: #FBEAE7; color: var(--coral); }
+  .badge.gray  { background: #F1F1EE; color: var(--text-muted); }
+
+  .flow {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+    padding: 16px;
+    background: #FAFBFA;
+    border-radius: 12px;
+    border: 1px dashed var(--border);
+  }
+  .flow-node {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.3px;
+    border: 1px solid;
+  }
+  .flow-node.draft    { background: #F1F1EE; color: var(--text-muted); border-color: var(--border); }
+  .flow-node.dikirim  { background: #FDF1E0; color: var(--amber); border-color: #FAE5B8; }
+  .flow-node.diterima { background: #E9EEFB; color: #3B5BDB; border-color: #D7DEEF; }
+  .flow-node.selesai  { background: var(--green-soft); color: var(--green-mid); border-color: #C4E8D2; }
+  .flow-node.batal    { background: #FBEAE7; color: var(--coral); border-color: #F3D0C4; }
+  .flow-arrow { color: var(--text-muted); font-weight: 800; font-size: 15px; }
+
+  code {
+    background: #F1F1EE;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-family: "SF Mono", "Courier New", monospace;
+    font-size: 12.5px;
+    color: var(--green-deep);
+  }
+
+  .btn-toggle {
+    display: none;
+    position: fixed;
+    top: 16px; left: 16px;
+    z-index: 60;
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--green-deep);
+    color: #fff; border: none;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+  }
+  .backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(15,61,46,0.5);
+    z-index: 45;
+  }
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .backdrop.show { display: block; }
+    .btn-toggle { display: flex; align-items: center; justify-content: center; }
+    .main { margin-left: 0; padding: 80px 20px 60px; }
+    .role-header { padding: 24px 22px; }
+    .role-header h1 { font-size: 22px; }
+    .section { padding: 20px 18px; }
+    .steps > li { padding-left: 46px; }
+    .steps > li::before { width: 30px; height: 30px; font-size: 13px; }
+  }
+
+  @media print {
+    .sidebar, .btn-toggle, .backdrop { display: none !important; }
+    .main { margin: 0; padding: 0; max-width: none; }
+    .role-page { display: block !important; page-break-before: always; }
+    .role-page:first-child { page-break-before: auto; }
+    .section { box-shadow: none; page-break-inside: avoid; }
+  }
+
+  .home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .home-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    text-decoration: none;
+    color: var(--text-dark);
+    transition: all 0.18s;
+    box-shadow: var(--shadow);
+    display: block;
+  }
+  .home-card:hover {
+    border-color: var(--green-mid);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+  .home-card .ico {
+    width: 44px; height: 44px;
+    background: var(--green-soft);
+    color: var(--green-mid);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+  .home-card .name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .home-card .role {
+    font-family: "SF Mono", "Courier New", monospace;
+    font-size: 11px; color: var(--text-muted); margin-bottom: 8px;
+  }
+  .home-card .desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+
+  /* Hide content until auth check pass */
+  body:not(.auth-ok) .app { visibility: hidden; }
+</style>
+</head>
+<body>
+
+<button class="btn-toggle" onclick="toggleSidebar()">☰</button>
+<div class="backdrop" id="backdrop" onclick="toggleSidebar()"></div>
+
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="mark">RS</div>
+      <div>
+        <div class="title">Panduan RKO</div>
+        <div class="sub">RS AM Parikesit</div>
+      </div>
+    </div>
+
+    <div class="sb-user">
+      <div class="who" id="sbUserName">—</div>
+      <div class="role-tag" id="sbUserRole">—</div>
+    </div>
+
+    <a class="sb-back" href="index.html">← Menu Utama</a>
+
+    <div class="sb-section">Mulai</div>
+    <nav class="sb-nav">
+      <a class="sb-link active" href="#home" data-role="home">
+        <span class="ico">🏠</span><span>Beranda</span>
+      </a>
+    </nav>
+
+    <div class="sb-section">Peran Pengguna</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="#super-admin" data-role="super-admin">
+        <span class="ico">⚡</span><span>Super Admin</span>
+      </a>
+      <a class="sb-link" href="#admin" data-role="admin">
+        <span class="ico">🛠️</span><span>Admin</span>
+      </a>
+      <a class="sb-link" href="#kepala-if" data-role="kepala-if">
+        <span class="ico">👔</span><span>Kepala Instalasi Farmasi</span>
+      </a>
+      <a class="sb-link" href="#koordinator" data-role="koordinator">
+        <span class="ico">📋</span><span>Koordinator Logistik</span>
+      </a>
+      <a class="sb-link" href="#mutasi-obat" data-role="mutasi-obat">
+        <span class="ico">💊</span><span>Petugas Mutasi Obat</span>
+      </a>
+      <a class="sb-link" href="#mutasi-bmhp" data-role="mutasi-bmhp">
+        <span class="ico">🧪</span><span>Petugas Mutasi BMHP</span>
+      </a>
+      <a class="sb-link" href="#penerimaan" data-role="penerimaan">
+        <span class="ico">📦</span><span>Tim Penerimaan</span>
+      </a>
+      <a class="sb-link" href="#pembelian" data-role="pembelian">
+        <span class="ico">🛒</span><span>Tim Pembelian</span>
+      </a>
+      <a class="sb-link" href="#keuangan" data-role="keuangan">
+        <span class="ico">💰</span><span>Keuangan</span>
+      </a>
+      <a class="sb-link" href="#user" data-role="user">
+        <span class="ico">👤</span><span>User (Unit/Ruangan)</span>
+      </a>
+      <a class="sb-link" href="#distributor" data-role="distributor">
+        <span class="ico">🚛</span><span>Distributor View</span>
+      </a>
+    </nav>
+
+    <div class="sb-footer">
+      &copy; 2025–2026 RS AM Parikesit<br>
+      Versi panduan 1.0
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ========== BERANDA ========== -->
+    <section id="home" class="role-page active">
+      <div class="role-header">
+        <div class="role-header-inner">
+          <div class="role-eyebrow">Panduan Pengguna</div>
+          <h1>Selamat Datang di RKO RSAMP</h1>
+          <p>Pilih peran Anda di bawah atau dari sidebar kiri untuk melihat panduan penggunaan lengkap sesuai hak akses Anda.</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Pilih Peran</h2>
+        <p class="muted">Role Anda: <strong id="homeUserRole">—</strong>. Klik kartu role Anda untuk panduan terkait, atau lihat role lain untuk memahami alur kerja mereka.</p>
+        <div class="home-grid">
+          <a class="home-card" href="#super-admin">
+            <div class="ico">⚡</div>
+            <div class="name">Super Admin</div>
+            <div class="role">SUPER_ADMIN</div>
+            <div class="desc">Akses penuh ke seluruh sistem</div>
+          </a>
+          <a class="home-card" href="#admin">
+            <div class="ico">🛠️</div>
+            <div class="name">Admin</div>
+            <div class="role">ADMIN</div>
+            <div class="desc">Kelola master data & user</div>
+          </a>
+          <a class="home-card" href="#kepala-if">
+            <div class="ico">👔</div>
+            <div class="name">Kepala Instalasi Farmasi</div>
+            <div class="role">KEPALA_INSTALASI_FARMASI</div>
+            <div class="desc">Approval & verifikasi</div>
+          </a>
+          <a class="home-card" href="#koordinator">
+            <div class="ico">📋</div>
+            <div class="name">Koordinator Logistik</div>
+            <div class="role">KOORDINATOR_LOGISTIK_FARMASI</div>
+            <div class="desc">Operasional harian logistik</div>
+          </a>
+          <a class="home-card" href="#mutasi-obat">
+            <div class="ico">💊</div>
+            <div class="name">Petugas Mutasi Obat</div>
+            <div class="role">PETUGAS_MUTASI_OBAT</div>
+            <div class="desc">Mutasi obat ke ruangan</div>
+          </a>
+          <a class="home-card" href="#mutasi-bmhp">
+            <div class="ico">🧪</div>
+            <div class="name">Petugas Mutasi BMHP</div>
+            <div class="role">PETUGAS_MUTASI_BMHP</div>
+            <div class="desc">Mutasi BMHP ke ruangan</div>
+          </a>
+          <a class="home-card" href="#penerimaan">
+            <div class="ico">📦</div>
+            <div class="name">Tim Penerimaan</div>
+            <div class="role">TIM_PENERIMAAN</div>
+            <div class="desc">Penerimaan barang & retur</div>
+          </a>
+          <a class="home-card" href="#pembelian">
+            <div class="ico">🛒</div>
+            <div class="name">Tim Pembelian</div>
+            <div class="role">TIM_PEMBELIAN</div>
+            <div class="desc">Buat PO ke distributor</div>
+          </a>
+          <a class="home-card" href="#keuangan">
+            <div class="ico">💰</div>
+            <div class="name">Keuangan</div>
+            <div class="role">KEUANGAN</div>
+            <div class="desc">Anggaran & realisasi</div>
+          </a>
+          <a class="home-card" href="#user">
+            <div class="ico">👤</div>
+            <div class="name">User (Unit/Ruangan)</div>
+            <div class="role">USER</div>
+            <div class="desc">Input RKO & pemakaian</div>
+          </a>
+          <a class="home-card" href="#distributor">
+            <div class="ico">🚛</div>
+            <div class="name">Distributor View</div>
+            <div class="role">DISTRIBUTOR_VIEW</div>
+            <div class="desc">Lihat rencana belanja</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Alur Besar Sistem</h2>
+        <div class="flow">
+          <span class="flow-node draft">Input RKO Unit</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node dikirim">Usulan Pembelian</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node diterima">Approval</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node diterima">PO</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node selesai">Penerimaan</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node selesai">Mutasi ke Ruangan</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Konten role lainnya SAMA PERSIS dengan versi sebelumnya.
+         Salin blok <section> dari file panduan.html lama Anda:
+         #super-admin, #admin, #kepala-if, #koordinator,
+         #mutasi-obat, #mutasi-bmhp, #penerimaan, #pembelian,
+         #keuangan, #user, #distributor
+         dan tempel di sini. -->
+
+  </main>
+</div>
+
+<script>
+  // ===== Hash routing =====
+  function showPage(id) {
+    document.querySelectorAll('.role-page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sb-link').forEach(a => a.classList.remove('active'));
+
+    const page = document.getElementById(id) || document.getElementById('home');
+    const link = document.querySelector(`.sb-link[data-role="${id}"]`) ||
+                 document.querySelector('.sb-link[data-role="home"]');
+
+    page.classList.add('active');
+    if (link) link.classList.add('active');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (window.innerWidth <= 900) {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('backdrop').classList.remove('show');
+    }
+  }
+
+  window.addEventListener('hashchange', () => {
+    const id = location.hash.replace('#', '') || 'home';
+    showPage(id);
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const id = location.hash.replace('#', '') || 'home';
+    showPage(id);
+  });
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('backdrop').classList.toggle('show');
+  }
+  window.toggleSidebar = toggleSidebar;
+
+  // ===== WAJIB LOGIN (Opsi B) =====
+  (async function checkAuth() {
+    const ALL_ROLES = [
+      'SUPER_ADMIN', 'ADMIN', 'KEPALA_INSTALASI_FARMASI',
+      'KOORDINATOR_LOGISTIK_FARMASI', 'PETUGAS_MUTASI_OBAT',
+      'PETUGAS_MUTASI_BMHP', 'TIM_PENERIMAAN', 'TIM_PEMBELIAN',
+      'KEUANGAN', 'USER', 'DISTRIBUTOR_VIEW'
+    ];
+
+    const user = await window.auth.requireAuth({ allowRoles: ALL_ROLES });
+    if (!user) return;
+
+    // Tampilkan info user di sidebar
+    document.getElementById('sbUserName').textContent = user.nama;
+    document.getElementById('sbUserRole').textContent = user.role;
+    document.getElementById('homeUserRole').textContent = user.role;
+
+    // Highlight link role yang sesuai user (opsional)
+    const roleId = user.role.toLowerCase().replace(/_/g, '-');
+    document.querySelectorAll('.sb-link').forEach(a => {
+      if (a.dataset.role === roleId) {
+        a.style.background = 'rgba(63,207,106,0.18)';
+        a.style.fontWeight = '700';
+        a.style.color = '#fff';
+      }
+    });
+
+    // Tampilkan konten setelah auth OK
+    document.body.classList.add('auth-ok');
+  })();
+</script>
+</body>
+</html>
