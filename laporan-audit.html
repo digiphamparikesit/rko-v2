@@ -38,6 +38,9 @@
     .badge.approved{ background: var(--green-soft); color: var(--green-mid); }
     .badge.rejected{ background: #FBEAE7; color: var(--coral); }
     .badge.netral  { background: #F1F1EE; color: var(--text-muted); }
+    .badge.terbuka { background: var(--green-soft); color: var(--green-mid); }
+    .badge.belum   { background: #FDF1E0; color: var(--amber); }
+    .badge.tutup   { background: #FBEAE7; color: var(--coral); }
 
     .meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .diff-old { color: var(--coral); text-decoration: line-through; font-size: 12px; }
@@ -65,7 +68,7 @@
 
 <main>
   <div class="info-box">
-    Halaman ini menampilkan jejak audit: <strong>log mutasi</strong> (BUAT/KOREKSI/BATAL), <strong>log penerimaan</strong> (perubahan via approval), dan <strong>riwayat approval</strong> edit penerimaan. Hanya untuk dibaca, tidak ada aksi.
+    Halaman ini menampilkan jejak audit: <strong>log mutasi</strong>, <strong>log penerimaan</strong>, <strong>riwayat approval</strong>, <strong>log perubahan distributor</strong>, dan <strong>log periode RKO</strong>. Hanya untuk dibaca.
   </div>
 
   <div class="filter-bar">
@@ -88,6 +91,12 @@
     </button>
     <button class="tab-btn" id="tabApproval" onclick="window.switchTab('approval')">
       Riwayat Approval <span class="count" id="countApproval"></span>
+    </button>
+    <button class="tab-btn" id="tabDistributor" onclick="window.switchTab('distributor')">
+      Log Distributor <span class="count" id="countDistributor"></span>
+    </button>
+    <button class="tab-btn" id="tabPeriode" onclick="window.switchTab('periode')">
+      Log Periode RKO <span class="count" id="countPeriode"></span>
     </button>
   </div>
 
@@ -164,6 +173,55 @@
       </div>
     </div>
   </div>
+
+  <div class="panel" id="panelDistributor" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th>Waktu</th>
+          <th>No. PO</th>
+          <th>Barang</th>
+          <th>Distributor lama</th>
+          <th>Distributor baru</th>
+          <th>Alasan</th>
+          <th>Oleh</th>
+        </tr>
+      </thead>
+      <tbody id="tableDistributor"><tr><td colspan="7" class="empty-state">Memuat data...</td></tr></tbody>
+    </table>
+    <div class="pager">
+      <span id="pagerDistributor">-</span>
+      <div>
+        <button id="btnPrevDistributor" onclick="window.changePage('distributor', -1)">&larr; Sebelumnya</button>
+        <button id="btnNextDistributor" onclick="window.changePage('distributor', 1)">Berikutnya &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panelPeriode" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th>Waktu Diubah</th>
+          <th>Periode</th>
+          <th>Tanggal Buka</th>
+          <th>Tanggal Tutup</th>
+          <th>Mode</th>
+          <th>Status Saat Ini</th>
+          <th>Keterangan</th>
+          <th>Oleh</th>
+        </tr>
+      </thead>
+      <tbody id="tablePeriode"><tr><td colspan="8" class="empty-state">Memuat data...</td></tr></tbody>
+    </table>
+    <div class="pager">
+      <span id="pagerPeriode">-</span>
+      <div>
+        <button id="btnPrevPeriode" onclick="window.changePage('periode', -1)">&larr; Sebelumnya</button>
+        <button id="btnNextPeriode" onclick="window.changePage('periode', 1)">Berikutnya &rarr;</button>
+      </div>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -212,6 +270,13 @@
     return d.toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
   }
 
+  function formatTanggal(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+  }
+
   function labelField(field) {
     const map = {
       tanggal_terima: 'Tanggal terima',
@@ -223,6 +288,19 @@
     return map[field] || field;
   }
 
+  function hitungStatusPeriode(p) {
+    if (!p) return { status: 'TERBUKA', label: 'Terbuka', cls: 'terbuka' };
+    if (p.status_manual === 'DIPAKSA_TUTUP') {
+      return { status: 'TUTUP', label: 'Tutup (manual)', cls: 'tutup' };
+    }
+    const today = new Date(); today.setHours(0,0,0,0);
+    const buka = new Date(p.tanggal_buka + 'T00:00:00');
+    const tutup = new Date(p.tanggal_tutup + 'T23:59:59');
+    if (today < buka) return { status: 'BELUM_BUKA', label: 'Belum dibuka', cls: 'belum' };
+    if (today > tutup) return { status: 'TUTUP', label: 'Tutup (otomatis)', cls: 'tutup' };
+    return { status: 'TERBUKA', label: 'Terbuka', cls: 'terbuka' };
+  }
+
   // ============================================================
   //  VARIABEL
   // ============================================================
@@ -232,20 +310,29 @@
   let pembelianMap = {};
   let penerimaanMap = {};
   let mutasiMap = {};
+  let distributorMap = {};
 
   let logMutasi = [];
   let logPenerimaan = [];
   let listApproval = [];
+  let logDistributor = [];
+  let listPeriode = [];
 
   let filteredMutasi = [];
   let filteredPenerimaan = [];
   let filteredApproval = [];
+  let filteredDistributor = [];
+  let filteredPeriode = [];
 
   const PAGE_SIZE = 20;
   let pageMutasi = 1;
   let pagePenerimaan = 1;
   let pageApproval = 1;
+  let pageDistributor = 1;
+  let pagePeriode = 1;
   let currentTab = 'mutasi';
+
+  const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
   // ============================================================
   //  PERIODE
@@ -253,8 +340,7 @@
   function fillPeriodOptions(curBulan, curTahun) {
     const bulanSel = document.getElementById('bulanSelect');
     const tahunSel = document.getElementById('tahunSelect');
-    const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    namaBulan.forEach((nm, i) => {
+    NAMA_BULAN.forEach((nm, i) => {
       const opt = document.createElement('option');
       opt.value = i + 1; opt.textContent = nm;
       if (i + 1 === curBulan) opt.selected = true;
@@ -287,15 +373,16 @@
     const bulan = Number(document.getElementById('bulanSelect').value);
     const tahun = Number(document.getElementById('tahunSelect').value);
 
-    document.getElementById('tableMutasi').innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
-    document.getElementById('tablePenerimaan').innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
-    document.getElementById('tableApproval').innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
+    ['tableMutasi','tablePenerimaan','tableApproval','tableDistributor','tablePeriode'].forEach(id => {
+      document.getElementById(id).innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
+    });
 
     try {
-      const [barangData, ruanganData, userData, pembelianData, penerimaanData, mutasiData] = await Promise.all([
+      const [barangData, ruanganData, userData, distData, pembelianData, penerimaanData, mutasiData] = await Promise.all([
         fetchAllRows('master_barang'),
         fetchAllRows('master_ruangan'),
         fetchAllRows('users'),
+        fetchAllRows('master_distributor'),
         fetchAllRows('pembelian', q => q.eq('bulan', bulan).eq('tahun', tahun)),
         fetchAllRows('penerimaan'),
         fetchAllRows('mutasi_ruangan', q => q.eq('bulan', bulan).eq('tahun', tahun))
@@ -304,6 +391,7 @@
       barangMap = {}; barangData.forEach(b => { barangMap[b.id] = b; });
       ruanganMap = {}; ruanganData.forEach(r => { ruanganMap[r.id] = r; });
       userMap = {}; userData.forEach(u => { userMap[u.id] = u; });
+      distributorMap = {}; distData.forEach(d => { distributorMap[d.id] = d; });
       pembelianMap = {}; pembelianData.forEach(p => { pembelianMap[p.id] = p; });
       penerimaanMap = {}; penerimaanData.forEach(p => { penerimaanMap[p.id] = p; });
       mutasiMap = {}; mutasiData.forEach(m => { mutasiMap[m.id] = m; });
@@ -314,15 +402,24 @@
       );
       const mutasiIdsPeriode = new Set(mutasiData.map(m => m.id));
 
-      const [allMutasiLog, allPenerimaanLog, allApproval] = await Promise.all([
+      const [allMutasiLog, allPenerimaanLog, allApproval, allLogDist, allPeriode] = await Promise.all([
         fetchAllRows('mutasi_log', q => q.order('id', { ascending: false })),
         fetchAllRows('penerimaan_log', q => q.order('id', { ascending: false })),
-        fetchAllRows('approval_request', q => q.order('id', { ascending: false }))
+        fetchAllRows('approval_request', q => q.order('id', { ascending: false })),
+        fetchAllRows('log_perubahan_distributor', q => q.order('id', { ascending: false })).catch(() => []),
+        fetchAllRows('periode_rko', q => q.order('tahun', { ascending: false }).order('bulan', { ascending: false })).catch(() => [])
       ]);
 
       logMutasi = allMutasiLog.filter(l => mutasiIdsPeriode.has(l.mutasi_id));
       logPenerimaan = allPenerimaanLog.filter(l => penerimaanIdsPeriode.has(l.penerimaan_id));
       listApproval = allApproval.filter(a => penerimaanIdsPeriode.has(a.referensi_id));
+
+      // Log Distributor — hanya pembelian periode ini
+      const pembelianIdsSet = new Set(pembelianData.map(p => p.id));
+      logDistributor = (allLogDist || []).filter(l => pembelianIdsSet.has(l.pembelian_id));
+
+      // Log Periode — hanya periode bulan/tahun yang dipilih
+      listPeriode = (allPeriode || []).filter(p => Number(p.bulan) === bulan && Number(p.tahun) === tahun);
 
       applyFilterAll();
       updateCounts();
@@ -337,6 +434,8 @@
     document.getElementById('countMutasi').textContent = '(' + filteredMutasi.length + ')';
     document.getElementById('countPenerimaan').textContent = '(' + filteredPenerimaan.length + ')';
     document.getElementById('countApproval').textContent = '(' + filteredApproval.length + ')';
+    document.getElementById('countDistributor').textContent = '(' + filteredDistributor.length + ')';
+    document.getElementById('countPeriode').textContent = '(' + filteredPeriode.length + ')';
   }
 
   // ============================================================
@@ -392,13 +491,45 @@
       return !q || haystack.includes(q);
     });
 
+    filteredDistributor = logDistributor.filter(l => {
+      const pembelian = pembelianMap[l.pembelian_id];
+      const barang = pembelian ? barangMap[pembelian.barang_id] : null;
+      const distLama = l.distributor_lama ? distributorMap[l.distributor_lama] : null;
+      const distBaru = l.distributor_baru ? distributorMap[l.distributor_baru] : null;
+      const user = userMap[l.diubah_oleh];
+      const haystack = [
+        pembelian ? pembelian.no_po : '',
+        barang ? barang.nama_barang : '',
+        distLama ? distLama.nama_distributor : '',
+        distBaru ? distBaru.nama_distributor : '',
+        l.alasan || '',
+        user ? user.nama : ''
+      ].join(' ').toLowerCase();
+      return !q || haystack.includes(q);
+    });
+
+    filteredPeriode = listPeriode.filter(p => {
+      const user = userMap[p.diubah_oleh];
+      const haystack = [
+        NAMA_BULAN[p.bulan - 1] + ' ' + p.tahun,
+        p.keterangan || '',
+        p.status_manual || '',
+        user ? user.nama : ''
+      ].join(' ').toLowerCase();
+      return !q || haystack.includes(q);
+    });
+
     pageMutasi = 1;
     pagePenerimaan = 1;
     pageApproval = 1;
+    pageDistributor = 1;
+    pagePeriode = 1;
 
     renderMutasi();
     renderPenerimaan();
     renderApproval();
+    renderDistributor();
+    renderPeriode();
     updateCounts();
   }
 
@@ -579,23 +710,96 @@
   }
 
   // ============================================================
+  //  RENDER LOG DISTRIBUTOR
+  // ============================================================
+  function renderDistributor() {
+    const tbody = document.getElementById('tableDistributor');
+    const start = (pageDistributor - 1) * PAGE_SIZE;
+    const pageItems = filteredDistributor.slice(start, start + PAGE_SIZE);
+
+    if (pageItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada perubahan distributor untuk periode ini.</td></tr>';
+    } else {
+      tbody.innerHTML = pageItems.map(l => {
+        const pembelian = pembelianMap[l.pembelian_id];
+        const barang = pembelian ? barangMap[pembelian.barang_id] : null;
+        const distLama = l.distributor_lama ? distributorMap[l.distributor_lama] : null;
+        const distBaru = l.distributor_baru ? distributorMap[l.distributor_baru] : null;
+        const user = userMap[l.diubah_oleh];
+
+        return `<tr>
+          <td>${formatDT(l.diubah_pada)}</td>
+          <td>${escapeHtml(pembelian ? pembelian.no_po : '-')}</td>
+          <td>${escapeHtml(barang ? barang.nama_barang : '-')}</td>
+          <td><span class="diff-old">${escapeHtml(distLama ? distLama.nama_distributor : '(kosong)')}</span></td>
+          <td><span class="diff-new">${escapeHtml(distBaru ? distBaru.nama_distributor : '(kosong)')}</span></td>
+          <td>${escapeHtml(l.alasan || '-')}</td>
+          <td>${escapeHtml(user ? user.nama : 'User #' + (l.diubah_oleh || '-'))}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    const totalPages = Math.max(1, Math.ceil(filteredDistributor.length / PAGE_SIZE));
+    document.getElementById('pagerDistributor').textContent = `${filteredDistributor.length} baris · Halaman ${pageDistributor} dari ${totalPages}`;
+    document.getElementById('btnPrevDistributor').disabled = pageDistributor <= 1;
+    document.getElementById('btnNextDistributor').disabled = pageDistributor >= totalPages;
+  }
+
+  // ============================================================
+  //  RENDER LOG PERIODE RKO
+  // ============================================================
+  function renderPeriode() {
+    const tbody = document.getElementById('tablePeriode');
+    const start = (pagePeriode - 1) * PAGE_SIZE;
+    const pageItems = filteredPeriode.slice(start, start + PAGE_SIZE);
+
+    if (pageItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada pengaturan periode untuk bulan/tahun ini.</td></tr>';
+    } else {
+      tbody.innerHTML = pageItems.map(p => {
+        const user = userMap[p.diubah_oleh];
+        const st = hitungStatusPeriode(p);
+        const modeLabel = p.status_manual === 'DIPAKSA_TUTUP' ? 'Paksa tutup' : 'Otomatis';
+
+        return `<tr>
+          <td>${formatDT(p.diubah_pada)}</td>
+          <td><strong>${NAMA_BULAN[p.bulan - 1]} ${p.tahun}</strong></td>
+          <td>${formatTanggal(p.tanggal_buka)}</td>
+          <td>${formatTanggal(p.tanggal_tutup)}</td>
+          <td>${escapeHtml(modeLabel)}</td>
+          <td><span class="badge ${st.cls}">${st.label}</span></td>
+          <td>${escapeHtml(p.keterangan || '-')}</td>
+          <td>${escapeHtml(user ? user.nama : 'User #' + (p.diubah_oleh || '-'))}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    const totalPages = Math.max(1, Math.ceil(filteredPeriode.length / PAGE_SIZE));
+    document.getElementById('pagerPeriode').textContent = `${filteredPeriode.length} baris · Halaman ${pagePeriode} dari ${totalPages}`;
+    document.getElementById('btnPrevPeriode').disabled = pagePeriode <= 1;
+    document.getElementById('btnNextPeriode').disabled = pagePeriode >= totalPages;
+  }
+
+  // ============================================================
   //  TAB & PAGINATION
   // ============================================================
   window.switchTab = function(tab) {
     currentTab = tab;
-    document.getElementById('tabMutasi').classList.toggle('active', tab === 'mutasi');
-    document.getElementById('tabPenerimaan').classList.toggle('active', tab === 'penerimaan');
-    document.getElementById('tabApproval').classList.toggle('active', tab === 'approval');
-
-    document.getElementById('panelMutasi').style.display = tab === 'mutasi' ? 'block' : 'none';
-    document.getElementById('panelPenerimaan').style.display = tab === 'penerimaan' ? 'block' : 'none';
-    document.getElementById('panelApproval').style.display = tab === 'approval' ? 'block' : 'none';
+    const tabIds = ['mutasi', 'penerimaan', 'approval', 'distributor', 'periode'];
+    tabIds.forEach(t => {
+      const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+      const panel = document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1));
+      if (btn) btn.classList.toggle('active', tab === t);
+      if (panel) panel.style.display = tab === t ? 'block' : 'none';
+    });
   };
 
   window.changePage = function(jenis, delta) {
     if (jenis === 'mutasi') { pageMutasi += delta; renderMutasi(); }
     else if (jenis === 'penerimaan') { pagePenerimaan += delta; renderPenerimaan(); }
     else if (jenis === 'approval') { pageApproval += delta; renderApproval(); }
+    else if (jenis === 'distributor') { pageDistributor += delta; renderDistributor(); }
+    else if (jenis === 'periode') { pagePeriode += delta; renderPeriode(); }
   };
 
   window.refreshAll = function() {
