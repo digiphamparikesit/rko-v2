@@ -39,12 +39,12 @@
     .log-item.ubah .log-aksi { color: var(--amber); }
     select.status-select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
 
-    /* ==== Filter & Aksi (collapsible) ==== */
-    .filter-toggle-bar {
+    /* ==== Baris tombol aksi utama (filter, buat PO, dll) ==== */
+    .action-bar {
       display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
       margin-bottom: 14px;
     }
-    .btn-filter-toggle {
+    .btn-action-toggle {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 9px 16px; border-radius: 10px;
       border: 1px solid var(--border); background: #fff;
@@ -52,20 +52,32 @@
       cursor: pointer; font-family: inherit;
       transition: all 0.15s;
     }
-    .btn-filter-toggle:hover {
+    .btn-action-toggle:hover {
       border-color: var(--green-mid); color: var(--green-deep);
       background: var(--green-soft);
     }
-    .btn-filter-toggle.open {
+    .btn-action-toggle.open {
       background: var(--green-mid); color: #fff;
       border-color: var(--green-mid);
     }
-    .btn-filter-toggle .arrow {
+    .btn-action-toggle .arrow {
       font-size: 10px;
       transition: transform 0.2s;
     }
-    .btn-filter-toggle.open .arrow { transform: rotate(180deg); }
+    .btn-action-toggle.open .arrow { transform: rotate(180deg); }
+    .btn-action-toggle .count-pill {
+      background: rgba(255,255,255,0.25);
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .btn-action-toggle:not(.open) .count-pill {
+      background: var(--green-soft);
+      color: var(--green-deep);
+    }
 
+    /* ==== Filter Panel ==== */
     .filter-panel {
       background: #fff;
       border: 1px solid var(--border);
@@ -91,13 +103,18 @@
       border-top: 1px dashed var(--border);
     }
 
-    /* ==== Panel Usulan Siap Buat PO ==== */
+    /* ==== Panel Usulan Siap Buat PO — dengan sticky header ==== */
     .usulan-panel {
       background: #fff;
       border: 1px solid var(--border);
       border-left: 4px solid var(--green-mid);
       border-radius: 14px;
       margin-bottom: 20px;
+      position: relative;
+      /* max-height + overflow supaya header bisa sticky */
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
     }
     .usulan-panel .up-head {
@@ -106,6 +123,11 @@
       background: #F1FAF4;
       border-bottom: 1px solid var(--border);
       flex-wrap: wrap; gap: 10px;
+      /* Sticky di dalam panel */
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      flex-shrink: 0;
     }
     .usulan-panel .up-title {
       display: flex; align-items: center; gap: 10px;
@@ -130,8 +152,20 @@
       font-size: 12px; color: var(--text-muted); margin-left: 4px;
       font-weight: 400;
     }
+    /* Area scroll untuk body + pager */
+    .usulan-panel .up-body {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
     .usulan-panel table { min-width: 100%; }
-    .usulan-panel table th { background: #F7FAF8; }
+    .usulan-panel table th {
+      background: #F7FAF8;
+      /* Sticky header tabel juga */
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
     .usulan-panel .qty-hi { color: var(--green-deep); font-weight: 700; font-size: 14px; }
     .usulan-panel .btn-buat-po {
       padding: 6px 14px; font-size: 12px; font-weight: 600;
@@ -144,6 +178,41 @@
     .usulan-panel .btn-buat-po:hover { background: #128a3e; }
     .usulan-panel .barang-nama { font-weight: 600; font-size: 13px; line-height: 1.3; }
     .usulan-panel .barang-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ==== Panel Daftar PO (collapsible) ==== */
+    .po-panel {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: none;
+      overflow: hidden;
+    }
+    .po-panel.show { display: block; }
+    .po-panel .po-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+      background: #FAFBFA;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap: 10px;
+    }
+    .po-panel .po-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 700; color: var(--text-dark);
+    }
+    .po-panel .po-title .po-icon {
+      width: 32px; height: 32px;
+      background: #E9EEFB;
+      color: #3B5BDB;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .po-panel .po-count {
+      background: #3B5BDB; color: #fff;
+      padding: 3px 11px;
+      border-radius: 999px;
+      font-size: 11.5px; font-weight: 700;
+    }
 
     /* ==== Pagination ==== */
     .pager {
@@ -226,9 +295,9 @@
     </div>
   </section>
 
-  <!-- ==== Toggle Filter ==== -->
-  <div class="filter-toggle-bar">
-    <button class="btn-filter-toggle" id="btnFilterToggle" onclick="window.toggleFilterPanel()">
+  <!-- ==== Baris tombol aksi utama ==== -->
+  <div class="action-bar">
+    <button class="btn-action-toggle" id="btnFilterToggle" onclick="window.toggleFilterPanel()">
       <span>🔍</span>
       <span>Cari &amp; Filter</span>
       <span class="arrow">▼</span>
@@ -237,6 +306,13 @@
     <button class="btn" style="background:#F1F1EE; color:var(--text-dark);" onclick="window.openUploadModal()">&#8593; Upload CSV</button>
     <button class="btn btn-warning" onclick="window.openSelisihModal()">&#9888; PO Ulang dari Selisih</button>
     <button class="btn btn-secondary" onclick="window.exportExcel()">&#8681; Excel</button>
+    <!-- ==== Toggle Daftar PO ==== -->
+    <button class="btn-action-toggle" id="btnPoListToggle" onclick="window.togglePoListPanel()">
+      <span>📋</span>
+      <span>Daftar PO</span>
+      <span class="count-pill" id="poToggleCount">0</span>
+      <span class="arrow">▼</span>
+    </button>
   </div>
 
   <!-- ==== Panel Filter (collapsed default) ==== -->
@@ -284,15 +360,24 @@
         <span class="up-sub" id="usulanSub">usulan dari ruangan yang sudah disetujui</span>
       </div>
     </div>
-    <div id="usulanListWrap">
-      <div class="empty-state" style="padding:24px;">Memuat usulan...</div>
+    <div class="up-body">
+      <div id="usulanListWrap">
+        <div class="empty-state" style="padding:24px;">Memuat usulan...</div>
+      </div>
+      <!-- pager usulan akan di-render di sini -->
+      <div id="usulanPagerWrap"></div>
     </div>
-    <!-- pager usulan akan di-render di sini -->
-    <div id="usulanPagerWrap"></div>
   </section>
 
-  <!-- ==== Tabel PO ==== -->
-  <div class="panel">
+  <!-- ==== Panel Daftar PO (collapsible) ==== -->
+  <div class="po-panel" id="poPanel">
+    <div class="po-head">
+      <div class="po-title">
+        <span class="po-icon">📋</span>
+        <span>Daftar PO</span>
+        <span class="po-count" id="poPanelCount">0</span>
+      </div>
+    </div>
     <table>
       <thead>
         <tr>
@@ -456,16 +541,26 @@
   let poPage = 1;
 
   // ============================================================
-  //  TOGGLE FILTER PANEL
+  //  TOGGLE PANEL
   // ============================================================
   window.toggleFilterPanel = function() {
     const panel = document.getElementById('filterPanel');
     const btn = document.getElementById('btnFilterToggle');
     panel.classList.toggle('show');
     btn.classList.toggle('open');
-    // Fokus ke search box saat dibuka
     if (panel.classList.contains('show')) {
       setTimeout(() => document.getElementById('searchBox').focus(), 100);
+    }
+  };
+
+  window.togglePoListPanel = function() {
+    const panel = document.getElementById('poPanel');
+    const btn = document.getElementById('btnPoListToggle');
+    panel.classList.toggle('show');
+    btn.classList.toggle('open');
+    // Render ulang tabel saat dibuka (untuk refresh pager)
+    if (panel.classList.contains('show')) {
+      renderTable();
     }
   };
 
@@ -510,8 +605,6 @@
     document.getElementById('filterGolongan').addEventListener('change', applyFilter);
     document.getElementById('filterStatus').addEventListener('change', applyFilter);
     await loadAllData();
-
-    // Cek apakah datang dari halaman usulan-pembelian
     cekPrefillDariUsulan();
   }
 
@@ -630,7 +723,6 @@
 
     subEl.textContent = 'usulan disetujui — klik Buat PO untuk memproses';
 
-    // Pagination
     const total = usulanPendingList.length;
     const totalPages = Math.ceil(total / PAGE_SIZE_USULAN);
     if (usulanPage > totalPages) usulanPage = totalPages;
@@ -689,14 +781,12 @@
       <tbody>${rows}</tbody>
     </table>`;
 
-    // Render pager hanya kalau lebih dari 1 halaman
     if (totalPages > 1) {
       pagerWrap.innerHTML = buildPagerHtml(total, usulanPage, totalPages, startIdx + 1, endIdx, 'usulan');
-      // Wire buttons
       const prev = document.getElementById('usulanPgPrev');
       const next = document.getElementById('usulanPgNext');
-      if (prev) prev.addEventListener('click', () => { usulanPage--; renderUsulanPanel(); scrollToPanel('usulanPanel'); });
-      if (next) next.addEventListener('click', () => { usulanPage++; renderUsulanPanel(); scrollToPanel('usulanPanel'); });
+      if (prev) prev.addEventListener('click', () => { usulanPage--; renderUsulanPanel(); });
+      if (next) next.addEventListener('click', () => { usulanPage++; renderUsulanPanel(); });
     } else {
       pagerWrap.innerHTML = '';
     }
@@ -716,11 +806,6 @@
         <button class="pg-btn" id="${prefix}PgNext" ${currentPage === totalPages ? 'disabled' : ''}>Berikutnya →</button>
       </div>
     </div>`;
-  }
-
-  function scrollToPanel(id) {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // ============================================================
@@ -776,6 +861,10 @@
       applyFilter();
       updateStats();
       renderUsulanPanel();
+
+      // Update count di tombol toggle
+      document.getElementById('poToggleCount').textContent = pembelianList.length;
+      document.getElementById('poPanelCount').textContent = pembelianList.length;
     } catch (err) {
       console.error(err);
       document.getElementById('tableBody').innerHTML =
@@ -1019,7 +1108,6 @@
       return;
     }
 
-    // Pagination
     const total = filteredList.length;
     const totalPages = Math.ceil(total / PAGE_SIZE_PO);
     if (poPage > totalPages) poPage = totalPages;
@@ -1048,13 +1136,12 @@
       </tr>`;
     }).join('');
 
-    // Render pager
     if (totalPages > 1) {
       pagerWrap.innerHTML = buildPagerHtml(total, poPage, totalPages, startIdx + 1, endIdx, 'po');
       const prev = document.getElementById('poPgPrev');
       const next = document.getElementById('poPgNext');
-      if (prev) prev.addEventListener('click', () => { poPage--; renderTable(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-      if (next) next.addEventListener('click', () => { poPage++; renderTable(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+      if (prev) prev.addEventListener('click', () => { poPage--; renderTable(); });
+      if (next) next.addEventListener('click', () => { poPage++; renderTable(); });
     } else {
       pagerWrap.innerHTML = '';
     }
